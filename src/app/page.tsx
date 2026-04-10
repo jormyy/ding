@@ -85,11 +85,11 @@ export default function HomePage() {
                 onKeyDown={(e) => e.key === "Enter" && handleJoinGame()}
                 placeholder="XK92"
                 maxLength={4}
-                className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white font-mono text-lg tracking-widest text-center placeholder:text-gray-600 focus:outline-none focus:border-green-500 transition-colors"
+                className="flex-1 min-w-0 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white font-mono text-lg tracking-widest text-center placeholder:text-gray-600 focus:outline-none focus:border-green-500 transition-colors"
               />
               <button
                 onClick={handleJoinGame}
-                className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-xl transition-all duration-150 active:scale-95"
+                className="shrink-0 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-xl transition-all duration-150 active:scale-95"
               >
                 Join
               </button>

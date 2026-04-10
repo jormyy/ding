@@ -16,7 +16,7 @@ export default function NameModal({ onSubmit }: NameModalProps) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-gray-950">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-950/30 via-gray-950 to-gray-950 pointer-events-none" />
 
       <div className="relative z-10 bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-sm shadow-2xl">

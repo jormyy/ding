@@ -89,29 +89,32 @@ export default function GameBoard({ gameState, myId, onSend }: GameBoardProps) {
         </span>
       </div>
 
-      {/* Poker Table — fills remaining height */}
-      <div className="flex-1 relative min-h-0">
-        <PokerTable
-          gameState={displayState}
-          myId={myId}
-          selectedHandId={selectedHandId}
-          onHandClick={handleHandClick}
-        />
+      {/* Poker Table */}
+      <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
+        {/* On mobile: constrain to a square so the oval isn't egg-shaped in portrait */}
+        <div className="relative w-full aspect-square sm:aspect-auto sm:h-full">
+          <PokerTable
+            gameState={displayState}
+            myId={myId}
+            selectedHandId={selectedHandId}
+            onHandClick={handleHandClick}
+          />
 
-        {/* Instruction hint */}
-        {selectedHandId !== null ? (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-            <div className="bg-yellow-500/90 text-yellow-950 text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-              Click any hand to swap
+          {/* Instruction hint */}
+          {selectedHandId !== null ? (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+              <div className="bg-yellow-500/90 text-yellow-950 text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                Click any hand to swap
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-            <div className="bg-gray-900/80 text-gray-400 text-xs px-3 py-1 rounded-full">
-              Click your chip to rank it
+          ) : (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+              <div className="bg-gray-900/80 text-gray-400 text-xs px-3 py-1 rounded-full">
+                Click your chip to rank it
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Bottom bar: ready button */}

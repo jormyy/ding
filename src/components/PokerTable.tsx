@@ -218,8 +218,9 @@ export default function PokerTable({
   }, []);
 
   const isMobile = containerWidth < 500;
-  const xRadius = isMobile ? 38 : 41;
-  const yRadius = isMobile ? 34 : 38;
+  // On mobile the container is constrained to a square, so we use a wide oval
+  const xRadius = isMobile ? 43 : 41;
+  const yRadius = isMobile ? 28 : 38;
 
   const isReveal = gameState.phase === "reveal";
   const hasSelection = selectedHandId !== null;
@@ -253,7 +254,8 @@ export default function PokerTable({
     : { small: true as const };
   const commCardW = isMobile ? 26 : 36;
   const commCardH = isMobile ? 38 : 52;
-  const feltInset = isMobile ? "12% 10%" : "10% 16%";
+  // Mobile: wide landscape oval (20% top/bottom, 5% left/right) in the square container
+  const feltInset = isMobile ? "20% 5%" : "10% 16%";
 
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden">

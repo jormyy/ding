@@ -34,14 +34,17 @@ export default function Reveal({ gameState, myId, onSend }: RevealProps) {
       </div>
 
       {/* Poker Table */}
-      <div className="flex-1 relative min-h-0">
-        <PokerTable
-          gameState={gameState}
-          myId={myId}
-          onFlip={handleFlip}
-        />
+      <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden relative">
+        {/* On mobile: constrain to a square so the oval isn't egg-shaped in portrait */}
+        <div className="relative w-full aspect-square sm:aspect-auto sm:h-full">
+          <PokerTable
+            gameState={gameState}
+            myId={myId}
+            onFlip={handleFlip}
+          />
+        </div>
 
-        {/* Score overlay — appears over the table when all flipped */}
+        {/* Score overlay — covers the full flex-1 area for proper centering */}
         {allFlipped && (
           <div className="absolute inset-0 bg-gray-950/80 backdrop-blur-sm flex items-center justify-center z-30 p-4">
             <ScorePanel
