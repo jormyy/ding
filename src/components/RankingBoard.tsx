@@ -68,6 +68,7 @@ export default function RankingBoard({
   }
 
   const orderedHands = gameState.ranking
+    .filter((id): id is string => id !== null)
     .map((id) => handMap.get(id))
     .filter(Boolean) as Hand[];
 
@@ -92,7 +93,7 @@ export default function RankingBoard({
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={gameState.ranking}
+          items={gameState.ranking.filter((id): id is string => id !== null)}
           strategy={verticalListSortingStrategy}
         >
           <div className="space-y-2">

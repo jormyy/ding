@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { ClientMessage, GameState, Hand } from "@/lib/types";
 import PokerTable from "./PokerTable";
 
@@ -13,6 +14,7 @@ export default function Reveal({ gameState, myId, onSend }: RevealProps) {
   const allFlipped = gameState.score !== null;
   const myPlayer = gameState.players.find((p) => p.id === myId);
   const isCreator = myPlayer?.isCreator ?? false;
+  const [viewingBoard, setViewingBoard] = useState(false);
 
   function handleFlip(handId: string) {
     onSend({ type: "flip", handId });
@@ -30,12 +32,19 @@ export default function Reveal({ gameState, myId, onSend }: RevealProps) {
         <span className="text-yellow-400 text-[10px] font-bold uppercase tracking-widest">
           Reveal
         </span>
-        <div className="w-12" />
+        {allFlipped && (
+          <button
+            onClick={() => setViewingBoard((v) => !v)}
+            className="text-xs font-bold px-2 py-1 rounded-lg border transition-colors border-gray-700 text-gray-400 hover:text-white hover:border-gray-500"
+          >
+            {viewingBoard ? "Results" : "Board"}
+          </button>
+        )}
+        {!allFlipped && <div className="w-12" />}
       </div>
 
       {/* Poker Table */}
       <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden relative">
-        {/* On mobile: constrain to a square so the oval isn't egg-shaped in portrait */}
         <div className="relative w-full aspect-square sm:aspect-auto sm:h-full">
           <PokerTable
             gameState={gameState}
@@ -44,8 +53,8 @@ export default function Reveal({ gameState, myId, onSend }: RevealProps) {
           />
         </div>
 
-        {/* Score overlay — covers the full flex-1 area for proper centering */}
-        {allFlipped && (
+        {/* Score overlay */}
+        {allFlipped && !viewingBoard && (
           <div className="absolute inset-0 bg-gray-950/80 backdrop-blur-sm flex items-center justify-center z-30 p-4">
             <ScorePanel
               gameState={gameState}
@@ -70,6 +79,7 @@ function ScorePanel({ gameState, isCreator, onPlayAgain }: ScorePanelProps) {
   const isPerfect = score === 0;
 
   const handMap = new Map<string, Hand>(gameState.hands.map((h) => [h.id, h]));
+  const trueRanks = gameState.trueRanks;
 
   function getHandLabel(hand: Hand): string {
     const name =
@@ -79,15 +89,19 @@ function ScorePanel({ gameState, isCreator, onPlayAgain }: ScorePanelProps) {
     return `${name} (${idx + 1})`;
   }
 
+  function isCorrectPlacement(handId: string, playerIndex: number): boolean {
+    if (!trueRanks) return false;
+    const myTrueRank = trueRanks[handId];
+    const tieGroupSize = Object.values(trueRanks).filter((r) => r === myTrueRank).length;
+    const playerRank = playerIndex + 1;
+    return playerRank >= myTrueRank && playerRank < myTrueRank + tieGroupSize;
+  }
+
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 shadow-2xl w-full max-w-sm max-h-[88dvh] overflow-y-auto">
       {/* Score */}
       <div className="text-center mb-4">
-        <div
-          className={`text-6xl font-black mb-1 ${
-            isPerfect ? "text-green-400" : "text-white"
-          }`}
-        >
+        <div className={`text-6xl font-black mb-1 ${isPerfect ? "text-green-400" : "text-white"}`}>
           {score}
         </div>
         <div className="text-gray-400 text-sm font-medium">
@@ -108,10 +122,10 @@ function ScorePanel({ gameState, isCreator, onPlayAgain }: ScorePanelProps) {
             </div>
             <div className="space-y-1">
               {gameState.ranking.map((handId, i) => {
+                if (!handId) return null;
                 const hand = handMap.get(handId);
                 if (!hand) return null;
-                const truePos = gameState.trueRanking!.indexOf(handId);
-                const correct = truePos === i;
+                const correct = isCorrectPlacement(handId, i);
                 return (
                   <div
                     key={handId}
@@ -125,9 +139,7 @@ function ScorePanel({ gameState, isCreator, onPlayAgain }: ScorePanelProps) {
                     <span className="text-white font-medium truncate flex-1">
                       {getHandLabel(hand)}
                     </span>
-                    <span
-                      className={correct ? "text-green-400" : "text-red-400"}
-                    >
+                    <span className={correct ? "text-green-400" : "text-red-400"}>
                       {correct ? "✓" : "✗"}
                     </span>
                   </div>
@@ -144,12 +156,13 @@ function ScorePanel({ gameState, isCreator, onPlayAgain }: ScorePanelProps) {
               {gameState.trueRanking.map((handId, i) => {
                 const hand = handMap.get(handId);
                 if (!hand) return null;
+                const displayRank = trueRanks?.[handId] ?? i + 1;
                 return (
                   <div
                     key={handId}
                     className="flex items-center gap-1.5 px-2 py-1 rounded text-xs bg-gray-800/60 border border-gray-700/40"
                   >
-                    <span className="text-gray-500 w-4">{i + 1}.</span>
+                    <span className="text-gray-500 w-4">{displayRank}.</span>
                     <span className="text-white font-medium truncate flex-1">
                       {getHandLabel(hand)}
                     </span>
