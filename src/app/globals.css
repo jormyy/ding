@@ -33,6 +33,12 @@
   }
 }
 
+/* Prevent rubber-band scroll on iOS */
+html,
+body {
+  overscroll-behavior: none;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

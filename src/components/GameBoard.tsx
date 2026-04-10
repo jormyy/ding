@@ -63,15 +63,15 @@ export default function GameBoard({ gameState, myId, onSend }: GameBoardProps) {
   const phaseLabels = ["preflop", "flop", "turn", "river"] as const;
 
   return (
-    <div className="h-screen flex flex-col bg-gray-950">
+    <div className="h-[100dvh] flex flex-col bg-gray-950">
       {/* Header */}
-      <div className="flex-none border-b border-gray-800 bg-gray-950/90 backdrop-blur-sm px-4 py-2.5 flex items-center justify-between">
-        <span className="text-lg font-black text-white tracking-tight">DING</span>
-        <div className="flex items-center gap-3">
+      <div className="flex-none border-b border-gray-800 bg-gray-950/90 backdrop-blur-sm px-3 py-2 flex items-center justify-between">
+        <span className="text-base font-black text-white tracking-tight">DING</span>
+        <div className="flex items-center gap-2">
           {phaseLabels.map((phase) => (
             <div
               key={phase}
-              className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest transition-colors ${
+              className={`flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-widest transition-colors ${
                 gameState.phase === phase ? "text-green-400" : "text-gray-700"
               }`}
             >
@@ -80,12 +80,12 @@ export default function GameBoard({ gameState, myId, onSend }: GameBoardProps) {
                   gameState.phase === phase ? "bg-green-400" : "bg-gray-700"
                 }`}
               />
-              {phase === "preflop" ? "pre" : phase}
+              <span className="hidden sm:inline">{phase === "preflop" ? "pre" : phase}</span>
             </div>
           ))}
         </div>
-        <span className="text-green-400 text-xs font-bold uppercase tracking-widest">
-          {gameState.phase}
+        <span className="text-green-400 text-[10px] font-bold uppercase tracking-widest">
+          {gameState.phase === "preflop" ? "pre-flop" : gameState.phase}
         </span>
       </div>
 
@@ -115,7 +115,7 @@ export default function GameBoard({ gameState, myId, onSend }: GameBoardProps) {
       </div>
 
       {/* Bottom bar: ready button */}
-      <div className="flex-none border-t border-gray-800 bg-gray-950/90 backdrop-blur-sm px-4 py-3 flex items-center justify-center gap-4">
+      <div className="flex-none border-t border-gray-800 bg-gray-950/90 backdrop-blur-sm px-4 py-2.5 flex items-center justify-center gap-3">
         <p className="text-gray-600 text-xs">
           {isReady ? "Waiting for others..." : "Happy with the ranking?"}
         </p>

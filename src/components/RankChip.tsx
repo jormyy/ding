@@ -7,6 +7,7 @@ interface RankChipProps {
   isSelected: boolean;
   hasSelection: boolean; // any chip currently selected
   onClick: () => void;
+  small?: boolean;
 }
 
 export default function RankChip({
@@ -16,6 +17,7 @@ export default function RankChip({
   isSelected,
   hasSelection,
   onClick,
+  small = false,
 }: RankChipProps) {
   const isClickable = isOwn || hasSelection;
 
@@ -32,7 +34,8 @@ export default function RankChip({
       onClick={onClick}
       disabled={!isClickable}
       className={[
-        "w-8 h-8 rounded-full font-black text-xs flex items-center justify-center border-2 select-none transition-all duration-150",
+        "rounded-full font-black flex items-center justify-center border-2 select-none transition-all duration-150",
+        small ? "w-6 h-6 text-[10px]" : "w-8 h-8 text-xs",
         chipBg,
         isClickable ? "cursor-pointer" : "cursor-default",
         isClickable && !isSelected ? "hover:scale-110" : "",

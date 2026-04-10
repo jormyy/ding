@@ -39,7 +39,7 @@ export default function Lobby({ gameState, myId, code, onSend }: LobbyProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-6">
+    <div className="min-h-[100dvh] bg-gray-950 flex flex-col items-center justify-center p-4 sm:p-6">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-950/20 via-gray-950 to-gray-950 pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-md space-y-4">

@@ -23,14 +23,14 @@ export default function Reveal({ gameState, myId, onSend }: RevealProps) {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-950">
+    <div className="h-[100dvh] flex flex-col bg-gray-950">
       {/* Header */}
-      <div className="flex-none border-b border-gray-800 bg-gray-950/90 backdrop-blur-sm px-4 py-2.5 flex items-center justify-between">
-        <span className="text-lg font-black text-white tracking-tight">DING</span>
-        <span className="text-yellow-400 text-xs font-bold uppercase tracking-widest">
+      <div className="flex-none border-b border-gray-800 bg-gray-950/90 backdrop-blur-sm px-3 py-2 flex items-center justify-between">
+        <span className="text-base font-black text-white tracking-tight">DING</span>
+        <span className="text-yellow-400 text-[10px] font-bold uppercase tracking-widest">
           Reveal
         </span>
-        <div className="w-16" />
+        <div className="w-12" />
       </div>
 
       {/* Poker Table */}
@@ -77,11 +77,11 @@ function ScorePanel({ gameState, isCreator, onPlayAgain }: ScorePanelProps) {
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded-2xl p-5 shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 shadow-2xl w-full max-w-sm max-h-[88dvh] overflow-y-auto">
       {/* Score */}
-      <div className="text-center mb-5">
+      <div className="text-center mb-4">
         <div
-          className={`text-7xl font-black mb-1 ${
+          className={`text-6xl font-black mb-1 ${
             isPerfect ? "text-green-400" : "text-white"
           }`}
         >
@@ -98,7 +98,7 @@ function ScorePanel({ gameState, isCreator, onPlayAgain }: ScorePanelProps) {
 
       {/* True vs player ranking */}
       {gameState.trueRanking && (
-        <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="grid grid-cols-2 gap-2 mb-4">
           <div>
             <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
               Your Ranking

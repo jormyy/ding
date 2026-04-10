@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useState, useEffect } from "react";
 import type { GameState, Hand, Player } from "@/lib/types";
 import { CardFace, CardBack } from "./CardFace";
 import RankChip from "./RankChip";
@@ -17,15 +18,17 @@ interface PokerTableProps {
 function getSeatPosition(
   playerIndex: number,
   totalPlayers: number,
-  selfIndex: number
+  selfIndex: number,
+  xRadius = 41,
+  yRadius = 38
 ): { x: number; y: number } {
   const step = 360 / totalPlayers;
   // Self always at 90° (bottom center). Angle 0° = right, 90° = bottom.
   const angleDeg = ((playerIndex - selfIndex) * step + 90 + 3600) % 360;
   const angleRad = (angleDeg * Math.PI) / 180;
   return {
-    x: 50 + 41 * Math.cos(angleRad),
-    y: 50 + 38 * Math.sin(angleRad),
+    x: 50 + xRadius * Math.cos(angleRad),
+    y: 50 + yRadius * Math.sin(angleRad),
   };
 }
 
@@ -42,6 +45,7 @@ interface SeatProps {
   onHandClick: (handId: string) => void;
   currentFlipHandId: string | null;
   onFlip: ((handId: string) => void) | null;
+  isMobile: boolean;
 }
 
 function Seat({
@@ -57,16 +61,21 @@ function Seat({
   onHandClick,
   currentFlipHandId,
   onFlip,
+  isMobile,
 }: SeatProps) {
   const isFlipTurn =
     currentFlipHandId !== null &&
     hands.some((h) => h.id === currentFlipHandId);
   const canFlip = isFlipTurn && isMe;
 
+  const nameMaxW = isMobile ? "max-w-[72px]" : "max-w-[120px]";
+  const cardProps = isMobile ? { tiny: true as const } : { small: true as const };
+
   return (
     <div
       className={[
-        "flex flex-col items-center gap-1.5 px-2 py-2 rounded-xl border transition-all",
+        "flex flex-col items-center rounded-xl border transition-all",
+        isMobile ? "gap-1 px-1.5 py-1.5" : "gap-1.5 px-2 py-2",
         isMe
           ? "bg-green-950/70 border-green-700/50 shadow-lg shadow-green-900/30"
           : "bg-gray-950/70 border-gray-700/30",
@@ -80,19 +89,19 @@ function Seat({
       {/* Player name */}
       <div className="text-center leading-tight">
         <div
-          className={`text-[11px] font-bold truncate max-w-[120px] ${
+          className={`text-[10px] font-bold truncate ${nameMaxW} ${
             isMe ? "text-green-300" : "text-gray-300"
           }`}
         >
           {player.name}
         </div>
         {isMe && (
-          <div className="text-green-700 text-[9px] uppercase tracking-wider">
+          <div className="text-green-700 text-[8px] uppercase tracking-wider">
             you
           </div>
         )}
         {player.ready && !isReveal && (
-          <div className="text-green-500 text-[9px] font-bold">✓ ready</div>
+          <div className="text-green-500 text-[8px] font-bold">✓</div>
         )}
       </div>
 
@@ -102,20 +111,20 @@ function Seat({
           {canFlip && currentFlipHandId ? (
             <button
               onClick={() => onFlip?.(currentFlipHandId)}
-              className="text-[10px] font-black bg-yellow-500 hover:bg-yellow-400 text-black px-3 py-0.5 rounded-full transition-all active:scale-95"
+              className="text-[10px] font-black bg-yellow-500 hover:bg-yellow-400 text-black px-2 py-0.5 rounded-full transition-all active:scale-95"
             >
               FLIP!
             </button>
           ) : (
-            <div className="text-[9px] text-yellow-400 font-semibold">
+            <div className="text-[8px] text-yellow-400 font-semibold">
               flipping...
             </div>
           )}
         </div>
       )}
 
-      {/* Hands */}
-      <div className="flex gap-2">
+      {/* Hands — stacked vertically on mobile when multiple */}
+      <div className={handsPerPlayer > 1 && isMobile ? "flex flex-col gap-1" : "flex gap-2"}>
         {hands.map((hand, handIdx) => {
           const rank = rankMap.get(hand.id) ?? handIdx + 1;
           const isSelected = selectedHandId === hand.id;
@@ -123,8 +132,15 @@ function Seat({
           const isHighlighted = hand.id === currentFlipHandId;
 
           return (
-            <div key={hand.id} className="flex flex-col items-center gap-1">
-              {handsPerPlayer > 1 && (
+            <div
+              key={hand.id}
+              className={
+                handsPerPlayer > 1 && isMobile
+                  ? "flex flex-row items-center gap-1"
+                  : "flex flex-col items-center gap-1"
+              }
+            >
+              {handsPerPlayer > 1 && !isMobile && (
                 <div className="text-[9px] text-gray-600 font-medium">
                   #{handIdx + 1}
                 </div>
@@ -150,14 +166,14 @@ function Seat({
                 {isReveal
                   ? hand.flipped && hand.cards.length > 0
                     ? hand.cards.map((card, i) => (
-                        <CardFace key={i} card={card} small />
+                        <CardFace key={i} card={card} {...cardProps} />
                       ))
-                    : [0, 1].map((i) => <CardBack key={i} small />)
+                    : [0, 1].map((i) => <CardBack key={i} {...cardProps} />)
                   : isMe && hand.cards.length > 0
                   ? hand.cards.map((card, i) => (
-                      <CardFace key={i} card={card} small />
+                      <CardFace key={i} card={card} {...cardProps} />
                     ))
-                  : [0, 1].map((i) => <CardBack key={i} small />)}
+                  : [0, 1].map((i) => <CardBack key={i} {...cardProps} />)}
               </div>
 
               {/* Rank chip — game phase only */}
@@ -169,6 +185,7 @@ function Seat({
                   isSelected={isSelected}
                   hasSelection={hasSelection}
                   onClick={() => onHandClick(hand.id)}
+                  small={isMobile}
                 />
               )}
             </div>
@@ -186,6 +203,24 @@ export default function PokerTable({
   onHandClick = () => {},
   onFlip,
 }: PokerTableProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(800);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    setContainerWidth(el.clientWidth);
+    const ro = new ResizeObserver(([entry]) => {
+      setContainerWidth(entry.contentRect.width);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const isMobile = containerWidth < 500;
+  const xRadius = isMobile ? 38 : 41;
+  const yRadius = isMobile ? 34 : 38;
+
   const isReveal = gameState.phase === "reveal";
   const hasSelection = selectedHandId !== null;
 
@@ -212,18 +247,26 @@ export default function PokerTable({
       ? gameState.ranking[gameState.ranking.length - 1 - gameState.revealIndex]
       : null;
 
+  // Community card sizing: tiny on mobile
+  const commCardProps = isMobile
+    ? { tiny: true as const }
+    : { small: true as const };
+  const commCardW = isMobile ? 26 : 36;
+  const commCardH = isMobile ? 38 : 52;
+  const feltInset = isMobile ? "12% 10%" : "10% 16%";
+
   return (
-    <div className="relative w-full h-full">
+    <div ref={containerRef} className="relative w-full h-full overflow-hidden">
       {/* Table felt */}
       <div
         className="absolute rounded-[50%] overflow-hidden pointer-events-none"
         style={{
-          inset: "10% 16%",
+          inset: feltInset,
           background:
             "radial-gradient(ellipse at 50% 35%, #166534 0%, #14532d 50%, #052e16 100%)",
           boxShadow:
             "inset 0 0 80px rgba(0,0,0,0.6), 0 8px 40px rgba(0,0,0,0.7)",
-          border: "8px solid #78350f",
+          border: isMobile ? "5px solid #78350f" : "8px solid #78350f",
           outline: "3px solid #92400e33",
         }}
       >
@@ -231,12 +274,12 @@ export default function PokerTable({
         <div className="absolute inset-3 rounded-[50%] border border-green-700/20 pointer-events-none" />
       </div>
 
-      {/* Community cards — on the table surface, pointer-events on */}
+      {/* Community cards — on the table surface */}
       <div
-        className="absolute pointer-events-none flex flex-col items-center justify-center gap-1.5"
-        style={{ inset: "10% 16%" }}
+        className="absolute pointer-events-none flex flex-col items-center justify-center gap-1"
+        style={{ inset: feltInset }}
       >
-        <div className="text-green-500/40 text-[9px] uppercase tracking-[0.2em] font-bold select-none">
+        <div className="text-green-500/40 text-[8px] uppercase tracking-[0.2em] font-bold select-none">
           {gameState.phase === "preflop"
             ? "pre-flop"
             : gameState.phase === "flop"
@@ -247,18 +290,18 @@ export default function PokerTable({
             ? "river"
             : "reveal"}
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1">
           {Array.from({ length: 5 }).map((_, i) => {
             const card = gameState.communityCards[i];
             return card ? (
               <div key={i} className="drop-shadow-lg">
-                <CardFace card={card} small />
+                <CardFace card={card} {...commCardProps} />
               </div>
             ) : (
               <div
                 key={i}
                 className="rounded border border-dashed border-green-700/25"
-                style={{ width: 36, height: 52 }}
+                style={{ width: commCardW, height: commCardH }}
               />
             );
           })}
@@ -267,7 +310,7 @@ export default function PokerTable({
 
       {/* Player seats */}
       {players.map((player, i) => {
-        const { x, y } = getSeatPosition(i, n, selfIndex);
+        const { x, y } = getSeatPosition(i, n, selfIndex, xRadius, yRadius);
         const playerHands = handsByPlayer.get(player.id) ?? [];
         const isMe = player.id === myId;
 
@@ -295,6 +338,7 @@ export default function PokerTable({
               onHandClick={onHandClick}
               currentFlipHandId={currentFlipHandId}
               onFlip={onFlip ?? null}
+              isMobile={isMobile}
             />
           </div>
         );

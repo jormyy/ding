@@ -6,12 +6,30 @@ import { getSuitSymbol, isRedSuit } from "@/lib/utils";
 interface CardFaceProps {
   card: Card;
   small?: boolean;
+  tiny?: boolean;
 }
 
-export function CardFace({ card, small = false }: CardFaceProps) {
+export function CardFace({ card, small = false, tiny = false }: CardFaceProps) {
   const red = isRedSuit(card.suit);
   const symbol = getSuitSymbol(card.suit);
   const colorClass = red ? "text-red-500" : "text-gray-900";
+
+  if (tiny) {
+    return (
+      <div
+        className="bg-white rounded-sm shadow-sm flex flex-col items-center justify-between px-px py-px select-none"
+        style={{ width: 26, height: 38 }}
+      >
+        <div className={`text-[8px] font-black leading-none ${colorClass}`}>
+          {card.rank}
+        </div>
+        <div className={`text-[9px] leading-none ${colorClass}`}>{symbol}</div>
+        <div className={`text-[8px] font-black leading-none rotate-180 ${colorClass}`}>
+          {card.rank}
+        </div>
+      </div>
+    );
+  }
 
   if (small) {
     return (
@@ -55,7 +73,18 @@ export function CardFace({ card, small = false }: CardFaceProps) {
   );
 }
 
-export function CardBack({ small = false }: { small?: boolean }) {
+export function CardBack({ small = false, tiny = false }: { small?: boolean; tiny?: boolean }) {
+  if (tiny) {
+    return (
+      <div
+        className="rounded-sm shadow-sm select-none overflow-hidden bg-blue-900 border border-blue-700"
+        style={{ width: 26, height: 38 }}
+      >
+        <div className="w-full h-full bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.05)_0px,rgba(255,255,255,0.05)_2px,transparent_2px,transparent_8px)]" />
+      </div>
+    );
+  }
+
   if (small) {
     return (
       <div
@@ -86,28 +115,28 @@ interface FlippableCardProps {
   flipped: boolean;
   animating?: boolean;
   small?: boolean;
+  tiny?: boolean;
 }
 
-export function FlippableCard({ card, flipped, animating, small }: FlippableCardProps) {
+export function FlippableCard({ card, flipped, animating, small, tiny }: FlippableCardProps) {
+  const w = tiny ? 26 : small ? 36 : 56;
+  const h = tiny ? 38 : small ? 52 : 80;
   return (
-    <div
-      className="perspective"
-      style={{ width: small ? 36 : 56, height: small ? 52 : 80 }}
-    >
+    <div className="perspective" style={{ width: w, height: h }}>
       <div
         className={`card-flip relative w-full h-full ${flipped ? "flipped" : ""} ${animating ? "animate-flip" : ""}`}
       >
         {/* Front (card face) */}
         <div className="card-back-face absolute inset-0">
           {card ? (
-            <CardFace card={card} small={small} />
+            <CardFace card={card} small={small} tiny={tiny} />
           ) : (
-            <CardBack small={small} />
+            <CardBack small={small} tiny={tiny} />
           )}
         </div>
         {/* Back (card back) */}
         <div className="card-face absolute inset-0">
-          <CardBack small={small} />
+          <CardBack small={small} tiny={tiny} />
         </div>
       </div>
     </div>

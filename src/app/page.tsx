@@ -24,7 +24,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gray-950">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center p-4 sm:p-6 bg-gray-950">
       {/* Background felt texture */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-950/30 via-gray-950 to-gray-950 pointer-events-none" />
 
