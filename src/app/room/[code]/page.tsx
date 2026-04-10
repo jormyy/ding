@@ -57,7 +57,6 @@ export default function RoomPage() {
 
     socket.addEventListener("open", () => {
       const pid = getOrCreatePid();
-      setMyId(pid);
       const joinMsg: ClientMessage = { type: "join", name: playerName, pid };
       socket.send(JSON.stringify(joinMsg));
     });
@@ -65,7 +64,9 @@ export default function RoomPage() {
     socket.addEventListener("message", (event: MessageEvent) => {
       try {
         const msg = JSON.parse(event.data as string) as ServerMessage;
-        if (msg.type === "state") {
+        if (msg.type === "welcome") {
+          setMyId(msg.playerId);
+        } else if (msg.type === "state") {
           setGameState(msg.state);
         } else if (msg.type === "error") {
           setConnectionError(msg.message);

@@ -261,12 +261,14 @@ export default class DingServer implements Party.Server {
         if (existingPlayer) {
           existingPlayer.connId = sender.id;
           existingPlayer.connected = true;
+          sender.send(JSON.stringify({ type: "welcome", playerId: existingPlayer.id } as ServerMessage));
           broadcastStateTo(this.room, this.state, this.connections);
           return;
         }
 
         if (player) {
-          // Already joined with this connection — just re-send state
+          // Already joined with this connection — re-send welcome + state
+          sender.send(JSON.stringify({ type: "welcome", playerId: player.id } as ServerMessage));
           broadcastStateTo(this.room, this.state, this.connections);
           return;
         }
@@ -292,6 +294,7 @@ export default class DingServer implements Party.Server {
           connected: true,
         };
         this.state.players.push(newPlayer);
+        sender.send(JSON.stringify({ type: "welcome", playerId: newPlayer.id } as ServerMessage));
         broadcastStateTo(this.room, this.state, this.connections);
         break;
       }

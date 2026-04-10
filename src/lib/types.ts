@@ -76,5 +76,6 @@ export type ClientMessage =
 
 export type ServerMessage =
   | { type: "state"; state: GameState }
+  | { type: "welcome"; playerId: string }
   | { type: "ended"; reason: "player_disconnected"; playerName: string }
   | { type: "error"; message: string };
