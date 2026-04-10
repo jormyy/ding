@@ -305,10 +305,7 @@ export default function GameBoard({ gameState, myId, onSend }: GameBoardProps) {
       )}
 
       {/* Bottom bar: ready button */}
-      <div className="flex-none border-t border-gray-800 bg-gray-950/90 backdrop-blur-sm px-4 py-2.5 flex items-center justify-center gap-3">
-        <p className="text-gray-600 text-xs">
-          {isReady ? "Waiting for others..." : "Happy with the ranking?"}
-        </p>
+      <div className="flex-none border-t border-gray-800 bg-gray-950/90 backdrop-blur-sm px-4 py-2.5 flex items-center justify-center">
         <ReadyButton
           isReady={isReady}
           onToggle={handleReady}

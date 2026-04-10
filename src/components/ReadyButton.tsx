@@ -10,33 +10,22 @@ interface ReadyButtonProps {
 export default function ReadyButton({
   isReady,
   onToggle,
-  allPlayersReady,
   disabled = false,
 }: ReadyButtonProps) {
   return (
-    <div className="flex flex-col items-center gap-2">
-      <button
-        onClick={() => !disabled && onToggle(!isReady)}
-        disabled={disabled && !isReady}
-        title={disabled ? "All coins must be claimed before you can ready up" : undefined}
-        className={`px-8 py-3 rounded-xl font-bold text-lg transition-all duration-150 active:scale-95 shadow-lg ${
-          disabled && !isReady
-            ? "bg-gray-800 text-gray-600 cursor-not-allowed shadow-none"
-            : isReady
-            ? "bg-green-600 hover:bg-green-500 text-white shadow-green-900/50"
-            : "bg-gray-700 hover:bg-gray-600 text-gray-200 shadow-gray-900/50"
-        }`}
-      >
-        {isReady ? "✓ Ready!" : "Ready"}
-      </button>
-      {disabled && !isReady && (
-        <p className="text-gray-600 text-xs">Claim all rank chips first</p>
-      )}
-      {allPlayersReady && (
-        <p className="text-green-400 text-sm font-medium animate-pulse">
-          All ready — advancing...
-        </p>
-      )}
-    </div>
+    <button
+      onClick={() => !disabled && onToggle(!isReady)}
+      disabled={disabled && !isReady}
+      title={disabled ? "Claim all rank chips first" : undefined}
+      className={`px-8 py-3 rounded-xl font-bold text-lg transition-all duration-150 active:scale-95 shadow-lg ${
+        disabled && !isReady
+          ? "bg-gray-800 text-gray-600 cursor-not-allowed shadow-none"
+          : isReady
+          ? "bg-green-600 hover:bg-green-500 text-white shadow-green-900/50"
+          : "bg-gray-700 hover:bg-gray-600 text-gray-200 shadow-gray-900/50"
+      }`}
+    >
+      {isReady ? "✓ Ready!" : "Ready?"}
+    </button>
   );
 }
