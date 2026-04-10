@@ -1,0 +1,5 @@
+{
+  "name": "ding",
+  "main": "party/index.ts",
+  "compatibilityDate": "2023-02-16"
+}
