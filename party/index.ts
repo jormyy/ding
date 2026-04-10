@@ -1,5 +1,6 @@
 import type * as Party from "partykit/server";
 import type {
+  AcquireRequest,
   Card,
   ClientMessage,
   GameState,
@@ -18,6 +19,7 @@ const { Hand: PokerHand } = require("pokersolver");
 interface ServerGameState extends GameState {
   // hands here contain ALL cards (unmasked)
   allCommunityCards: Card[]; // all 5, we slice for broadcast
+  acquireRequests: AcquireRequest[];
 }
 
 function createInitialState(): ServerGameState {
@@ -30,8 +32,11 @@ function createInitialState(): ServerGameState {
     hands: [],
     revealIndex: 0,
     trueRanking: null,
+    trueRanks: null,
     score: null,
+    rankHistory: {},
     allCommunityCards: [],
+    acquireRequests: [],
   };
 }
 
@@ -60,12 +65,44 @@ function computeTrueRanking(
   return solvedHands.map((h) => h.id);
 }
 
+function computeTrueRanks(
+  trueRanking: string[],
+  hands: Hand[],
+  communityCards: Card[]
+): Record<string, number> {
+  const solvedMap = new Map<string, ReturnType<typeof PokerHand.solve>>();
+  for (const hand of hands) {
+    const cardStrs = [
+      ...hand.cards.map(cardToPokersolverStr),
+      ...communityCards.map(cardToPokersolverStr),
+    ];
+    solvedMap.set(hand.id, PokerHand.solve(cardStrs));
+  }
+
+  const ranks: Record<string, number> = {};
+  let rank = 1;
+  for (let i = 0; i < trueRanking.length; i++) {
+    if (i === 0) {
+      ranks[trueRanking[i]] = rank;
+    } else {
+      const prev = solvedMap.get(trueRanking[i - 1])!;
+      const curr = solvedMap.get(trueRanking[i])!;
+      const winners = PokerHand.winners([prev, curr]);
+      if (winners.length !== 2) rank++; // not a tie
+      ranks[trueRanking[i]] = rank;
+    }
+  }
+  return ranks;
+}
+
 function countInversions(
-  playerRanking: string[],
+  playerRanking: (string | null)[],
   trueRanking: string[],
   hands: Hand[],
   communityCards: Card[]
 ): number {
+  // Only score claimed slots
+  const claimedRanking = playerRanking.filter((id): id is string => id !== null);
   // Build solved map for tie detection
   const solvedMap = new Map<string, ReturnType<typeof PokerHand.solve>>();
   for (const hand of hands) {
@@ -97,10 +134,10 @@ function countInversions(
   }
 
   let inversions = 0;
-  for (let i = 0; i < playerRanking.length; i++) {
-    for (let j = i + 1; j < playerRanking.length; j++) {
-      const posI = truePosMap.get(playerRanking[i])!;
-      const posJ = truePosMap.get(playerRanking[j])!;
+  for (let i = 0; i < claimedRanking.length; i++) {
+    for (let j = i + 1; j < claimedRanking.length; j++) {
+      const posI = truePosMap.get(claimedRanking[i])!;
+      const posJ = truePosMap.get(claimedRanking[j])!;
       // i should come before j (lower index = better = lower true pos number)
       // inversion if posI > posJ (i is actually worse than j)
       if (posI > posJ) {
@@ -151,7 +188,10 @@ function broadcastStateTo(
       hands: maskedHands,
       revealIndex: state.revealIndex,
       trueRanking: state.trueRanking,
+      trueRanks: state.trueRanks,
       score: state.score,
+      rankHistory: state.rankHistory,
+      acquireRequests: state.acquireRequests,
     };
     const msg: ServerMessage = { type: "state", state: clientState };
     conn.send(JSON.stringify(msg));
@@ -267,9 +307,8 @@ export default class DingServer implements Party.Server {
           this.state.handsPerPlayer
         );
 
-        // Build hands array
+        // Build hands array — ranking starts as all-null (slots on the board)
         const hands: Hand[] = [];
-        const ranking: string[] = [];
 
         for (const playerId of playerIds) {
           for (let h = 0; h < this.state.handsPerPlayer; h++) {
@@ -280,17 +319,20 @@ export default class DingServer implements Party.Server {
               cards: playerHands[playerId][h],
               flipped: false,
             });
-            ranking.push(handId);
           }
         }
 
+        const totalHands = hands.length;
+
         this.state.hands = hands;
-        this.state.ranking = ranking;
+        this.state.ranking = Array(totalHands).fill(null);
+        this.state.rankHistory = {};
         this.state.allCommunityCards = communityCards;
         this.state.communityCards = [];
         this.state.phase = "preflop";
         this.state.revealIndex = 0;
         this.state.trueRanking = null;
+        this.state.trueRanks = null;
         this.state.score = null;
 
         // Reset ready states
@@ -303,14 +345,15 @@ export default class DingServer implements Party.Server {
       }
 
       case "swap": {
+        // Only allowed for swapping your own hands (handsPerPlayer > 1)
         const swapPhases: Phase[] = ["preflop", "flop", "turn", "river"];
         if (!swapPhases.includes(this.state.phase)) return;
 
         const handA = this.state.hands.find((h) => h.id === msg.handIdA);
         const handB = this.state.hands.find((h) => h.id === msg.handIdB);
         if (!handA || !handB) return;
-        // Sender must own at least one of the hands
-        if (handA.playerId !== sender.id && handB.playerId !== sender.id) return;
+        // Sender must own BOTH hands
+        if (handA.playerId !== sender.id || handB.playerId !== sender.id) return;
 
         const idxA = this.state.ranking.indexOf(msg.handIdA);
         const idxB = this.state.ranking.indexOf(msg.handIdB);
@@ -323,6 +366,94 @@ export default class DingServer implements Party.Server {
         break;
       }
 
+      case "requestAcquire": {
+        const gamePhases: Phase[] = ["preflop", "flop", "turn", "river"];
+        if (!gamePhases.includes(this.state.phase)) return;
+
+        const requesterHand = this.state.hands.find((h) => h.id === msg.requesterHandId);
+        const targetHand = this.state.hands.find((h) => h.id === msg.targetHandId);
+        if (!requesterHand || !targetHand) return;
+
+        // Sender must own the requester hand
+        if (requesterHand.playerId !== sender.id) return;
+
+        // Can't request your own chip
+        if (targetHand.playerId === sender.id) return;
+
+        // Target must have a chip in the ranking
+        if (this.state.ranking.indexOf(msg.targetHandId) === -1) return;
+
+        // Prevent duplicate request from same requester hand to same target
+        const alreadyExists = this.state.acquireRequests.some(
+          (r) => r.requesterHandId === msg.requesterHandId && r.targetHandId === msg.targetHandId
+        );
+        if (alreadyExists) return;
+
+        this.state.acquireRequests.push({
+          requesterId: sender.id,
+          requesterHandId: msg.requesterHandId,
+          targetHandId: msg.targetHandId,
+        });
+
+        broadcastStateTo(this.room, this.state, this.connections);
+        break;
+      }
+
+      case "acceptAcquire": {
+        const gamePhases: Phase[] = ["preflop", "flop", "turn", "river"];
+        if (!gamePhases.includes(this.state.phase)) return;
+
+        const targetHand = this.state.hands.find((h) => h.id === msg.targetHandId);
+        if (!targetHand) return;
+
+        // Only the owner of the targeted hand can accept
+        if (targetHand.playerId !== sender.id) return;
+
+        // Request must exist
+        const reqIdx = this.state.acquireRequests.findIndex(
+          (r) => r.requesterHandId === msg.requesterHandId && r.targetHandId === msg.targetHandId
+        );
+        if (reqIdx === -1) return;
+
+        // Target must still have a chip
+        const idxTarget = this.state.ranking.indexOf(msg.targetHandId);
+        if (idxTarget === -1) return;
+
+        // Capture requester's current position BEFORE mutating the array
+        const idxRequester = this.state.ranking.indexOf(msg.requesterHandId);
+
+        // Move requester's hand into target's rank slot
+        this.state.ranking[idxTarget] = msg.requesterHandId;
+
+        // Requester's old slot (if any) goes back to the board
+        if (idxRequester !== -1) {
+          this.state.ranking[idxRequester] = null;
+        }
+
+        // Clear all pending requests for this target hand
+        this.state.acquireRequests = this.state.acquireRequests.filter(
+          (r) => r.targetHandId !== msg.targetHandId
+        );
+
+        broadcastStateTo(this.room, this.state, this.connections);
+        break;
+      }
+
+      case "rejectAcquire": {
+        const targetHand = this.state.hands.find((h) => h.id === msg.targetHandId);
+        if (!targetHand) return;
+
+        // Only the owner of the targeted hand can reject
+        if (targetHand.playerId !== sender.id) return;
+
+        this.state.acquireRequests = this.state.acquireRequests.filter(
+          (r) => !(r.requesterHandId === msg.requesterHandId && r.targetHandId === msg.targetHandId)
+        );
+
+        broadcastStateTo(this.room, this.state, this.connections);
+        break;
+      }
+
       case "move": {
         const gamePhasess: Phase[] = ["preflop", "flop", "turn", "river"];
         if (!gamePhasess.includes(this.state.phase)) return;
@@ -330,18 +461,21 @@ export default class DingServer implements Party.Server {
         const hand = this.state.hands.find((h) => h.id === msg.handId);
         if (!hand || hand.playerId !== sender.id) return;
 
-        // Remove from current position
-        const currentIndex = this.state.ranking.indexOf(msg.handId);
-        if (currentIndex === -1) return;
-
-        this.state.ranking.splice(currentIndex, 1);
-
-        // Clamp toIndex
         const toIndex = Math.max(
           0,
-          Math.min(msg.toIndex, this.state.ranking.length)
+          Math.min(msg.toIndex, this.state.ranking.length - 1)
         );
-        this.state.ranking.splice(toIndex, 0, msg.handId);
+
+        // Only move to unclaimed (null) slots
+        if (this.state.ranking[toIndex] !== null) return;
+
+        // Remove from current slot if already claimed
+        const currentIndex = this.state.ranking.indexOf(msg.handId);
+        if (currentIndex !== -1) {
+          this.state.ranking[currentIndex] = null;
+        }
+
+        this.state.ranking[toIndex] = msg.handId;
 
         broadcastStateTo(this.room, this.state, this.connections);
         break;
@@ -352,11 +486,23 @@ export default class DingServer implements Party.Server {
         if (!gamePhases.includes(this.state.phase)) return;
         if (!player) return;
 
+        // Don't allow readying up while any rank slots are unclaimed
+        if (msg.ready && this.state.ranking.some((slot) => slot === null)) return;
+
         player.ready = msg.ready;
 
         // Check if all players ready
         const allReady = this.state.players.every((p) => p.ready);
         if (allReady) {
+          // Snapshot rank history for the current phase
+          for (const hand of this.state.hands) {
+            const idx = this.state.ranking.indexOf(hand.id);
+            if (!this.state.rankHistory[hand.id]) {
+              this.state.rankHistory[hand.id] = [];
+            }
+            this.state.rankHistory[hand.id].push(idx === -1 ? null : idx + 1);
+          }
+
           // Advance phase
           const phaseOrder: Phase[] = [
             "preflop",
@@ -368,13 +514,25 @@ export default class DingServer implements Party.Server {
           const currentIndex = phaseOrder.indexOf(this.state.phase as Phase);
           const nextPhase = phaseOrder[currentIndex + 1];
 
+          // Clear all pending acquire requests on phase change
+          this.state.acquireRequests = [];
+
           if (nextPhase === "reveal") {
-            // Compute true ranking
+            // Keep the river ranking intact — it drives flip order and scoring
+            // Compute true ranking and per-hand true ranks (ties share same number)
             this.state.trueRanking = computeTrueRanking(
               this.state.hands,
               this.state.allCommunityCards
             );
+            this.state.trueRanks = computeTrueRanks(
+              this.state.trueRanking,
+              this.state.hands,
+              this.state.allCommunityCards
+            );
             this.state.revealIndex = 0;
+          } else {
+            // Reset ranking — coins go back to the board at the start of each phase
+            this.state.ranking = Array(this.state.hands.length).fill(null);
           }
 
           this.state.phase = nextPhase;
@@ -400,6 +558,9 @@ export default class DingServer implements Party.Server {
         const currentRevealIdx =
           this.state.ranking.length - 1 - this.state.revealIndex;
         const handToFlipId = this.state.ranking[currentRevealIdx];
+
+        // Nulls should not exist at reveal (auto-filled), but guard anyway
+        if (!handToFlipId) return;
 
         const handToFlip = this.state.hands.find((h) => h.id === handToFlipId);
         if (!handToFlip) return;

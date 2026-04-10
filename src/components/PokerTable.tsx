@@ -1,16 +1,22 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import type { GameState, Hand, Player } from "@/lib/types";
+import type { AcquireRequest, GameState, Hand, Player } from "@/lib/types";
 import { CardFace, CardBack } from "./CardFace";
-import RankChip from "./RankChip";
+import RankChip, { HistoryChip } from "./RankChip";
+
+const PHASE_LABELS = ["Pre", "Flop", "Turn", "River"];
 
 interface PokerTableProps {
   gameState: GameState;
   myId: string;
   // Game phase chip interaction:
   selectedHandId?: string | null;
+  selectedSlot?: number | null;
   onHandClick?: (handId: string) => void;
+  onSlotClick?: (slotIndex: number) => void;
+  // Acquire requests:
+  onAcceptAcquire?: (requesterHandId: string, targetHandId: string) => void;
   // Reveal phase:
   onFlip?: (handId: string) => void;
 }
@@ -46,6 +52,10 @@ interface SeatProps {
   currentFlipHandId: string | null;
   onFlip: ((handId: string) => void) | null;
   isMobile: boolean;
+  rankHistory: Record<string, (number | null)[]>;
+  acquireRequests: AcquireRequest[];
+  players: Player[];
+  onAcceptAcquire: (requesterHandId: string, targetHandId: string) => void;
 }
 
 function Seat({
@@ -62,6 +72,10 @@ function Seat({
   currentFlipHandId,
   onFlip,
   isMobile,
+  rankHistory,
+  acquireRequests,
+  players,
+  onAcceptAcquire,
 }: SeatProps) {
   const isFlipTurn =
     currentFlipHandId !== null &&
@@ -126,10 +140,12 @@ function Seat({
       {/* Hands — stacked vertically on mobile when multiple */}
       <div className={handsPerPlayer > 1 && isMobile ? "flex flex-col gap-1" : "flex gap-2"}>
         {hands.map((hand, handIdx) => {
-          const rank = rankMap.get(hand.id) ?? handIdx + 1;
+          const rank = rankMap.get(hand.id) ?? null;
           const isSelected = selectedHandId === hand.id;
           const isDropTarget = hasSelection && !isSelected;
           const isHighlighted = hand.id === currentFlipHandId;
+          const history = rankHistory[hand.id] ?? [];
+          const isClickableArea = !isReveal && (isMe || hasSelection);
 
           return (
             <div
@@ -154,11 +170,14 @@ function Seat({
                   isDropTarget && !isReveal
                     ? "cursor-pointer ring-1 ring-yellow-400/40 hover:ring-yellow-400/60"
                     : "",
+                  isClickableArea && rank === null && !isReveal
+                    ? "cursor-pointer hover:ring-1 hover:ring-green-500/40"
+                    : "",
                 ]
                   .filter(Boolean)
                   .join(" ")}
                 onClick={
-                  !isReveal && isDropTarget
+                  !isReveal && (isDropTarget || (isClickableArea && rank === null))
                     ? () => onHandClick(hand.id)
                     : undefined
                 }
@@ -176,17 +195,72 @@ function Seat({
                   : [0, 1].map((i) => <CardBack key={i} {...cardProps} />)}
               </div>
 
-              {/* Rank chip — game phase only */}
-              {!isReveal && (
-                <RankChip
-                  rank={rank}
-                  total={totalHands}
-                  isOwn={isMe}
-                  isSelected={isSelected}
-                  hasSelection={hasSelection}
-                  onClick={() => onHandClick(hand.id)}
-                  small={isMobile}
-                />
+              {/* Rank chip (current) + history chips */}
+              {!isReveal && (() => {
+                const handRequests = acquireRequests.filter((r) => r.targetHandId === hand.id);
+                return (
+                  <div className="flex flex-col items-center gap-0.5">
+                    {/* Current rank chip with optional request badge */}
+                    {rank !== null ? (
+                      <div className="relative">
+                        <RankChip
+                          rank={rank}
+                          total={totalHands}
+                          isOwn={isMe}
+                          isSelected={isSelected}
+                          hasSelection={hasSelection}
+                          onClick={() => onHandClick(hand.id)}
+                          small={isMobile}
+                        />
+                        {handRequests.length > 0 && (
+                          <div className="absolute -top-1.5 -right-1.5 min-w-[13px] h-[13px] bg-orange-500 rounded-full text-[7px] font-black text-white flex items-center justify-center px-0.5 pointer-events-none">
+                            {handRequests.length}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* Empty placeholder when unclaimed */
+                      <div
+                        className={[
+                          "rounded-full border-2 border-dashed flex items-center justify-center transition-all",
+                          isMobile ? "w-6 h-6" : "w-8 h-8",
+                          hasSelection && isMe
+                            ? "border-yellow-400/60 cursor-pointer hover:border-yellow-400 hover:bg-yellow-400/10"
+                            : "border-gray-700/40",
+                        ].join(" ")}
+                        onClick={hasSelection && isMe ? () => onHandClick(hand.id) : undefined}
+                      />
+                    )}
+
+                    {/* Phase history chips */}
+                    {history.length > 0 && (
+                      <div className="flex gap-0.5 mt-0.5">
+                        {history.map((r, phaseIdx) => (
+                          <HistoryChip
+                            key={phaseIdx}
+                            rank={r}
+                            total={totalHands}
+                            phaseLabel={PHASE_LABELS[phaseIdx] ?? ""}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* History chips during reveal */}
+              {isReveal && history.length > 0 && (
+                <div className="flex gap-0.5 mt-0.5">
+                  {history.map((r, phaseIdx) => (
+                    <HistoryChip
+                      key={phaseIdx}
+                      rank={r}
+                      total={totalHands}
+                      phaseLabel={PHASE_LABELS[phaseIdx] ?? ""}
+                    />
+                  ))}
+                </div>
               )}
             </div>
           );
@@ -200,7 +274,10 @@ export default function PokerTable({
   gameState,
   myId,
   selectedHandId = null,
+  selectedSlot = null,
   onHandClick = () => {},
+  onSlotClick = () => {},
+  onAcceptAcquire = () => {},
   onFlip,
 }: PokerTableProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -223,11 +300,12 @@ export default function PokerTable({
   const yRadius = isMobile ? 28 : 38;
 
   const isReveal = gameState.phase === "reveal";
-  const hasSelection = selectedHandId !== null;
+  const hasSelection = selectedHandId !== null || selectedSlot !== null;
 
-  const rankMap = new Map<string, number>(
-    gameState.ranking.map((id, i) => [id, i + 1])
-  );
+  const rankMap = new Map<string, number>();
+  gameState.ranking.forEach((id, i) => {
+    if (id !== null) rankMap.set(id, i + 1);
+  });
 
   const handsByPlayer = new Map<string, Hand[]>();
   for (const hand of gameState.hands) {
@@ -245,7 +323,7 @@ export default function PokerTable({
 
   const currentFlipHandId =
     isReveal && gameState.score === null
-      ? gameState.ranking[gameState.ranking.length - 1 - gameState.revealIndex]
+      ? (gameState.ranking[gameState.ranking.length - 1 - gameState.revealIndex] ?? null)
       : null;
 
   // Community card sizing: tiny on mobile
@@ -256,6 +334,13 @@ export default function PokerTable({
   const commCardH = isMobile ? 38 : 52;
   // Mobile: wide landscape oval (20% top/bottom, 5% left/right) in the square container
   const feltInset = isMobile ? "20% 5%" : "10% 16%";
+
+  // Board slots: indices where ranking is null
+  const boardSlots = gameState.ranking
+    .map((id, i) => (id === null ? i : null))
+    .filter((i): i is number => i !== null);
+
+  const totalHands = gameState.ranking.length;
 
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden">
@@ -276,12 +361,12 @@ export default function PokerTable({
         <div className="absolute inset-3 rounded-[50%] border border-green-700/20 pointer-events-none" />
       </div>
 
-      {/* Community cards — on the table surface */}
+      {/* Community cards + board rank slots — on the table surface */}
       <div
-        className="absolute pointer-events-none flex flex-col items-center justify-center gap-1"
+        className="absolute flex flex-col items-center justify-center gap-1"
         style={{ inset: feltInset }}
       >
-        <div className="text-green-500/40 text-[8px] uppercase tracking-[0.2em] font-bold select-none">
+        <div className="text-green-500/40 text-[8px] uppercase tracking-[0.2em] font-bold select-none pointer-events-none">
           {gameState.phase === "preflop"
             ? "pre-flop"
             : gameState.phase === "flop"
@@ -292,7 +377,7 @@ export default function PokerTable({
             ? "river"
             : "reveal"}
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 pointer-events-none">
           {Array.from({ length: 5 }).map((_, i) => {
             const card = gameState.communityCards[i];
             return card ? (
@@ -308,6 +393,46 @@ export default function PokerTable({
             );
           })}
         </div>
+
+        {/* Board rank slots — unclaimed chips shown on the table */}
+        {!isReveal && boardSlots.length > 0 && (
+          <div className="flex gap-1 flex-wrap justify-center mt-0.5">
+            {boardSlots.map((slotIndex) => {
+              const rank = slotIndex + 1;
+              const isFirst = rank === 1;
+              const isLast = rank === totalHands;
+              const isSlotSelected = selectedSlot === slotIndex;
+
+              let chipBg = "bg-gray-700 border-gray-500 text-white";
+              if (isFirst) chipBg = "bg-amber-500 border-amber-300 text-amber-950";
+              else if (isLast) chipBg = "bg-red-950 border-red-800 text-red-300";
+
+              const chipSize = isMobile ? "w-6 h-6 text-[10px]" : "w-8 h-8 text-xs";
+
+              return (
+                <button
+                  key={slotIndex}
+                  onClick={() => onSlotClick(slotIndex)}
+                  className={[
+                    "rounded-full font-black flex items-center justify-center border-2 select-none transition-all duration-150 cursor-pointer",
+                    chipSize,
+                    chipBg,
+                    isSlotSelected
+                      ? "scale-125 ring-[3px] ring-yellow-400 ring-offset-[2px] ring-offset-green-900 shadow-lg shadow-yellow-400/40"
+                      : "hover:scale-110",
+                    selectedHandId !== null && !isSlotSelected
+                      ? "ring-1 ring-yellow-400/40 hover:ring-yellow-400/70"
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  {rank}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Player seats */}
@@ -332,7 +457,7 @@ export default function PokerTable({
               hands={playerHands}
               isMe={isMe}
               rankMap={rankMap}
-              totalHands={gameState.hands.length}
+              totalHands={totalHands}
               handsPerPlayer={gameState.handsPerPlayer}
               isReveal={isReveal}
               selectedHandId={selectedHandId}
@@ -341,6 +466,10 @@ export default function PokerTable({
               currentFlipHandId={currentFlipHandId}
               onFlip={onFlip ?? null}
               isMobile={isMobile}
+              rankHistory={gameState.rankHistory ?? {}}
+              acquireRequests={gameState.acquireRequests ?? []}
+              players={players}
+              onAcceptAcquire={onAcceptAcquire}
             />
           </div>
         );

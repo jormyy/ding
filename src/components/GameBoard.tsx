@@ -12,8 +12,9 @@ interface GameBoardProps {
 }
 
 export default function GameBoard({ gameState, myId, onSend }: GameBoardProps) {
-  const [localRanking, setLocalRanking] = useState<string[]>(gameState.ranking);
+  const [localRanking, setLocalRanking] = useState<(string | null)[]>(gameState.ranking);
   const [selectedHandId, setSelectedHandId] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
 
   useEffect(() => {
     setLocalRanking(gameState.ranking);
@@ -22,12 +23,56 @@ export default function GameBoard({ gameState, myId, onSend }: GameBoardProps) {
   const myPlayer = gameState.players.find((p) => p.id === myId);
   const isReady = myPlayer?.ready ?? false;
   const allReady = gameState.players.every((p) => p.ready);
+  const hasUnclaimedSlots = localRanking.some((slot) => slot === null);
+
+  // Incoming requests targeting chips I own
+  const rankMap = new Map<string, number>();
+  localRanking.forEach((id, i) => {
+    if (id !== null) rankMap.set(id, i + 1);
+  });
+  const incomingRequests = (gameState.acquireRequests ?? []).filter((req) => {
+    const targetHand = gameState.hands.find((h) => h.id === req.targetHandId);
+    return targetHand?.playerId === myId;
+  });
+
+  function handleSlotClick(slotIndex: number) {
+    if (selectedHandId !== null) {
+      const newRanking = [...localRanking];
+      const currentIdx = newRanking.indexOf(selectedHandId);
+      if (currentIdx !== -1) newRanking[currentIdx] = null;
+      newRanking[slotIndex] = selectedHandId;
+      setLocalRanking(newRanking);
+      onSend({ type: "move", handId: selectedHandId, toIndex: slotIndex });
+      setSelectedHandId(null);
+      setSelectedSlot(null);
+      return;
+    }
+    if (selectedSlot === slotIndex) {
+      setSelectedSlot(null);
+      return;
+    }
+    setSelectedSlot(slotIndex);
+    setSelectedHandId(null);
+  }
 
   function handleHandClick(handId: string) {
     const hand = gameState.hands.find((h) => h.id === handId);
+    const currentSlotIdx = localRanking.indexOf(handId);
+
+    if (selectedSlot !== null) {
+      if (hand?.playerId === myId) {
+        const newRanking = [...localRanking];
+        if (currentSlotIdx !== -1) newRanking[currentSlotIdx] = null;
+        newRanking[selectedSlot] = handId;
+        setLocalRanking(newRanking);
+        onSend({ type: "move", handId, toIndex: selectedSlot });
+        setSelectedSlot(null);
+        setSelectedHandId(null);
+      }
+      return;
+    }
 
     if (selectedHandId === null) {
-      // Can only select own hands
       if (hand?.playerId === myId) {
         setSelectedHandId(handId);
       }
@@ -35,23 +80,37 @@ export default function GameBoard({ gameState, myId, onSend }: GameBoardProps) {
     }
 
     if (selectedHandId === handId) {
-      // Deselect
       setSelectedHandId(null);
       return;
     }
 
-    // Swap selected chip with clicked hand
-    const newRanking = [...localRanking];
-    const idxA = newRanking.indexOf(selectedHandId);
-    const idxB = newRanking.indexOf(handId);
-    if (idxA !== -1 && idxB !== -1) {
-      newRanking[idxA] = handId;
-      newRanking[idxB] = selectedHandId;
-      setLocalRanking(newRanking);
+    if (hand?.playerId !== myId) {
+      // Clicking another player's chip — request to acquire it
+      if (currentSlotIdx !== -1) {
+        onSend({ type: "requestAcquire", requesterHandId: selectedHandId, targetHandId: handId });
+      }
+      setSelectedHandId(null);
+      return;
     }
 
-    onSend({ type: "swap", handIdA: selectedHandId, handIdB: handId });
+    // Clicking own different hand — swap positions (own-to-own, both must be claimed)
+    const idxA = localRanking.indexOf(selectedHandId);
+    if (idxA !== -1 && currentSlotIdx !== -1) {
+      const newRanking = [...localRanking];
+      newRanking[idxA] = handId;
+      newRanking[currentSlotIdx] = selectedHandId;
+      setLocalRanking(newRanking);
+      onSend({ type: "swap", handIdA: selectedHandId, handIdB: handId });
+    }
     setSelectedHandId(null);
+  }
+
+  function handleAcceptAcquire(requesterHandId: string, targetHandId: string) {
+    onSend({ type: "acceptAcquire", requesterHandId, targetHandId });
+  }
+
+  function handleRejectAcquire(requesterHandId: string, targetHandId: string) {
+    onSend({ type: "rejectAcquire", requesterHandId, targetHandId });
   }
 
   function handleReady(ready: boolean) {
@@ -89,31 +148,109 @@ export default function GameBoard({ gameState, myId, onSend }: GameBoardProps) {
         </span>
       </div>
 
-      {/* Poker Table */}
-      <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
-        {/* On mobile: constrain to a square so the oval isn't egg-shaped in portrait */}
-        <div className="relative w-full aspect-square sm:aspect-auto sm:h-full">
-          <PokerTable
-            gameState={displayState}
-            myId={myId}
-            selectedHandId={selectedHandId}
-            onHandClick={handleHandClick}
-          />
+      {/* Main area: table + requests panel side by side */}
+      <div className="flex-1 min-h-0 flex overflow-hidden">
+        {/* Poker Table */}
+        <div className="flex-1 min-w-0 flex items-center justify-center overflow-hidden">
+          <div className="relative w-full aspect-square sm:aspect-auto sm:h-full">
+            <PokerTable
+              gameState={displayState}
+              myId={myId}
+              selectedHandId={selectedHandId}
+              selectedSlot={selectedSlot}
+              onHandClick={handleHandClick}
+              onSlotClick={handleSlotClick}
+              onAcceptAcquire={handleAcceptAcquire}
+            />
 
-          {/* Instruction hint */}
-          {selectedHandId !== null ? (
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-              <div className="bg-yellow-500/90 text-yellow-950 text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                Click any hand to swap
+            {/* Instruction hint */}
+            {selectedHandId !== null ? (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                <div className="bg-yellow-500/90 text-yellow-950 text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                  Place on a board slot, or click a player&apos;s chip to request it
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-              <div className="bg-gray-900/80 text-gray-400 text-xs px-3 py-1 rounded-full">
-                Click your chip to rank it
+            ) : selectedSlot !== null ? (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                <div className="bg-yellow-500/90 text-yellow-950 text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                  Click your hand to claim this slot
+                </div>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                <div className="bg-gray-900/80 text-gray-400 text-xs px-3 py-1 rounded-full">
+                  Grab a rank chip from the board
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Requests panel — always visible on the right, shows incoming requests */}
+        <div className="flex-none w-52 sm:w-64 border-l border-gray-800 bg-gray-950 flex flex-col overflow-hidden">
+          <div className="flex-none px-3 py-2 border-b border-gray-800 flex items-center gap-2">
+            <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">Requests</span>
+            {incomingRequests.length > 0 && (
+              <span className="bg-orange-500 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center">
+                {incomingRequests.length}
+              </span>
+            )}
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-2 py-2 flex flex-col gap-2">
+            {incomingRequests.length === 0 ? (
+              <p className="text-gray-600 text-xs text-center mt-4">No incoming requests</p>
+            ) : (
+              incomingRequests.map((req) => {
+                const requesterName =
+                  gameState.players.find((p) => p.id === req.requesterId)?.name ?? "?";
+                const chipRank = rankMap.get(req.targetHandId);
+                return (
+                  <div
+                    key={`${req.requesterHandId}-${req.targetHandId}`}
+                    className="bg-gray-900 border border-gray-700 rounded-xl p-3 flex flex-col gap-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      {chipRank !== undefined && (
+                        <div
+                          className={[
+                            "w-8 h-8 rounded-full border-2 font-black text-sm flex items-center justify-center flex-shrink-0",
+                            chipRank === 1
+                              ? "bg-amber-500 border-amber-300 text-amber-950"
+                              : chipRank === localRanking.length
+                              ? "bg-red-950 border-red-800 text-red-300"
+                              : "bg-gray-700 border-gray-500 text-white",
+                          ].join(" ")}
+                        >
+                          {chipRank}
+                        </div>
+                      )}
+                      <p className="text-sm text-gray-100 leading-snug">
+                        <span className="font-bold text-white">{requesterName}</span>
+                        {" wants your "}
+                        <span className="font-bold text-orange-300">#{chipRank}</span>
+                        {" chip"}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleAcceptAcquire(req.requesterHandId, req.targetHandId)}
+                        className="flex-1 bg-green-600 hover:bg-green-500 active:bg-green-700 text-white text-xs font-bold py-1.5 rounded-lg transition-colors"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => handleRejectAcquire(req.requesterHandId, req.targetHandId)}
+                        className="flex-1 bg-gray-700 hover:bg-gray-600 active:bg-gray-800 text-gray-200 text-xs font-bold py-1.5 rounded-lg transition-colors"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       </div>
 
@@ -126,6 +263,7 @@ export default function GameBoard({ gameState, myId, onSend }: GameBoardProps) {
           isReady={isReady}
           onToggle={handleReady}
           allPlayersReady={allReady}
+          disabled={hasUnclaimedSlots}
         />
       </div>
     </div>

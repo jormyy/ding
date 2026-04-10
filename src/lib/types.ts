@@ -44,11 +44,20 @@ export type GameState = {
   players: Player[];
   handsPerPlayer: number; // 1–3
   communityCards: Card[]; // grows each phase
-  ranking: string[]; // array of handIds, index 0 = best
+  ranking: (string | null)[]; // array of handIds, index 0 = best; null = unclaimed slot on board
   hands: Hand[]; // cards stripped for non-owners (except in reveal after flipped)
   revealIndex: number; // during reveal: index in TRUE ranking (worst→best) currently being flipped
   trueRanking: string[] | null; // null until reveal phase
+  trueRanks: Record<string, number> | null; // handId -> true rank (ties share same number), null until reveal
   score: number | null; // inversion count, null until all flipped
+  rankHistory: Record<string, (number | null)[]>; // handId -> [rank at end of preflop, flop, turn, river]
+  acquireRequests: AcquireRequest[]; // pending chip acquisition requests
+};
+
+export type AcquireRequest = {
+  requesterId: string;     // player who wants the chip
+  requesterHandId: string; // the hand that will receive the chip
+  targetHandId: string;    // the hand whose chip is being requested
 };
 
 export type ClientMessage =
@@ -56,7 +65,10 @@ export type ClientMessage =
   | { type: "configure"; handsPerPlayer: number } // lobby only, creator only
   | { type: "start" } // lobby only, creator only
   | { type: "move"; handId: string; toIndex: number } // preflop→river, own hands only
-  | { type: "swap"; handIdA: string; handIdB: string } // swap two hands' positions
+  | { type: "swap"; handIdA: string; handIdB: string } // swap own hands' positions (handsPerPlayer > 1)
+  | { type: "requestAcquire"; requesterHandId: string; targetHandId: string } // request another player's chip
+  | { type: "acceptAcquire"; requesterHandId: string; targetHandId: string } // accept an acquire request
+  | { type: "rejectAcquire"; requesterHandId: string; targetHandId: string } // reject an acquire request
   | { type: "ready"; ready: boolean } // preflop→river
   | { type: "flip"; handId: string } // reveal phase, own hand only
   | { type: "playAgain" }; // reveal phase, creator only
