@@ -602,6 +602,13 @@ export default class DingServer implements Party.Server {
         break;
       }
 
+      case "ding": {
+        if (!player) return;
+        const dingMsg: ServerMessage = { type: "ding", playerName: player.name };
+        this.room.broadcast(JSON.stringify(dingMsg));
+        break;
+      }
+
       case "playAgain": {
         if (this.state.phase !== "reveal") return;
         if (!player?.isCreator) return;

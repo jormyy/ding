@@ -9,6 +9,27 @@ import Lobby from "@/components/Lobby";
 import GameBoard from "@/components/GameBoard";
 import Reveal from "@/components/Reveal";
 
+function playDingSound() {
+  try {
+    const ctx = new AudioContext();
+    const freqs = [1318.5, 1760, 2637]; // E6, A6, E7
+    freqs.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.25 / (i + 1), ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.8);
+      osc.start();
+      osc.stop(ctx.currentTime + 1.8);
+    });
+  } catch {
+    // ignore audio errors (e.g. autoplay policy)
+  }
+}
+
 export default function RoomPage() {
   const params = useParams();
   const code = (params.code as string).toUpperCase();
@@ -18,6 +39,7 @@ export default function RoomPage() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [myId, setMyId] = useState<string | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [dingNotifications, setDingNotifications] = useState<{ id: string; playerName: string }[]>([]);
 
   const socketRef = useRef<PartySocket | null>(null);
 
@@ -69,6 +91,13 @@ export default function RoomPage() {
           setMyId(msg.playerId);
         } else if (msg.type === "state") {
           setGameState(msg.state);
+        } else if (msg.type === "ding") {
+          playDingSound();
+          const id = crypto.randomUUID();
+          setDingNotifications((prev) => [...prev, { id, playerName: msg.playerName }]);
+          setTimeout(() => {
+            setDingNotifications((prev) => prev.filter((n) => n.id !== id));
+          }, 2500);
         } else if (msg.type === "error") {
           setConnectionError(msg.message);
         }
@@ -90,6 +119,10 @@ export default function RoomPage() {
     if (socketRef.current?.readyState === WebSocket.OPEN) {
       socketRef.current.send(JSON.stringify(msg));
     }
+  }
+
+  function sendDing() {
+    sendMessage({ type: "ding" });
   }
 
   function handleNameSubmit(name: string) {
@@ -153,6 +186,8 @@ export default function RoomPage() {
         gameState={gameState}
         myId={myId}
         onSend={sendMessage}
+        onDing={sendDing}
+        dingNotifications={dingNotifications}
       />
     );
   }
@@ -162,6 +197,8 @@ export default function RoomPage() {
       gameState={gameState}
       myId={myId}
       onSend={sendMessage}
+      onDing={sendDing}
+      dingNotifications={dingNotifications}
     />
   );
 }

@@ -72,10 +72,12 @@ export type ClientMessage =
   | { type: "rejectAcquire"; requesterHandId: string; targetHandId: string } // reject an acquire request
   | { type: "ready"; ready: boolean } // preflop→river
   | { type: "flip"; handId: string } // reveal phase, own hand only
-  | { type: "playAgain" }; // reveal phase, creator only
+  | { type: "playAgain" } // reveal phase, creator only
+  | { type: "ding" }; // ring the bell
 
 export type ServerMessage =
   | { type: "state"; state: GameState }
   | { type: "welcome"; playerId: string }
   | { type: "ended"; reason: "player_disconnected"; playerName: string }
+  | { type: "ding"; playerName: string }
   | { type: "error"; message: string };

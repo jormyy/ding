@@ -8,9 +8,11 @@ interface RevealProps {
   gameState: GameState;
   myId: string;
   onSend: (msg: ClientMessage) => void;
+  onDing: () => void;
+  dingNotifications: { id: string; playerName: string }[];
 }
 
-export default function Reveal({ gameState, myId, onSend }: RevealProps) {
+export default function Reveal({ gameState, myId, onSend, onDing, dingNotifications }: RevealProps) {
   const allFlipped = gameState.score !== null;
   const myPlayer = gameState.players.find((p) => p.id === myId);
   const isCreator = myPlayer?.isCreator ?? false;
@@ -51,6 +53,27 @@ export default function Reveal({ gameState, myId, onSend }: RevealProps) {
             myId={myId}
             onFlip={handleFlip}
           />
+
+          {/* Ding bell button + notifications */}
+          <div className="absolute top-3 right-3 z-40 flex flex-col items-end gap-1.5">
+            <button
+              onClick={onDing}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 transition-all text-xl select-none"
+              aria-label="Ding"
+            >
+              🔔
+            </button>
+            <div className="flex flex-col items-end gap-1 pointer-events-none">
+              {dingNotifications.map((n) => (
+                <div
+                  key={n.id}
+                  className="bg-gray-900/90 border border-gray-700 text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg animate-fade-out whitespace-nowrap"
+                >
+                  {n.playerName} dings
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Score overlay */}

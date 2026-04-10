@@ -9,9 +9,11 @@ interface GameBoardProps {
   gameState: GameState;
   myId: string;
   onSend: (msg: ClientMessage) => void;
+  onDing: () => void;
+  dingNotifications: { id: string; playerName: string }[];
 }
 
-export default function GameBoard({ gameState, myId, onSend }: GameBoardProps) {
+export default function GameBoard({ gameState, myId, onSend, onDing, dingNotifications }: GameBoardProps) {
   const [localRanking, setLocalRanking] = useState<(string | null)[]>(gameState.ranking);
   const [selectedHandId, setSelectedHandId] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
@@ -162,6 +164,27 @@ export default function GameBoard({ gameState, myId, onSend }: GameBoardProps) {
               onSlotClick={handleSlotClick}
               onAcceptAcquire={handleAcceptAcquire}
             />
+
+            {/* Ding bell button + notifications */}
+            <div className="absolute top-3 right-3 z-20 flex flex-col items-end gap-1.5">
+              <button
+                onClick={onDing}
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 transition-all text-xl select-none"
+                aria-label="Ding"
+              >
+                🔔
+              </button>
+              <div className="flex flex-col items-end gap-1 pointer-events-none">
+                {dingNotifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className="bg-gray-900/90 border border-gray-700 text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg animate-fade-out whitespace-nowrap"
+                  >
+                    {n.playerName} dings
+                  </div>
+                ))}
+              </div>
+            </div>
 
             {/* Instruction hint */}
             {selectedHandId !== null ? (
