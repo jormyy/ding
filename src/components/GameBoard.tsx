@@ -176,13 +176,7 @@ export default function GameBoard({ gameState, myId, onSend }: GameBoardProps) {
                   Click your hand to claim this slot
                 </div>
               </div>
-            ) : (
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                <div className="bg-gray-900/80 text-gray-400 text-xs px-3 py-1 rounded-full">
-                  Grab a rank chip from the board
-                </div>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
 
