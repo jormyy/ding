@@ -57,6 +57,7 @@ export default function RoomPage() {
 
     socket.addEventListener("open", () => {
       const pid = getOrCreatePid();
+      setMyId(pid); // optimistic — server confirms via "welcome"
       const joinMsg: ClientMessage = { type: "join", name: playerName, pid };
       socket.send(JSON.stringify(joinMsg));
     });
