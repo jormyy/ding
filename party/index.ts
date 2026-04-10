@@ -391,27 +391,30 @@ export default class DingServer implements Party.Server {
 
       case "flip": {
         if (this.state.phase !== "reveal") return;
-        if (!this.state.trueRanking) return;
+        if (this.state.score !== null) return; // already done
 
         const totalHands = this.state.hands.length;
+        if (this.state.revealIndex >= totalHands) return;
+
+        // Server determines which hand is up — no client validation needed
         const currentRevealIdx =
           this.state.ranking.length - 1 - this.state.revealIndex;
         const handToFlipId = this.state.ranking[currentRevealIdx];
 
-        if (msg.handId !== handToFlipId) return;
-
         const handToFlip = this.state.hands.find((h) => h.id === handToFlipId);
         if (!handToFlip) return;
-        if (handToFlip.playerId !== sender.id) return;
+
+        // Must be the owner of this hand
+        const senderPlayer = this.state.players.find((p) => p.id === sender.id);
+        if (!senderPlayer || handToFlip.playerId !== senderPlayer.id) return;
 
         handToFlip.flipped = true;
         this.state.revealIndex++;
 
         if (this.state.revealIndex === totalHands) {
-          // All flipped — compute score
           this.state.score = countInversions(
             this.state.ranking,
-            this.state.trueRanking,
+            this.state.trueRanking!,
             this.state.hands,
             this.state.allCommunityCards
           );

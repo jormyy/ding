@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Ding — Poker Ranking Game",
+  title: "Ding",
   description: "A multiplayer poker hand ranking game",
 };
 
