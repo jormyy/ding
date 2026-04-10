@@ -223,15 +223,16 @@ export default class DingServer implements Party.Server {
     if (!player) return;
 
     if (this.state.phase === "lobby") {
-      // Remove player from lobby
-      this.state.players = this.state.players.filter((p) => p.connId !== conn.id);
+      // Mark disconnected rather than removing, so others can see they left
+      player.connected = false;
 
-      // If the creator left and there are still players, assign new creator
-      if (
-        this.state.players.length > 0 &&
-        !this.state.players.some((p) => p.isCreator)
-      ) {
-        this.state.players[0].isCreator = true;
+      // If the creator disconnected and others are still connected, reassign
+      if (player.isCreator) {
+        const nextConnected = this.state.players.find((p) => p.connected);
+        if (nextConnected) {
+          player.isCreator = false;
+          nextConnected.isCreator = true;
+        }
       }
 
       broadcastStateTo(this.room, this.state, this.connections);
@@ -309,7 +310,11 @@ export default class DingServer implements Party.Server {
 
       case "start": {
         if (!player?.isCreator || this.state.phase !== "lobby") return;
-        if (this.state.players.length < 2) return;
+        const connectedPlayers = this.state.players.filter((p) => p.connected);
+        if (connectedPlayers.length < 2) return;
+
+        // Drop disconnected players before starting
+        this.state.players = connectedPlayers;
 
         const deck = shuffleDeck(createDeck());
         const playerIds = this.state.players.map((p) => p.id);
