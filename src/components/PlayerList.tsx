@@ -30,10 +30,13 @@ export default function PlayerList({
                 player.connected ? "bg-green-400" : "bg-gray-600"
               }`}
             />
-            <span className="text-white text-sm font-medium">
+            <span className={`text-sm font-medium ${player.connected ? "text-white" : "text-gray-500"}`}>
               {player.name}
               {player.id === myId && (
                 <span className="text-green-400 text-xs ml-1">(you)</span>
+              )}
+              {!player.connected && (
+                <span className="text-gray-600 text-xs ml-1">(disconnected)</span>
               )}
             </span>
             {player.isCreator && (

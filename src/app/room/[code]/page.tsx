@@ -17,7 +17,6 @@ export default function RoomPage() {
   const [showNameModal, setShowNameModal] = useState(false);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [myId, setMyId] = useState<string | null>(null);
-  const [endedReason, setEndedReason] = useState<string | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
   const socketRef = useRef<PartySocket | null>(null);
@@ -31,6 +30,16 @@ export default function RoomPage() {
       setShowNameModal(true);
     }
   }, []);
+
+  // Retrieve or generate a persistent player ID
+  function getOrCreatePid(): string {
+    let pid = sessionStorage.getItem("ding-player-id");
+    if (!pid) {
+      pid = crypto.randomUUID();
+      sessionStorage.setItem("ding-player-id", pid);
+    }
+    return pid;
+  }
 
   // Connect to PartyKit when we have a name
   useEffect(() => {
@@ -47,8 +56,9 @@ export default function RoomPage() {
     socketRef.current = socket;
 
     socket.addEventListener("open", () => {
-      setMyId(socket.id);
-      const joinMsg: ClientMessage = { type: "join", name: playerName };
+      const pid = getOrCreatePid();
+      setMyId(pid);
+      const joinMsg: ClientMessage = { type: "join", name: playerName, pid };
       socket.send(JSON.stringify(joinMsg));
     });
 
@@ -57,10 +67,6 @@ export default function RoomPage() {
         const msg = JSON.parse(event.data as string) as ServerMessage;
         if (msg.type === "state") {
           setGameState(msg.state);
-          setEndedReason(null);
-        } else if (msg.type === "ended") {
-          setEndedReason(`${msg.playerName} disconnected. Game over.`);
-          setGameState(null);
         } else if (msg.type === "error") {
           setConnectionError(msg.message);
         }
@@ -110,25 +116,6 @@ export default function RoomPage() {
           >
             Retry
           </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Game ended mid-play
-  if (endedReason) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-950">
-        <div className="text-center">
-          <div className="text-6xl mb-4">💔</div>
-          <div className="text-white text-2xl font-bold mb-2">Game Ended</div>
-          <p className="text-gray-400 mb-6">{endedReason}</p>
-          <a
-            href="/"
-            className="bg-green-600 hover:bg-green-500 text-white px-6 py-3 rounded-xl font-bold transition-colors"
-          >
-            Back to Home
-          </a>
         </div>
       </div>
     );

@@ -24,7 +24,8 @@ export type Hand = {
 };
 
 export type Player = {
-  id: string;
+  id: string;      // persistent player ID (stable across reconnects)
+  connId: string;  // current WebSocket connection ID (changes on reconnect)
   name: string;
   isCreator: boolean; // first to join — has start/configure controls
   ready: boolean;
@@ -61,7 +62,7 @@ export type AcquireRequest = {
 };
 
 export type ClientMessage =
-  | { type: "join"; name: string }
+  | { type: "join"; name: string; pid: string }
   | { type: "configure"; handsPerPlayer: number } // lobby only, creator only
   | { type: "start" } // lobby only, creator only
   | { type: "move"; handId: string; toIndex: number } // preflop→river, own hands only

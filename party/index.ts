@@ -149,13 +149,13 @@ function countInversions(
   return inversions;
 }
 
-function maskHandsForConnection(
+function maskHandsForPlayer(
   hands: Hand[],
-  connId: string,
+  playerId: string,
   phase: Phase
 ): Hand[] {
   return hands.map((hand) => {
-    if (hand.playerId === connId) return hand;
+    if (hand.playerId === playerId) return hand;
     if (hand.flipped && phase === "reveal") return hand; // revealed to everyone
     return { ...hand, cards: [] };
   });
@@ -178,7 +178,8 @@ function broadcastStateTo(
       : [];
 
   for (const [connId, conn] of Array.from(connections.entries())) {
-    const maskedHands = maskHandsForConnection(state.hands, connId, state.phase);
+    const player = state.players.find((p) => p.connId === connId);
+    const maskedHands = maskHandsForPlayer(state.hands, player?.id ?? "", state.phase);
     const clientState: GameState = {
       phase: state.phase,
       players: state.players,
@@ -206,26 +207,24 @@ export default class DingServer implements Party.Server {
     this.state = createInitialState();
   }
 
+  private getPlayerByConn(connId: string): Player | undefined {
+    return this.state.players.find((p) => p.connId === connId);
+  }
+
   onConnect(conn: Party.Connection) {
-    // If game is in progress (not lobby), reject connection
-    if (this.state.phase !== "lobby") {
-      const msg: ServerMessage = {
-        type: "error",
-        message: "Game already in progress",
-      };
-      conn.send(JSON.stringify(msg));
-      conn.close();
-      return;
-    }
+    // Accept all connections — game/lobby validation happens in the join handler
     this.connections.set(conn.id, conn);
   }
 
   onClose(conn: Party.Connection) {
     this.connections.delete(conn.id);
 
+    const player = this.getPlayerByConn(conn.id);
+    if (!player) return;
+
     if (this.state.phase === "lobby") {
-      // Remove player from list
-      this.state.players = this.state.players.filter((p) => p.id !== conn.id);
+      // Remove player from lobby
+      this.state.players = this.state.players.filter((p) => p.connId !== conn.id);
 
       // If the creator left and there are still players, assign new creator
       if (
@@ -237,22 +236,11 @@ export default class DingServer implements Party.Server {
 
       broadcastStateTo(this.room, this.state, this.connections);
     } else {
-      // Mid-game disconnect
-      const player = this.state.players.find((p) => p.id === conn.id);
-      const playerName = player?.name ?? "A player";
+      // Mid-game disconnect — mark disconnected and continue, don't end the game
+      player.connected = false;
+      player.ready = false; // reset ready so the phase doesn't get stuck
 
-      const endedMsg: ServerMessage = {
-        type: "ended",
-        reason: "player_disconnected",
-        playerName,
-      };
-
-      for (const [, c] of Array.from(this.connections.entries())) {
-        c.send(JSON.stringify(endedMsg));
-      }
-
-      // Reset state
-      this.state = createInitialState();
+      broadcastStateTo(this.room, this.state, this.connections);
     }
   }
 
@@ -264,19 +252,40 @@ export default class DingServer implements Party.Server {
       return;
     }
 
-    const player = this.state.players.find((p) => p.id === sender.id);
+    const player = this.getPlayerByConn(sender.id);
 
     switch (msg.type) {
       case "join": {
-        if (player) {
-          // Already joined — just re-send state
+        // Check if this is a reconnecting player (matched by persistent ID)
+        const existingPlayer = this.state.players.find((p) => p.id === msg.pid);
+        if (existingPlayer) {
+          existingPlayer.connId = sender.id;
+          existingPlayer.connected = true;
           broadcastStateTo(this.room, this.state, this.connections);
+          return;
+        }
+
+        if (player) {
+          // Already joined with this connection — just re-send state
+          broadcastStateTo(this.room, this.state, this.connections);
+          return;
+        }
+
+        // New player — only allowed in lobby
+        if (this.state.phase !== "lobby") {
+          const errMsg: ServerMessage = {
+            type: "error",
+            message: "Game already in progress",
+          };
+          sender.send(JSON.stringify(errMsg));
+          sender.close();
           return;
         }
 
         const isCreator = this.state.players.length === 0;
         const newPlayer: Player = {
-          id: sender.id,
+          id: msg.pid,
+          connId: sender.id,
           name: msg.name,
           isCreator,
           ready: false,
@@ -353,7 +362,7 @@ export default class DingServer implements Party.Server {
         const handB = this.state.hands.find((h) => h.id === msg.handIdB);
         if (!handA || !handB) return;
         // Sender must own BOTH hands
-        if (handA.playerId !== sender.id || handB.playerId !== sender.id) return;
+        if (!player || handA.playerId !== player.id || handB.playerId !== player.id) return;
 
         const idxA = this.state.ranking.indexOf(msg.handIdA);
         const idxB = this.state.ranking.indexOf(msg.handIdB);
@@ -375,10 +384,10 @@ export default class DingServer implements Party.Server {
         if (!requesterHand || !targetHand) return;
 
         // Sender must own the requester hand
-        if (requesterHand.playerId !== sender.id) return;
+        if (!player || requesterHand.playerId !== player.id) return;
 
         // Can't request your own chip
-        if (targetHand.playerId === sender.id) return;
+        if (targetHand.playerId === player.id) return;
 
         // Target must have a chip in the ranking
         if (this.state.ranking.indexOf(msg.targetHandId) === -1) return;
@@ -390,7 +399,7 @@ export default class DingServer implements Party.Server {
         if (alreadyExists) return;
 
         this.state.acquireRequests.push({
-          requesterId: sender.id,
+          requesterId: player.id,
           requesterHandId: msg.requesterHandId,
           targetHandId: msg.targetHandId,
         });
@@ -407,7 +416,7 @@ export default class DingServer implements Party.Server {
         if (!targetHand) return;
 
         // Only the owner of the targeted hand can accept
-        if (targetHand.playerId !== sender.id) return;
+        if (!player || targetHand.playerId !== player.id) return;
 
         // Request must exist
         const reqIdx = this.state.acquireRequests.findIndex(
@@ -444,7 +453,7 @@ export default class DingServer implements Party.Server {
         if (!targetHand) return;
 
         // Only the owner of the targeted hand can reject
-        if (targetHand.playerId !== sender.id) return;
+        if (!player || targetHand.playerId !== player.id) return;
 
         this.state.acquireRequests = this.state.acquireRequests.filter(
           (r) => !(r.requesterHandId === msg.requesterHandId && r.targetHandId === msg.targetHandId)
@@ -459,7 +468,7 @@ export default class DingServer implements Party.Server {
         if (!gamePhasess.includes(this.state.phase)) return;
 
         const hand = this.state.hands.find((h) => h.id === msg.handId);
-        if (!hand || hand.playerId !== sender.id) return;
+        if (!hand || !player || hand.playerId !== player.id) return;
 
         const toIndex = Math.max(
           0,
@@ -491,8 +500,8 @@ export default class DingServer implements Party.Server {
 
         player.ready = msg.ready;
 
-        // Check if all players ready
-        const allReady = this.state.players.every((p) => p.ready);
+        // Check if all connected players ready (skip disconnected)
+        const allReady = this.state.players.every((p) => !p.connected || p.ready);
         if (allReady) {
           // Snapshot rank history for the current phase
           for (const hand of this.state.hands) {
@@ -566,7 +575,7 @@ export default class DingServer implements Party.Server {
         if (!handToFlip) return;
 
         // Must be the owner of this hand
-        const senderPlayer = this.state.players.find((p) => p.id === sender.id);
+        const senderPlayer = this.getPlayerByConn(sender.id);
         if (!senderPlayer || handToFlip.playerId !== senderPlayer.id) return;
 
         handToFlip.flipped = true;
