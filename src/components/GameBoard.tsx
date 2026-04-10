@@ -186,8 +186,8 @@ export default function GameBoard({ gameState, myId, onSend }: GameBoardProps) {
           </div>
         </div>
 
-        {/* Requests panel — always visible on the right, shows incoming requests */}
-        <div className="flex-none w-52 sm:w-64 border-l border-gray-800 bg-gray-950 flex flex-col overflow-hidden">
+        {/* Requests panel — hidden on mobile, visible on sm+ */}
+        <div className="hidden sm:flex flex-none w-64 border-l border-gray-800 bg-gray-950 flex-col overflow-hidden">
           <div className="flex-none px-3 py-2 border-b border-gray-800 flex items-center gap-2">
             <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">Requests</span>
             {incomingRequests.length > 0 && (
@@ -253,6 +253,62 @@ export default function GameBoard({ gameState, myId, onSend }: GameBoardProps) {
           </div>
         </div>
       </div>
+
+      {/* Mobile-only requests section */}
+      {incomingRequests.length > 0 && (
+        <div className="sm:hidden flex-none border-t border-gray-800 bg-gray-950 px-3 py-2 flex flex-col gap-2 max-h-40 overflow-y-auto">
+          <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">
+            Requests
+            <span className="ml-1.5 bg-orange-500 text-white text-[10px] font-black rounded-full px-1.5 py-0.5">
+              {incomingRequests.length}
+            </span>
+          </span>
+          {incomingRequests.map((req) => {
+            const requesterName = gameState.players.find((p) => p.id === req.requesterId)?.name ?? "?";
+            const chipRank = rankMap.get(req.targetHandId);
+            return (
+              <div
+                key={`${req.requesterHandId}-${req.targetHandId}`}
+                className="flex items-center gap-2"
+              >
+                {chipRank !== undefined && (
+                  <div
+                    className={[
+                      "w-7 h-7 rounded-full border-2 font-black text-xs flex items-center justify-center flex-shrink-0",
+                      chipRank === 1
+                        ? "bg-amber-500 border-amber-300 text-amber-950"
+                        : chipRank === localRanking.length
+                        ? "bg-red-950 border-red-800 text-red-300"
+                        : "bg-gray-700 border-gray-500 text-white",
+                    ].join(" ")}
+                  >
+                    {chipRank}
+                  </div>
+                )}
+                <p className="text-xs text-gray-300 flex-1 leading-snug">
+                  <span className="font-bold text-white">{requesterName}</span>
+                  {" wants your "}
+                  <span className="font-bold text-orange-300">#{chipRank}</span>
+                </p>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => handleAcceptAcquire(req.requesterHandId, req.targetHandId)}
+                    className="bg-green-600 hover:bg-green-500 active:bg-green-700 text-white text-xs font-bold px-2.5 py-1 rounded-lg transition-colors"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => handleRejectAcquire(req.requesterHandId, req.targetHandId)}
+                    className="bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs font-bold px-2.5 py-1 rounded-lg transition-colors"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Bottom bar: ready button */}
       <div className="flex-none border-t border-gray-800 bg-gray-950/90 backdrop-blur-sm px-4 py-2.5 flex items-center justify-center gap-3">
