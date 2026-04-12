@@ -625,6 +625,22 @@ export default class DingServer implements Party.Server {
         broadcastStateTo(this.room, this.state, this.connections);
         break;
       }
+
+      case "endGame": {
+        if (this.state.phase === "lobby") return;
+        if (!player?.isCreator) return;
+
+        const players = this.state.players.map((p) => ({
+          ...p,
+          ready: false,
+        }));
+
+        this.state = createInitialState();
+        this.state.players = players;
+
+        broadcastStateTo(this.room, this.state, this.connections);
+        break;
+      }
     }
   }
 }

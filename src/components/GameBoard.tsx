@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { ClientMessage, GameState } from "@/lib/types";
 import PokerTable from "./PokerTable";
 import ReadyButton from "./ReadyButton";
@@ -22,8 +22,29 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
     setLocalRanking(gameState.ranking);
   }, [gameState.ranking]);
 
+  const [confirmingEnd, setConfirmingEnd] = useState(false);
+  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const myPlayer = gameState.players.find((p) => p.id === myId);
+  const isCreator = myPlayer?.isCreator ?? false;
   const isReady = myPlayer?.ready ?? false;
+
+  function handleEndGameClick() {
+    if (!confirmingEnd) {
+      setConfirmingEnd(true);
+      confirmTimerRef.current = setTimeout(() => setConfirmingEnd(false), 4000);
+    } else {
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+      setConfirmingEnd(false);
+      onSend({ type: "endGame" });
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+    };
+  }, []);
   const allReady = gameState.players.every((p) => p.ready);
   const hasUnclaimedSlots = localRanking.some((slot) => slot === null);
 
@@ -145,9 +166,28 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
             </div>
           ))}
         </div>
-        <span className="text-green-400 text-[10px] font-bold uppercase tracking-widest">
-          {gameState.phase === "preflop" ? "pre-flop" : gameState.phase}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-green-400 text-[10px] font-bold uppercase tracking-widest">
+            {gameState.phase === "preflop" ? "pre-flop" : gameState.phase}
+          </span>
+          {isCreator && (
+            confirmingEnd ? (
+              <button
+                onClick={handleEndGameClick}
+                className="text-[10px] font-black bg-red-600 hover:bg-red-500 active:bg-red-700 text-white px-2 py-0.5 rounded-full transition-all"
+              >
+                sure?
+              </button>
+            ) : (
+              <button
+                onClick={handleEndGameClick}
+                className="text-[10px] font-bold text-gray-600 hover:text-red-400 transition-colors"
+              >
+                end
+              </button>
+            )
+          )}
+        </div>
       </div>
 
       {/* Main area: table + requests panel side by side */}

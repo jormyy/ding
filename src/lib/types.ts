@@ -73,6 +73,7 @@ export type ClientMessage =
   | { type: "ready"; ready: boolean } // preflop→river
   | { type: "flip"; handId: string } // reveal phase, own hand only
   | { type: "playAgain" } // reveal phase, creator only
+  | { type: "endGame" } // any game phase, creator only — returns to lobby
   | { type: "ding" }; // ring the bell
 
 export type ServerMessage =
