@@ -1,13 +1,13 @@
 # Ding
 
-A multiplayer poker-based prediction game where players rank each other's hands across multiple betting rounds.
+A multiplayer poker-based prediction game where players work together to rank hands across multiple betting rounds.
 
 ## How to Play
 
 ### Setup
 
 - Create a room or join one with a 4-character room code
-- The room creator can configure how many hands each player gets (1–3)
+- The room creator can configure how many hands each player gets (1–6, limits apply based on player count)
 - The game starts once the creator hits Start with at least 2 players
 
 ### Phases
@@ -16,27 +16,27 @@ Each game progresses through the standard poker betting rounds:
 
 **Preflop → Flop → Turn → River → Reveal**
 
-At each phase, community cards are revealed (0, 3, 4, then 5 cards). Before advancing, every player must place all their hands on the ranking board — slot 1 being the best hand, slot N being the worst.
+At each phase, community cards are revealed (0, 3, 4, then 5 cards). Before advancing, every player must rank all hands on the ranking board — slot 1 being the best hand, slot N being the worst.
 
-You can only see your own hole cards. Other hands are face-down until the Reveal phase.
+You can only see your own hole cards. Teammates' hands are face-down until the Reveal phase.
 
 ### Ranking Board
 
-Each hand occupies one numbered slot. You assign chips to each of your hands rank them relative to all hands at the table. Every slot must be filled before anyone can ready up and advance.
+Each hand occupies one numbered slot. You rank all hands at the table — both yours and your teammates'. Every slot must be filled before anyone can ready up and advance.
 
 ### Chip Requests
 
-You can request another player's chip from any slot. The other player can accept or reject. If accepted, their chip moves to your position and your old chip opens up. Pending requests clear when the phase advances.
+You can request a teammate's chip from any slot. They can accept or reject. If accepted, their chip moves to your position and your old chip opens up. Pending requests clear when the phase advances.
 
 ### Reveal
 
 Hands flip one at a time, from worst-ranked to best-ranked. Only the hand's owner can flip it when it's their turn. Once all hands are revealed, scores are calculated.
 
-### Scoring
+### Winning
 
-Your score is the number of **inversions** between your predicted ranking and the true poker ranking. An inversion is any pair of hands where you predicted the worse hand would beat the better one. Tied hands don't count as inversions.
+Ding is a collaborative game. The team **wins** by achieving a **perfect board** — every hand ranked exactly where it belongs. Any mistakes (inversions) mean the team loses.
 
-Lower score is better. A perfect score is 0.
+The inversion count shown at the results screen is a diagnostic metric showing how many pair-orderings were wrong, useful for post-game discussion, but it doesn't change the outcome: perfect board or loss.
 
 ### Ding
 
