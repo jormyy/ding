@@ -18,15 +18,15 @@ Each game progresses through the standard poker betting rounds:
 
 At each phase, community cards are revealed (0, 3, 4, then 5 cards). Before advancing, every player must place all their hands on the ranking board — slot 1 being the best hand, slot N being the worst.
 
-You can only see your own hole cards. Opponent hands are face-down until the Reveal phase.
+You can only see your own hole cards. Other hands are face-down until the Reveal phase.
 
 ### Ranking Board
 
-Each hand occupies one numbered slot. You drag your hands (chips) onto the board to rank them relative to all hands at the table — yours and your opponents'. Every slot must be filled before anyone can ready up and advance.
+Each hand occupies one numbered slot. You assign chips to each of your hands rank them relative to all hands at the table. Every slot must be filled before anyone can ready up and advance.
 
 ### Chip Requests
 
-You can request another player's chip (hand) from any slot. The other player can accept or reject. If accepted, their hand moves to your position and your old slot opens up. Pending requests clear when the phase advances.
+You can request another player's chip from any slot. The other player can accept or reject. If accepted, their chip moves to your position and your old chip opens up. Pending requests clear when the phase advances.
 
 ### Reveal
 
