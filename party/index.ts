@@ -302,7 +302,8 @@ export default class DingServer implements Party.Server {
 
       case "configure": {
         if (!player?.isCreator || this.state.phase !== "lobby") return;
-        const maxHands = this.state.players.length <= 4 ? 4 : 3;
+        const playerCount = this.state.players.length;
+        const maxHands = playerCount <= 2 ? 6 : playerCount <= 4 ? 4 : 3;
         const n = Math.max(1, Math.min(maxHands, msg.handsPerPlayer));
         this.state.handsPerPlayer = n;
         broadcastStateTo(this.room, this.state, this.connections);
