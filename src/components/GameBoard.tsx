@@ -26,6 +26,14 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
 
   const [confirmingEnd, setConfirmingEnd] = useState(false);
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [toastError, setToastError] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function showToast(message: string) {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastError(message);
+    toastTimerRef.current = setTimeout(() => setToastError(null), 3000);
+  }
   const [isPortrait, setIsPortrait] = useState(false);
   const [isMobileLandscape, setIsMobileLandscape] = useState(false);
 
@@ -129,6 +137,15 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
     if (hand?.playerId !== myId) {
       // Clicking another player's chip — request to acquire it
       if (currentSlotIdx !== -1) {
+        const alreadyRequested = (gameState.acquireRequests ?? []).some(
+          (r) => r.targetHandId === handId && r.requesterId !== myId
+        );
+        if (alreadyRequested) {
+          const rank = rankMap.get(handId);
+          showToast(`Rank #${rank} is already being requested by someone else`);
+          setSelectedHandId(null);
+          return;
+        }
         onSend({ type: "requestAcquire", requesterHandId: selectedHandId, targetHandId: handId });
       }
       setSelectedHandId(null);
@@ -178,10 +195,19 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
     );
   }
 
+  const toastEl = toastError ? (
+    <div className="fixed inset-x-0 top-16 z-50 flex justify-center pointer-events-none">
+      <div className="bg-red-900/95 border border-red-700 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-xl">
+        {toastError}
+      </div>
+    </div>
+  ) : null;
+
   // ── Mobile landscape: full-width table (opponents only) + own hands at bottom ──
   if (isMobileLandscape) {
     return (
       <div className="h-[100dvh] flex flex-col bg-gray-950">
+        {toastEl}
         {/* Header */}
         <div className="flex-none border-b border-gray-800 bg-gray-950/90 px-3 py-1 flex items-center justify-between">
           <span className="text-sm font-black text-white tracking-tight">DING</span>
@@ -274,6 +300,7 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
 
   return (
     <div className="h-[100dvh] flex flex-col bg-gray-950">
+      {toastEl}
       {/* Header */}
       <div className="flex-none border-b border-gray-800 bg-gray-950/90 backdrop-blur-sm px-3 py-2 flex items-center justify-between">
         <span className="text-base font-black text-white tracking-tight">DING</span>
