@@ -11,6 +11,7 @@ interface PokerTableProps {
   gameState: GameState;
   myId: string;
   hideSelf?: boolean; // omit the self seat from the oval (used in mobile landscape panel layout)
+  onUnclaim?: (handId: string) => void;
   // Game phase chip interaction:
   selectedHandId?: string | null;
   selectedSlot?: number | null;
@@ -50,6 +51,7 @@ interface SeatProps {
   selectedHandId: string | null;
   hasSelection: boolean;
   onHandClick: (handId: string) => void;
+  onUnclaim: (handId: string) => void;
   currentFlipHandId: string | null;
   onFlip: ((handId: string) => void) | null;
   isMobile: boolean;
@@ -70,6 +72,7 @@ function Seat({
   selectedHandId,
   hasSelection,
   onHandClick,
+  onUnclaim,
   currentFlipHandId,
   onFlip,
   isMobile,
@@ -208,11 +211,17 @@ function Seat({
                           isSelected={isSelected}
                           hasSelection={hasSelection}
                           onClick={() => onHandClick(hand.id)}
+                          onDoubleClick={isMe ? () => onUnclaim(hand.id) : undefined}
                           small={isMobile}
                         />
                         {handRequests.length > 0 && (
                           <div className="absolute -top-1.5 -right-1.5 min-w-[13px] h-[13px] bg-orange-500 rounded-full text-[7px] font-black text-white flex items-center justify-center px-0.5 pointer-events-none">
-                            {handRequests.length}
+                            {/* Show the requester's current rank → target rank */}
+                            {(() => {
+                              const req = handRequests[0];
+                              const fromRank = rankMap.get(req.requesterHandId);
+                              return fromRank ? `${fromRank}→${rank}` : rank;
+                            })()}
                           </div>
                         )}
                       </div>
@@ -272,6 +281,7 @@ export default function PokerTable({
   gameState,
   myId,
   hideSelf = false,
+  onUnclaim = () => {},
   selectedHandId = null,
   selectedSlot = null,
   onHandClick = () => {},
@@ -488,6 +498,7 @@ export default function PokerTable({
               selectedHandId={selectedHandId}
               hasSelection={hasSelection}
               onHandClick={onHandClick}
+              onUnclaim={onUnclaim}
               currentFlipHandId={currentFlipHandId}
               onFlip={onFlip ?? null}
               isMobile={isMobile}

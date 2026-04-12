@@ -164,6 +164,17 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
     setSelectedHandId(null);
   }
 
+  function handleUnclaim(handId: string) {
+    const newRanking = [...localRanking];
+    const idx = newRanking.indexOf(handId);
+    if (idx !== -1) {
+      newRanking[idx] = null;
+      setLocalRanking(newRanking);
+    }
+    setSelectedHandId(null);
+    onSend({ type: "unclaim", handId });
+  }
+
   function handleAcceptAcquire(requesterHandId: string, targetHandId: string) {
     onSend({ type: "acceptAcquire", requesterHandId, targetHandId });
   }
@@ -235,6 +246,7 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
             gameState={displayState}
             myId={myId}
             hideSelf={true}
+            onUnclaim={handleUnclaim}
             selectedHandId={selectedHandId}
             selectedSlot={selectedSlot}
             onHandClick={handleHandClick}
@@ -278,7 +290,7 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
                       {hand.cards.map((card, i) => <CardFace key={i} card={card} tiny />)}
                     </div>
                     {rank !== null ? (
-                      <RankChip rank={rank} total={totalHands} isOwn isSelected={isSelected} hasSelection={hasSelection} onClick={() => handleHandClick(hand.id)} small />
+                      <RankChip rank={rank} total={totalHands} isOwn isSelected={isSelected} hasSelection={hasSelection} onClick={() => handleHandClick(hand.id)} onDoubleClick={() => handleUnclaim(hand.id)} small />
                     ) : (
                       <div
                         className={["w-6 h-6 rounded-full border-2 border-dashed transition-all", hasSelection ? "border-yellow-400/60 cursor-pointer hover:border-yellow-400" : "border-gray-700/40"].join(" ")}
@@ -353,6 +365,7 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
             <PokerTable
               gameState={displayState}
               myId={myId}
+              onUnclaim={handleUnclaim}
               selectedHandId={selectedHandId}
               selectedSlot={selectedSlot}
               onHandClick={handleHandClick}

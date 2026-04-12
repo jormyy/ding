@@ -7,6 +7,7 @@ interface RankChipProps {
   isSelected: boolean;
   hasSelection: boolean; // any chip/slot currently selected
   onClick: () => void;
+  onDoubleClick?: () => void;
   small?: boolean;
   tiny?: boolean; // for history chips
 }
@@ -18,6 +19,7 @@ export default function RankChip({
   isSelected,
   hasSelection,
   onClick,
+  onDoubleClick,
   small = false,
   tiny = false,
 }: RankChipProps) {
@@ -40,6 +42,7 @@ export default function RankChip({
   return (
     <button
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
       disabled={!isClickable}
       className={[
         "rounded-full font-black flex items-center justify-center border-2 select-none transition-all duration-150",

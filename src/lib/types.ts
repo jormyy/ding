@@ -72,6 +72,7 @@ export type ClientMessage =
   | { type: "rejectAcquire"; requesterHandId: string; targetHandId: string } // reject an acquire request
   | { type: "ready"; ready: boolean } // preflop→river
   | { type: "flip"; handId: string } // reveal phase, own hand only
+  | { type: "unclaim"; handId: string } // return own chip back to the board
   | { type: "playAgain" } // reveal phase, creator only
   | { type: "endGame" } // any game phase, creator only — returns to lobby
   | { type: "ding" }; // ring the bell

@@ -379,6 +379,7 @@ export default class DingServer implements Party.Server {
 
         this.state.ranking[idxA] = msg.handIdB;
         this.state.ranking[idxB] = msg.handIdA;
+        player.ready = false;
 
         broadcastStateTo(this.room, this.state, this.connections);
         break;
@@ -458,6 +459,12 @@ export default class DingServer implements Party.Server {
         this.state.acquireRequests = this.state.acquireRequests.filter(
           (r) => r.targetHandId !== msg.targetHandId
         );
+        // Unready both players involved
+        player.ready = false;
+        const requesterPlayer = this.state.players.find((p) =>
+          this.state.hands.some((h) => h.id === msg.requesterHandId && h.playerId === p.id)
+        );
+        if (requesterPlayer) requesterPlayer.ready = false;
 
         broadcastStateTo(this.room, this.state, this.connections);
         break;
@@ -473,6 +480,27 @@ export default class DingServer implements Party.Server {
         this.state.acquireRequests = this.state.acquireRequests.filter(
           (r) => !(r.requesterHandId === msg.requesterHandId && r.targetHandId === msg.targetHandId)
         );
+
+        broadcastStateTo(this.room, this.state, this.connections);
+        break;
+      }
+
+      case "unclaim": {
+        const unclaimPhases: Phase[] = ["preflop", "flop", "turn", "river"];
+        if (!unclaimPhases.includes(this.state.phase)) return;
+
+        const hand = this.state.hands.find((h) => h.id === msg.handId);
+        if (!hand || !player || hand.playerId !== player.id) return;
+
+        const idx = this.state.ranking.indexOf(msg.handId);
+        if (idx === -1) return;
+
+        this.state.ranking[idx] = null;
+        // Cancel any pending requests involving this hand
+        this.state.acquireRequests = this.state.acquireRequests.filter(
+          (r) => r.requesterHandId !== msg.handId && r.targetHandId !== msg.handId
+        );
+        player.ready = false;
 
         broadcastStateTo(this.room, this.state, this.connections);
         break;
@@ -500,6 +528,7 @@ export default class DingServer implements Party.Server {
         }
 
         this.state.ranking[toIndex] = msg.handId;
+        player.ready = false;
 
         broadcastStateTo(this.room, this.state, this.connections);
         break;
