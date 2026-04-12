@@ -52,6 +52,16 @@ export function isRedSuit(suit: Suit): boolean {
   return suit === "H" || suit === "D";
 }
 
+export function getSuitColor(suit: Suit): string {
+  const colors: Record<Suit, string> = {
+    H: "text-red-500",
+    D: "text-blue-500",
+    C: "text-emerald-600",
+    S: "text-gray-900",
+  };
+  return colors[suit];
+}
+
 export function getRankDisplay(rank: Rank): string {
-  return rank;
+  return rank === "T" ? "10" : rank;
 }

@@ -137,8 +137,8 @@ function Seat({
         </div>
       )}
 
-      {/* Hands — stacked vertically on mobile when multiple */}
-      <div className={handsPerPlayer > 1 && isMobile ? "flex flex-col gap-1" : "flex gap-2"}>
+      {/* Hands — always stacked horizontally */}
+      <div className="flex flex-row gap-1">
         {hands.map((hand, handIdx) => {
           const rank = rankMap.get(hand.id) ?? null;
           const isSelected = selectedHandId === hand.id;
@@ -150,11 +150,7 @@ function Seat({
           return (
             <div
               key={hand.id}
-              className={
-                handsPerPlayer > 1 && isMobile
-                  ? "flex flex-row items-center gap-1"
-                  : "flex flex-col items-center gap-1"
-              }
+              className="flex flex-col items-center gap-1"
             >
               {handsPerPlayer > 1 && !isMobile && (
                 <div className="text-[9px] text-gray-600 font-medium">

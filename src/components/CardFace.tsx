@@ -1,7 +1,7 @@
 "use client";
 
 import type { Card, Suit } from "@/lib/types";
-import { getSuitSymbol, isRedSuit } from "@/lib/utils";
+import { getSuitSymbol, getSuitColor, getRankDisplay } from "@/lib/utils";
 
 interface CardFaceProps {
   card: Card;
@@ -10,9 +10,9 @@ interface CardFaceProps {
 }
 
 export function CardFace({ card, small = false, tiny = false }: CardFaceProps) {
-  const red = isRedSuit(card.suit);
   const symbol = getSuitSymbol(card.suit);
-  const colorClass = red ? "text-red-500" : "text-gray-900";
+  const colorClass = getSuitColor(card.suit);
+  const rankDisplay = getRankDisplay(card.rank);
 
   if (tiny) {
     return (
@@ -21,11 +21,11 @@ export function CardFace({ card, small = false, tiny = false }: CardFaceProps) {
         style={{ width: 26, height: 38 }}
       >
         <div className={`text-[8px] font-black leading-none ${colorClass}`}>
-          {card.rank}
+          {rankDisplay}
         </div>
-        <div className={`text-[9px] leading-none ${colorClass}`}>{symbol}</div>
+        <div className={`text-[13px] leading-none ${colorClass}`}>{symbol}</div>
         <div className={`text-[8px] font-black leading-none rotate-180 ${colorClass}`}>
-          {card.rank}
+          {rankDisplay}
         </div>
       </div>
     );
@@ -33,14 +33,14 @@ export function CardFace({ card, small = false, tiny = false }: CardFaceProps) {
 
   if (small) {
     return (
-      <div className="bg-white rounded-md shadow-sm flex flex-col items-center justify-between p-0.5 w-9 h-13 select-none"
+      <div className="bg-white rounded-md shadow-sm flex flex-col items-center justify-between p-0.5 select-none"
         style={{ width: 36, height: 52 }}>
         <div className={`text-xs font-black leading-none ${colorClass}`}>
-          {card.rank}
+          {rankDisplay}
         </div>
-        <div className={`text-sm leading-none ${colorClass}`}>{symbol}</div>
+        <div className={`text-xl leading-none ${colorClass}`}>{symbol}</div>
         <div className={`text-xs font-black leading-none rotate-180 ${colorClass}`}>
-          {card.rank}
+          {rankDisplay}
         </div>
       </div>
     );
@@ -54,20 +54,20 @@ export function CardFace({ card, small = false, tiny = false }: CardFaceProps) {
       {/* Top rank + suit */}
       <div className="self-start">
         <div className={`text-sm font-black leading-none ${colorClass}`}>
-          {card.rank}
+          {rankDisplay}
         </div>
-        <div className={`text-xs leading-none ${colorClass}`}>{symbol}</div>
+        <div className={`text-sm leading-none ${colorClass}`}>{symbol}</div>
       </div>
 
       {/* Center suit */}
-      <div className={`text-2xl leading-none ${colorClass}`}>{symbol}</div>
+      <div className={`text-3xl leading-none ${colorClass}`}>{symbol}</div>
 
       {/* Bottom rank + suit (rotated) */}
       <div className="self-end rotate-180">
         <div className={`text-sm font-black leading-none ${colorClass}`}>
-          {card.rank}
+          {rankDisplay}
         </div>
-        <div className={`text-xs leading-none ${colorClass}`}>{symbol}</div>
+        <div className={`text-sm leading-none ${colorClass}`}>{symbol}</div>
       </div>
     </div>
   );
