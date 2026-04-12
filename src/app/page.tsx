@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { generateRoomCode } from "@/lib/utils";
 
 export default function HomePage() {
@@ -24,25 +25,16 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center p-4 sm:p-6 bg-gray-950">
-      {/* Background felt texture */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-950/30 via-gray-950 to-gray-950 pointer-events-none" />
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center p-4 sm:p-6" style={{
+        backgroundImage: "url('/felt.png')",
+        backgroundRepeat: "repeat",
+        backgroundSize: "256px 256px",
+      }}>
 
       <div className="relative z-10 w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-12">
-          <h1 className="text-7xl font-black tracking-tighter text-white mb-2">
-            DING
-          </h1>
-          <p className="text-green-400 text-sm font-medium tracking-widest uppercase">
-            Poker Ranking Game
-          </p>
-          <div className="flex justify-center gap-3 mt-4 text-2xl">
-            <span className="text-red-400">♥</span>
-            <span className="text-red-400">♦</span>
-            <span className="text-gray-400">♣</span>
-            <span className="text-gray-400">♠</span>
-          </div>
+        <div className="flex justify-center mb-10">
+          <Image src="/logo.png" alt="Ding" width={320} height={320} priority className="drop-shadow-2xl" />
         </div>
 
         {/* Cards */}
@@ -102,7 +94,7 @@ export default function HomePage() {
 
         {/* How to play */}
         <div className="mt-8 text-center">
-          <p className="text-gray-600 text-xs leading-relaxed">
+          <p className="text-green-200/70 text-xs leading-relaxed">
             Rank your poker hands from best to worst using the community cards.
             <br />
             Score is based on how many pairs are out of order.

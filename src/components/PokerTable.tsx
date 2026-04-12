@@ -425,20 +425,26 @@ export default function PokerTable({
           })}
         </div>
 
-        {/* Board rank slots — unclaimed chips shown on the table */}
+        {/* Board rank slots — all slots rendered at fixed positions; claimed ones are invisible placeholders */}
         {!isReveal && boardSlots.length > 0 && (
           <div className="flex gap-1 flex-wrap justify-center mt-0.5" style={{ maxWidth: isMobile ? "52%" : "70%" }}>
-            {boardSlots.map((slotIndex) => {
+            {gameState.ranking.map((claimedId, slotIndex) => {
               const rank = slotIndex + 1;
+              const isUnclaimed = claimedId === null;
               const isFirst = rank === 1;
               const isLast = rank === totalHands;
               const isSlotSelected = selectedSlot === slotIndex;
 
+              const chipSize = isMobile ? "w-6 h-6 text-[10px]" : "w-8 h-8 text-xs";
+
+              if (!isUnclaimed) {
+                // Invisible spacer to keep claimed slots in place
+                return <div key={slotIndex} className={chipSize} />;
+              }
+
               let chipBg = "bg-gray-700 border-gray-500 text-white";
               if (isFirst) chipBg = "bg-amber-500 border-amber-300 text-amber-950";
               else if (isLast) chipBg = "bg-red-950 border-red-800 text-red-300";
-
-              const chipSize = isMobile ? "w-6 h-6 text-[10px]" : "w-8 h-8 text-xs";
 
               return (
                 <button

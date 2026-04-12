@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import type { ClientMessage, GameState } from "@/lib/types";
 import PlayerList from "./PlayerList";
 
@@ -39,15 +40,12 @@ export default function Lobby({ gameState, myId, code, onSend }: LobbyProps) {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-gray-950 flex flex-col items-center justify-center p-4 sm:p-6">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-950/20 via-gray-950 to-gray-950 pointer-events-none" />
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center p-4 sm:p-6" style={{ backgroundImage: "url('/felt.png')", backgroundRepeat: "repeat", backgroundSize: "256px 256px" }}>
 
       <div className="relative z-10 w-full max-w-md space-y-4">
         {/* Header */}
-        <div className="text-center">
-          <h1 className="text-5xl font-black tracking-tighter text-white">
-            DING
-          </h1>
+        <div className="flex justify-center">
+          <Image src="/logo.png" alt="Ding" width={200} height={200} priority />
         </div>
 
         {/* Room Code */}

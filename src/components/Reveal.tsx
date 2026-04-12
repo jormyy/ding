@@ -113,11 +113,13 @@ function ScorePanel({ gameState, isCreator, onPlayAgain }: ScorePanelProps) {
   }
 
   function isCorrectPlacement(handId: string, playerIndex: number): boolean {
-    if (!trueRanks) return false;
+    if (!trueRanks || !gameState.trueRanking) return false;
     const myTrueRank = trueRanks[handId];
+    // Find where this tie group starts in the true ranking (0-indexed position)
+    const firstPos = gameState.trueRanking.findIndex((id) => trueRanks[id] === myTrueRank);
     const tieGroupSize = Object.values(trueRanks).filter((r) => r === myTrueRank).length;
     const playerRank = playerIndex + 1;
-    return playerRank >= myTrueRank && playerRank < myTrueRank + tieGroupSize;
+    return playerRank >= firstPos + 1 && playerRank <= firstPos + tieGroupSize;
   }
 
   return (

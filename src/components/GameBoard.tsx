@@ -24,6 +24,13 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
     setLocalRanking(gameState.ranking);
   }, [gameState.ranking]);
 
+  // Clear selectedSlot if another player claims the slot before we act
+  useEffect(() => {
+    if (selectedSlot !== null && localRanking[selectedSlot] !== null) {
+      setSelectedSlot(null);
+    }
+  }, [localRanking, selectedSlot]);
+
   const [confirmingEnd, setConfirmingEnd] = useState(false);
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [toastError, setToastError] = useState<string | null>(null);
@@ -87,6 +94,12 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
 
   function handleSlotClick(slotIndex: number) {
     if (selectedHandId !== null) {
+      // Abort if another player claimed this slot before we could act
+      if (localRanking[slotIndex] !== null) {
+        setSelectedHandId(null);
+        setSelectedSlot(null);
+        return;
+      }
       const newRanking = [...localRanking];
       const currentIdx = newRanking.indexOf(selectedHandId);
       if (currentIdx !== -1) newRanking[currentIdx] = null;
@@ -111,6 +124,11 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
 
     if (selectedSlot !== null) {
       if (hand?.playerId === myId) {
+        // Abort if another player claimed this slot before we could act
+        if (localRanking[selectedSlot] !== null) {
+          setSelectedSlot(null);
+          return;
+        }
         const newRanking = [...localRanking];
         if (currentSlotIdx !== -1) newRanking[currentSlotIdx] = null;
         newRanking[selectedSlot] = handId;

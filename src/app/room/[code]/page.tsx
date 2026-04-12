@@ -136,10 +136,12 @@ export default function RoomPage() {
     return <NameModal onSubmit={handleNameSubmit} />;
   }
 
+  const feltBg = { backgroundImage: "url('/felt.png')", backgroundRepeat: "repeat" as const, backgroundSize: "256px 256px" };
+
   // Connection error
   if (connectionError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-950">
+      <div className="min-h-screen flex items-center justify-center" style={feltBg}>
         <div className="text-center">
           <div className="text-red-400 text-xl font-bold mb-2">
             Connection Error
@@ -159,7 +161,7 @@ export default function RoomPage() {
   // Loading state
   if (!gameState || !myId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-950">
+      <div className="min-h-screen flex items-center justify-center" style={feltBg}>
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-400">Connecting to room {code}...</p>
