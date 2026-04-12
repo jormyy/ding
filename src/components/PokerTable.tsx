@@ -82,14 +82,15 @@ function Seat({
     hands.some((h) => h.id === currentFlipHandId);
   const canFlip = isFlipTurn && isMe;
 
-  const nameMaxW = isMobile ? "max-w-[72px]" : "max-w-[120px]";
+  const nameMaxW = isMobile ? "max-w-[60px]" : "max-w-[120px]";
   const cardProps = isMobile ? { tiny: true as const } : { small: true as const };
+  const tightPadding = isMobile && handsPerPlayer > 1;
 
   return (
     <div
       className={[
         "flex flex-col items-center rounded-xl border transition-all",
-        isMobile ? "gap-1 px-1.5 py-1.5" : "gap-1.5 px-2 py-2",
+        tightPadding ? "gap-0.5 px-1 py-1" : isMobile ? "gap-1 px-1.5 py-1.5" : "gap-1.5 px-2 py-2",
         isMe
           ? "bg-green-950/70 border-green-700/50 shadow-lg shadow-green-900/30"
           : "bg-gray-950/70 border-gray-700/30",
@@ -138,7 +139,7 @@ function Seat({
       )}
 
       {/* Hands — always stacked horizontally */}
-      <div className="flex flex-row gap-1">
+      <div className={tightPadding ? "flex flex-row gap-0.5" : "flex flex-row gap-1"}>
         {hands.map((hand, handIdx) => {
           const rank = rankMap.get(hand.id) ?? null;
           const isSelected = selectedHandId === hand.id;
@@ -291,9 +292,6 @@ export default function PokerTable({
   }, []);
 
   const isMobile = containerWidth < 500;
-  // On mobile the container is constrained to a square, so we use a wide oval
-  const xRadius = isMobile ? 43 : 41;
-  const yRadius = isMobile ? 28 : 38;
 
   const isReveal = gameState.phase === "reveal";
   const hasSelection = selectedHandId !== null || selectedSlot !== null;
@@ -316,6 +314,15 @@ export default function PokerTable({
     players.findIndex((p) => p.id === myId)
   );
   const n = players.length;
+
+  // Scale radii and opponent seats down when there are many players/hands
+  const load = n * gameState.handsPerPlayer;
+  const xRadius = isMobile ? (load >= 12 ? 37 : n >= 5 ? 40 : 43) : 41;
+  const yRadius = isMobile ? (load >= 12 ? 20 : n >= 5 ? 23 : 28) : 38;
+  // Shrink opponent seats via CSS scale so they don't overflow the oval
+  const opponentScale = isMobile
+    ? Math.max(0.60, 1 - Math.max(0, load - 4) * 0.04)
+    : 1;
 
   const currentFlipHandId =
     isReveal && gameState.score === null
@@ -444,7 +451,9 @@ export default function PokerTable({
             style={{
               left: `${x}%`,
               top: `${y}%`,
-              transform: "translate(-50%, -50%)",
+              transform: isMe
+                ? "translate(-50%, -50%)"
+                : `translate(-50%, -50%) scale(${opponentScale})`,
               zIndex: isMe ? 10 : 5,
             }}
           >
