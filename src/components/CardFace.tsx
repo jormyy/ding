@@ -1,7 +1,14 @@
 "use client";
 
-import type { Card, Suit } from "@/lib/types";
-import { getSuitSymbol, getSuitColor, getRankDisplay } from "@/lib/utils";
+import type { Card } from "@/lib/types";
+import { getSuitSymbol, getRankDisplay } from "@/lib/utils";
+
+const SUIT_COLOR: Record<string, string> = {
+  H: "text-red-500",
+  D: "text-blue-500",
+  C: "text-emerald-600",
+  S: "text-gray-900",
+};
 
 interface CardFaceProps {
   card: Card;
@@ -11,7 +18,7 @@ interface CardFaceProps {
 
 export function CardFace({ card, small = false, tiny = false }: CardFaceProps) {
   const symbol = getSuitSymbol(card.suit);
-  const colorClass = getSuitColor(card.suit);
+  const colorClass = SUIT_COLOR[card.suit] ?? "text-gray-900";
   const rankDisplay = getRankDisplay(card.rank);
 
   if (tiny) {
