@@ -178,21 +178,16 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
     );
   }
 
-  // ── Mobile landscape: own hands in a side panel, table shows opponents only ──
+  // ── Mobile landscape: full-width table (opponents only) + own hands at bottom ──
   if (isMobileLandscape) {
     return (
       <div className="h-[100dvh] flex flex-col bg-gray-950">
         {/* Header */}
-        <div className="flex-none border-b border-gray-800 bg-gray-950/90 px-3 py-1.5 flex items-center justify-between">
+        <div className="flex-none border-b border-gray-800 bg-gray-950/90 px-3 py-1 flex items-center justify-between">
           <span className="text-sm font-black text-white tracking-tight">DING</span>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             {phaseLabels.map((phase) => (
-              <div
-                key={phase}
-                className={`text-[9px] font-bold uppercase tracking-widest transition-colors ${
-                  gameState.phase === phase ? "text-green-400" : "text-gray-700"
-                }`}
-              >
+              <div key={phase} className={`text-[9px] font-bold uppercase tracking-widest ${gameState.phase === phase ? "text-green-400" : "text-gray-700"}`}>
                 {phase === "preflop" ? "pre" : phase}
               </div>
             ))}
@@ -201,87 +196,66 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
             <span className="text-green-400 text-[10px] font-bold uppercase tracking-widest">
               {gameState.phase === "preflop" ? "pre-flop" : gameState.phase}
             </span>
-            {isCreator && (
-              confirmingEnd ? (
-                <button onClick={handleEndGameClick} className="text-[10px] font-black bg-red-600 hover:bg-red-500 text-white px-2 py-0.5 rounded-full">sure?</button>
-              ) : (
-                <button onClick={handleEndGameClick} className="text-[10px] font-bold text-gray-600 hover:text-red-400 transition-colors">end</button>
-              )
+            {isCreator && (confirmingEnd
+              ? <button onClick={handleEndGameClick} className="text-[10px] font-black bg-red-600 text-white px-2 py-0.5 rounded-full">sure?</button>
+              : <button onClick={handleEndGameClick} className="text-[10px] font-bold text-gray-600 hover:text-red-400">end</button>
             )}
           </div>
         </div>
 
-        {/* Main: table (opponents) + own hands panel */}
-        <div className="flex-1 min-h-0 flex overflow-hidden">
-          {/* Poker table — opponents + board only */}
-          <div className="flex-1 min-w-0 relative">
-            <PokerTable
-              gameState={displayState}
-              myId={myId}
-              hideSelf={true}
-              selectedHandId={selectedHandId}
-              selectedSlot={selectedSlot}
-              onHandClick={handleHandClick}
-              onSlotClick={handleSlotClick}
-              onAcceptAcquire={handleAcceptAcquire}
-            />
-            {/* Ding bell */}
-            <button
-              onClick={onDing}
-              className="absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 transition-all text-lg"
-            >🔔</button>
-          </div>
+        {/* Table — full width, opponents + board chips only */}
+        <div className="flex-1 min-h-0 relative">
+          <PokerTable
+            gameState={displayState}
+            myId={myId}
+            hideSelf={true}
+            selectedHandId={selectedHandId}
+            selectedSlot={selectedSlot}
+            onHandClick={handleHandClick}
+            onSlotClick={handleSlotClick}
+            onAcceptAcquire={handleAcceptAcquire}
+          />
+          <button onClick={onDing} className="absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 text-lg">🔔</button>
+        </div>
 
-          {/* Own hands panel */}
-          <div className="flex-none w-44 border-l border-gray-800 bg-gray-950 flex flex-col overflow-hidden">
-            <div className="flex-none px-2 py-1 border-b border-gray-800 flex items-center justify-between">
-              <span className="text-[9px] font-bold text-green-300 uppercase tracking-widest">
-                {myPlayer?.name ?? "You"}
-              </span>
-              {selectedHandId && (
-                <span className="text-[8px] text-yellow-400 font-semibold">tap a slot →</span>
-              )}
-              {selectedSlot !== null && (
-                <span className="text-[8px] text-yellow-400 font-semibold">tap a hand</span>
-              )}
+        {/* Own hands strip */}
+        <div className="flex-none border-t border-gray-800 bg-gray-950 px-3 py-1.5">
+          {/* Requests row (if any) */}
+          {incomingRequests.length > 0 && (
+            <div className="flex gap-3 mb-1.5 overflow-x-auto">
+              {incomingRequests.map((req) => {
+                const name = gameState.players.find((p) => p.id === req.requesterId)?.name ?? "?";
+                const chipRank = rankMap.get(req.targetHandId);
+                return (
+                  <div key={`${req.requesterHandId}-${req.targetHandId}`} className="flex items-center gap-1.5 flex-none">
+                    <span className="text-[10px] text-gray-300"><span className="font-bold text-white">{name}</span> wants <span className="text-orange-300 font-bold">#{chipRank}</span></span>
+                    <button onClick={() => handleAcceptAcquire(req.requesterHandId, req.targetHandId)} className="bg-green-600 text-white text-[9px] font-bold px-2 py-0.5 rounded">✓</button>
+                    <button onClick={() => handleRejectAcquire(req.requesterHandId, req.targetHandId)} className="bg-gray-700 text-gray-200 text-[9px] font-bold px-2 py-0.5 rounded">✕</button>
+                  </div>
+                );
+              })}
             </div>
-            <div className="flex-1 overflow-y-auto p-1.5 flex flex-col gap-2">
+          )}
+
+          {/* Hands + ready */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 flex items-center gap-4">
               {myHands.map((hand) => {
                 const rank = rankMap.get(hand.id) ?? null;
                 const isSelected = selectedHandId === hand.id;
                 return (
                   <div key={hand.id} className="flex items-center gap-1.5">
                     <div
-                      className={[
-                        "flex gap-0.5 rounded p-0.5 transition-all cursor-pointer",
-                        isSelected
-                          ? "ring-2 ring-yellow-400 bg-yellow-400/10"
-                          : "hover:ring-1 hover:ring-green-500/40",
-                      ].join(" ")}
+                      className={["flex gap-0.5 rounded p-0.5 cursor-pointer transition-all", isSelected ? "ring-2 ring-yellow-400 bg-yellow-400/10" : "hover:ring-1 hover:ring-green-500/40"].join(" ")}
                       onClick={() => handleHandClick(hand.id)}
                     >
-                      {hand.cards.map((card, i) => (
-                        <CardFace key={i} card={card} tiny />
-                      ))}
+                      {hand.cards.map((card, i) => <CardFace key={i} card={card} tiny />)}
                     </div>
                     {rank !== null ? (
-                      <RankChip
-                        rank={rank}
-                        total={totalHands}
-                        isOwn={true}
-                        isSelected={isSelected}
-                        hasSelection={hasSelection}
-                        onClick={() => handleHandClick(hand.id)}
-                        small
-                      />
+                      <RankChip rank={rank} total={totalHands} isOwn isSelected={isSelected} hasSelection={hasSelection} onClick={() => handleHandClick(hand.id)} small />
                     ) : (
                       <div
-                        className={[
-                          "w-6 h-6 rounded-full border-2 border-dashed transition-all",
-                          hasSelection
-                            ? "border-yellow-400/60 cursor-pointer hover:border-yellow-400 hover:bg-yellow-400/10"
-                            : "border-gray-700/40",
-                        ].join(" ")}
+                        className={["w-6 h-6 rounded-full border-2 border-dashed transition-all", hasSelection ? "border-yellow-400/60 cursor-pointer hover:border-yellow-400" : "border-gray-700/40"].join(" ")}
                         onClick={hasSelection ? () => handleHandClick(hand.id) : undefined}
                       />
                     )}
@@ -289,47 +263,10 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
                 );
               })}
             </div>
-
-            {/* Incoming requests in the panel */}
-            {incomingRequests.length > 0 && (
-              <div className="flex-none border-t border-gray-800 p-1.5 flex flex-col gap-1.5 max-h-32 overflow-y-auto">
-                <span className="text-[9px] font-bold text-orange-400 uppercase tracking-widest">
-                  Requests ({incomingRequests.length})
-                </span>
-                {incomingRequests.map((req) => {
-                  const name = gameState.players.find((p) => p.id === req.requesterId)?.name ?? "?";
-                  const chipRank = rankMap.get(req.targetHandId);
-                  return (
-                    <div key={`${req.requesterHandId}-${req.targetHandId}`} className="flex flex-col gap-1">
-                      <p className="text-[10px] text-gray-300 leading-snug">
-                        <span className="font-bold text-white">{name}</span>{" wants #"}<span className="text-orange-300 font-bold">{chipRank}</span>
-                      </p>
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => handleAcceptAcquire(req.requesterHandId, req.targetHandId)}
-                          className="flex-1 bg-green-600 hover:bg-green-500 text-white text-[9px] font-bold py-1 rounded transition-colors"
-                        >Accept</button>
-                        <button
-                          onClick={() => handleRejectAcquire(req.requesterHandId, req.targetHandId)}
-                          className="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-200 text-[9px] font-bold py-1 rounded transition-colors"
-                        >Reject</button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <div className="flex-none">
+              <ReadyButton isReady={isReady} onToggle={handleReady} allPlayersReady={allReady} disabled={hasUnclaimedSlots} />
+            </div>
           </div>
-        </div>
-
-        {/* Bottom: ready */}
-        <div className="flex-none border-t border-gray-800 bg-gray-950/90 px-4 py-2 flex items-center justify-center">
-          <ReadyButton
-            isReady={isReady}
-            onToggle={handleReady}
-            allPlayersReady={allReady}
-            disabled={hasUnclaimedSlots}
-          />
         </div>
       </div>
     );

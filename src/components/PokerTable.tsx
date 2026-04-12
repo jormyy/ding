@@ -298,6 +298,7 @@ export default function PokerTable({
 
   // Treat as mobile if either dimension is small (catches landscape phones too)
   const isMobile = Math.min(containerWidth, containerHeight) < 500;
+  const isLandscape = containerWidth > containerHeight;
 
   const isReveal = gameState.phase === "reveal";
   const hasSelection = selectedHandId !== null || selectedSlot !== null;
@@ -323,8 +324,17 @@ export default function PokerTable({
 
   // Scale radii and opponent seats down when there are many players/hands
   const load = n * gameState.handsPerPlayer;
-  const xRadius = isMobile ? (load >= 12 ? 37 : n >= 5 ? 40 : 43) : 41;
-  const yRadius = isMobile ? (load >= 12 ? 20 : n >= 5 ? 23 : 28) : 38;
+  // In mobile landscape the oval is narrower, so use tighter x radii
+  const xRadius = isMobile
+    ? isLandscape
+      ? (load >= 12 ? 26 : n >= 5 ? 29 : 32)
+      : (load >= 12 ? 37 : n >= 5 ? 40 : 43)
+    : 41;
+  const yRadius = isMobile
+    ? isLandscape
+      ? (load >= 12 ? 28 : n >= 5 ? 32 : 36)
+      : (load >= 12 ? 20 : n >= 5 ? 23 : 28)
+    : 38;
   // Shrink opponent seats via CSS scale so they don't overflow the oval
   const opponentScale = isMobile
     ? Math.max(0.60, 1 - Math.max(0, load - 4) * 0.04)
@@ -341,8 +351,10 @@ export default function PokerTable({
     : { small: true as const };
   const commCardW = isMobile ? 26 : 36;
   const commCardH = isMobile ? 38 : 52;
-  // Mobile: wide landscape oval (20% top/bottom, 5% left/right) in the square container
-  const feltInset = isMobile ? "20% 5%" : "10% 16%";
+  // Oval shape: narrower in mobile landscape so side seats don't crowd the center
+  const feltInset = isMobile
+    ? isLandscape ? "8% 20%" : "20% 5%"
+    : "10% 16%";
 
   // Board slots: indices where ranking is null
   const boardSlots = gameState.ranking
@@ -405,7 +417,7 @@ export default function PokerTable({
 
         {/* Board rank slots — unclaimed chips shown on the table */}
         {!isReveal && boardSlots.length > 0 && (
-          <div className="flex gap-1 flex-wrap justify-center mt-0.5">
+          <div className="flex gap-1 flex-wrap justify-center mt-0.5" style={{ maxWidth: isMobile ? "52%" : "70%" }}>
             {boardSlots.map((slotIndex) => {
               const rank = slotIndex + 1;
               const isFirst = rank === 1;

@@ -400,11 +400,11 @@ export default class DingServer implements Party.Server {
         // Target must have a chip in the ranking
         if (this.state.ranking.indexOf(msg.targetHandId) === -1) return;
 
-        // Prevent duplicate request from same requester hand to same target
-        const alreadyExists = this.state.acquireRequests.some(
-          (r) => r.requesterHandId === msg.requesterHandId && r.targetHandId === msg.targetHandId
+        // Replace any existing request from this player for the same target chip
+        // so only their latest requesting hand is active
+        this.state.acquireRequests = this.state.acquireRequests.filter(
+          (r) => !(r.requesterId === player.id && r.targetHandId === msg.targetHandId)
         );
-        if (alreadyExists) return;
 
         this.state.acquireRequests.push({
           requesterId: player.id,
