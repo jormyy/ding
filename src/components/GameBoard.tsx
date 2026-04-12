@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import type { ClientMessage, GameState } from "@/lib/types";
 import PokerTable from "./PokerTable";
 import ReadyButton from "./ReadyButton";
+import { CardFace } from "./CardFace";
+import RankChip from "./RankChip";
 
 interface GameBoardProps {
   gameState: GameState;
@@ -25,13 +27,21 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
   const [confirmingEnd, setConfirmingEnd] = useState(false);
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isPortrait, setIsPortrait] = useState(false);
+  const [isMobileLandscape, setIsMobileLandscape] = useState(false);
 
   useEffect(() => {
-    const mql = window.matchMedia("(orientation: portrait) and (max-width: 767px)");
-    setIsPortrait(mql.matches);
-    const handler = (e: MediaQueryListEvent) => setIsPortrait(e.matches);
-    mql.addEventListener("change", handler);
-    return () => mql.removeEventListener("change", handler);
+    const portrait = window.matchMedia("(orientation: portrait) and (max-width: 767px)");
+    const landscape = window.matchMedia("(orientation: landscape) and (max-height: 500px)");
+    setIsPortrait(portrait.matches);
+    setIsMobileLandscape(landscape.matches);
+    const onPortrait = (e: MediaQueryListEvent) => setIsPortrait(e.matches);
+    const onLandscape = (e: MediaQueryListEvent) => setIsMobileLandscape(e.matches);
+    portrait.addEventListener("change", onPortrait);
+    landscape.addEventListener("change", onLandscape);
+    return () => {
+      portrait.removeEventListener("change", onPortrait);
+      landscape.removeEventListener("change", onLandscape);
+    };
   }, []);
 
   const myPlayer = gameState.players.find((p) => p.id === myId);
@@ -150,6 +160,9 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
   }
 
   const displayState: GameState = { ...gameState, ranking: localRanking };
+  const hasSelection = selectedHandId !== null || selectedSlot !== null;
+  const totalHands = localRanking.length;
+  const myHands = gameState.hands.filter((h) => h.playerId === myId);
 
   const phaseLabels = ["preflop", "flop", "turn", "river"] as const;
 
@@ -160,6 +173,163 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
         <div className="flex flex-col gap-2">
           <p className="text-white text-xl font-black tracking-tight">Rotate your phone</p>
           <p className="text-gray-400 text-sm">This game works best in landscape mode</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Mobile landscape: own hands in a side panel, table shows opponents only ──
+  if (isMobileLandscape) {
+    return (
+      <div className="h-[100dvh] flex flex-col bg-gray-950">
+        {/* Header */}
+        <div className="flex-none border-b border-gray-800 bg-gray-950/90 px-3 py-1.5 flex items-center justify-between">
+          <span className="text-sm font-black text-white tracking-tight">DING</span>
+          <div className="flex items-center gap-1.5">
+            {phaseLabels.map((phase) => (
+              <div
+                key={phase}
+                className={`text-[9px] font-bold uppercase tracking-widest transition-colors ${
+                  gameState.phase === phase ? "text-green-400" : "text-gray-700"
+                }`}
+              >
+                {phase === "preflop" ? "pre" : phase}
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-green-400 text-[10px] font-bold uppercase tracking-widest">
+              {gameState.phase === "preflop" ? "pre-flop" : gameState.phase}
+            </span>
+            {isCreator && (
+              confirmingEnd ? (
+                <button onClick={handleEndGameClick} className="text-[10px] font-black bg-red-600 hover:bg-red-500 text-white px-2 py-0.5 rounded-full">sure?</button>
+              ) : (
+                <button onClick={handleEndGameClick} className="text-[10px] font-bold text-gray-600 hover:text-red-400 transition-colors">end</button>
+              )
+            )}
+          </div>
+        </div>
+
+        {/* Main: table (opponents) + own hands panel */}
+        <div className="flex-1 min-h-0 flex overflow-hidden">
+          {/* Poker table — opponents + board only */}
+          <div className="flex-1 min-w-0 relative">
+            <PokerTable
+              gameState={displayState}
+              myId={myId}
+              hideSelf={true}
+              selectedHandId={selectedHandId}
+              selectedSlot={selectedSlot}
+              onHandClick={handleHandClick}
+              onSlotClick={handleSlotClick}
+              onAcceptAcquire={handleAcceptAcquire}
+            />
+            {/* Ding bell */}
+            <button
+              onClick={onDing}
+              className="absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 transition-all text-lg"
+            >🔔</button>
+          </div>
+
+          {/* Own hands panel */}
+          <div className="flex-none w-44 border-l border-gray-800 bg-gray-950 flex flex-col overflow-hidden">
+            <div className="flex-none px-2 py-1 border-b border-gray-800 flex items-center justify-between">
+              <span className="text-[9px] font-bold text-green-300 uppercase tracking-widest">
+                {myPlayer?.name ?? "You"}
+              </span>
+              {selectedHandId && (
+                <span className="text-[8px] text-yellow-400 font-semibold">tap a slot →</span>
+              )}
+              {selectedSlot !== null && (
+                <span className="text-[8px] text-yellow-400 font-semibold">tap a hand</span>
+              )}
+            </div>
+            <div className="flex-1 overflow-y-auto p-1.5 flex flex-col gap-2">
+              {myHands.map((hand) => {
+                const rank = rankMap.get(hand.id) ?? null;
+                const isSelected = selectedHandId === hand.id;
+                return (
+                  <div key={hand.id} className="flex items-center gap-1.5">
+                    <div
+                      className={[
+                        "flex gap-0.5 rounded p-0.5 transition-all cursor-pointer",
+                        isSelected
+                          ? "ring-2 ring-yellow-400 bg-yellow-400/10"
+                          : "hover:ring-1 hover:ring-green-500/40",
+                      ].join(" ")}
+                      onClick={() => handleHandClick(hand.id)}
+                    >
+                      {hand.cards.map((card, i) => (
+                        <CardFace key={i} card={card} tiny />
+                      ))}
+                    </div>
+                    {rank !== null ? (
+                      <RankChip
+                        rank={rank}
+                        total={totalHands}
+                        isOwn={true}
+                        isSelected={isSelected}
+                        hasSelection={hasSelection}
+                        onClick={() => handleHandClick(hand.id)}
+                        small
+                      />
+                    ) : (
+                      <div
+                        className={[
+                          "w-6 h-6 rounded-full border-2 border-dashed transition-all",
+                          hasSelection
+                            ? "border-yellow-400/60 cursor-pointer hover:border-yellow-400 hover:bg-yellow-400/10"
+                            : "border-gray-700/40",
+                        ].join(" ")}
+                        onClick={hasSelection ? () => handleHandClick(hand.id) : undefined}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Incoming requests in the panel */}
+            {incomingRequests.length > 0 && (
+              <div className="flex-none border-t border-gray-800 p-1.5 flex flex-col gap-1.5 max-h-32 overflow-y-auto">
+                <span className="text-[9px] font-bold text-orange-400 uppercase tracking-widest">
+                  Requests ({incomingRequests.length})
+                </span>
+                {incomingRequests.map((req) => {
+                  const name = gameState.players.find((p) => p.id === req.requesterId)?.name ?? "?";
+                  const chipRank = rankMap.get(req.targetHandId);
+                  return (
+                    <div key={`${req.requesterHandId}-${req.targetHandId}`} className="flex flex-col gap-1">
+                      <p className="text-[10px] text-gray-300 leading-snug">
+                        <span className="font-bold text-white">{name}</span>{" wants #"}<span className="text-orange-300 font-bold">{chipRank}</span>
+                      </p>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleAcceptAcquire(req.requesterHandId, req.targetHandId)}
+                          className="flex-1 bg-green-600 hover:bg-green-500 text-white text-[9px] font-bold py-1 rounded transition-colors"
+                        >Accept</button>
+                        <button
+                          onClick={() => handleRejectAcquire(req.requesterHandId, req.targetHandId)}
+                          className="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-200 text-[9px] font-bold py-1 rounded transition-colors"
+                        >Reject</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom: ready */}
+        <div className="flex-none border-t border-gray-800 bg-gray-950/90 px-4 py-2 flex items-center justify-center">
+          <ReadyButton
+            isReady={isReady}
+            onToggle={handleReady}
+            allPlayersReady={allReady}
+            disabled={hasUnclaimedSlots}
+          />
         </div>
       </div>
     );

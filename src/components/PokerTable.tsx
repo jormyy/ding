@@ -10,6 +10,7 @@ const PHASE_LABELS = ["Pre", "Flop", "Turn", "River"];
 interface PokerTableProps {
   gameState: GameState;
   myId: string;
+  hideSelf?: boolean; // omit the self seat from the oval (used in mobile landscape panel layout)
   // Game phase chip interaction:
   selectedHandId?: string | null;
   selectedSlot?: number | null;
@@ -270,6 +271,7 @@ function Seat({
 export default function PokerTable({
   gameState,
   myId,
+  hideSelf = false,
   selectedHandId = null,
   selectedSlot = null,
   onHandClick = () => {},
@@ -279,19 +281,23 @@ export default function PokerTable({
 }: PokerTableProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(800);
+  const [containerHeight, setContainerHeight] = useState(600);
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     setContainerWidth(el.clientWidth);
+    setContainerHeight(el.clientHeight);
     const ro = new ResizeObserver(([entry]) => {
       setContainerWidth(entry.contentRect.width);
+      setContainerHeight(entry.contentRect.height);
     });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
-  const isMobile = containerWidth < 500;
+  // Treat as mobile if either dimension is small (catches landscape phones too)
+  const isMobile = Math.min(containerWidth, containerHeight) < 500;
 
   const isReveal = gameState.phase === "reveal";
   const hasSelection = selectedHandId !== null || selectedSlot !== null;
@@ -443,6 +449,8 @@ export default function PokerTable({
         const { x, y } = getSeatPosition(i, n, selfIndex, xRadius, yRadius);
         const playerHands = handsByPlayer.get(player.id) ?? [];
         const isMe = player.id === myId;
+
+        if (hideSelf && isMe) return null;
 
         return (
           <div
