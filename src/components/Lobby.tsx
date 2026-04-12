@@ -93,19 +93,26 @@ export default function Lobby({ gameState, myId, code, onSend }: LobbyProps) {
                 Hands per player
               </label>
               <div className="flex gap-2">
-                {[1, 2, 3].map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => handleSetHands(n)}
-                    className={`flex-1 py-2 rounded-lg font-bold text-lg transition-all ${
-                      gameState.handsPerPlayer === n
-                        ? "bg-green-600 text-white"
-                        : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white"
-                    }`}
-                  >
-                    {n}
-                  </button>
-                ))}
+                {[1, 2, 3, 4].map((n) => {
+                  const tooManyPlayers = n === 4 && gameState.players.length > 4;
+                  return (
+                    <button
+                      key={n}
+                      onClick={() => !tooManyPlayers && handleSetHands(n)}
+                      disabled={tooManyPlayers}
+                      title={tooManyPlayers ? "Only available with 4 or fewer players" : undefined}
+                      className={`flex-1 py-2 rounded-lg font-bold text-lg transition-all ${
+                        gameState.handsPerPlayer === n
+                          ? "bg-green-600 text-white"
+                          : tooManyPlayers
+                          ? "bg-gray-800/40 text-gray-700 cursor-not-allowed"
+                          : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

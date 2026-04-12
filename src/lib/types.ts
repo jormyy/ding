@@ -43,7 +43,7 @@ export type Phase =
 export type GameState = {
   phase: Phase;
   players: Player[];
-  handsPerPlayer: number; // 1–3
+  handsPerPlayer: number; // 1–4 (max 4 only when ≤4 players)
   communityCards: Card[]; // grows each phase
   ranking: (string | null)[]; // array of handIds, index 0 = best; null = unclaimed slot on board
   hands: Hand[]; // cards stripped for non-owners (except in reveal after flipped)
