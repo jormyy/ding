@@ -30,6 +30,26 @@ function playDingSound() {
   }
 }
 
+function playFuckoffSound() {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sawtooth";
+    // descending: ~220Hz A3 -> ~110Hz A2
+    osc.frequency.setValueAtTime(220, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.5);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.55);
+  } catch {
+    // ignore audio errors (e.g. autoplay policy)
+  }
+}
+
 export default function RoomPage() {
   const params = useParams();
   const code = (params.code as string).toUpperCase();
@@ -40,6 +60,7 @@ export default function RoomPage() {
   const [myId, setMyId] = useState<string | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [dingNotifications, setDingNotifications] = useState<{ id: string; playerName: string }[]>([]);
+  const [fuckoffNotifications, setFuckoffNotifications] = useState<{ id: string; playerName: string }[]>([]);
 
   const socketRef = useRef<PartySocket | null>(null);
 
@@ -98,6 +119,13 @@ export default function RoomPage() {
           setTimeout(() => {
             setDingNotifications((prev) => prev.filter((n) => n.id !== id));
           }, 2500);
+        } else if (msg.type === "fuckoff") {
+          playFuckoffSound();
+          const id = crypto.randomUUID();
+          setFuckoffNotifications((prev) => [...prev, { id, playerName: msg.playerName }]);
+          setTimeout(() => {
+            setFuckoffNotifications((prev) => prev.filter((n) => n.id !== id));
+          }, 2500);
         } else if (msg.type === "error") {
           setConnectionError(msg.message);
         }
@@ -123,6 +151,10 @@ export default function RoomPage() {
 
   function sendDing() {
     sendMessage({ type: "ding" });
+  }
+
+  function sendFuckoff() {
+    sendMessage({ type: "fuckoff" });
   }
 
   function handleNameSubmit(name: string) {
@@ -190,6 +222,8 @@ export default function RoomPage() {
         onSend={sendMessage}
         onDing={sendDing}
         dingNotifications={dingNotifications}
+        onFuckoff={sendFuckoff}
+        fuckoffNotifications={fuckoffNotifications}
       />
     );
   }
@@ -201,6 +235,8 @@ export default function RoomPage() {
       onSend={sendMessage}
       onDing={sendDing}
       dingNotifications={dingNotifications}
+      onFuckoff={sendFuckoff}
+      fuckoffNotifications={fuckoffNotifications}
     />
   );
 }

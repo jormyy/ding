@@ -52,13 +52,25 @@ export type GameState = {
   trueRanks: Record<string, number> | null; // handId -> true rank (ties share same number), null until reveal
   score: number | null; // inversion count, null until all flipped
   rankHistory: Record<string, (number | null)[]>; // handId -> [rank at end of preflop, flop, turn, river]
-  acquireRequests: AcquireRequest[]; // pending chip acquisition requests
+  acquireRequests: AcquireRequest[]; // pending chip move proposals (acquire/offer/swap)
+  chatMessages: ChatMessage[]; // persistent room chat history
 };
 
+export type AcquireRequestKind = "acquire" | "offer" | "swap";
+
 export type AcquireRequest = {
-  requesterId: string;     // player who wants the chip
-  requesterHandId: string; // the hand that will receive the chip
-  targetHandId: string;    // the hand whose chip is being requested
+  kind: AcquireRequestKind;
+  initiatorId: string;       // player who started the proposal
+  initiatorHandId: string;   // the initiator's hand involved
+  recipientHandId: string;   // the other player's hand involved (recipient accepts/rejects)
+};
+
+export type ChatMessage = {
+  id: string;
+  playerId: string;
+  playerName: string;
+  text: string;
+  ts: number;
 };
 
 export type ClientMessage =
@@ -67,19 +79,23 @@ export type ClientMessage =
   | { type: "start" } // lobby only, creator only
   | { type: "move"; handId: string; toIndex: number } // preflop→river, own hands only
   | { type: "swap"; handIdA: string; handIdB: string } // swap own hands' positions (handsPerPlayer > 1)
-  | { type: "requestAcquire"; requesterHandId: string; targetHandId: string } // request another player's chip
-  | { type: "acceptAcquire"; requesterHandId: string; targetHandId: string } // accept an acquire request
-  | { type: "rejectAcquire"; requesterHandId: string; targetHandId: string } // reject an acquire request
+  | { type: "transferOwnChip"; fromHandId: string; toHandId: string } // atomic chip transfer between two of your own hands
+  | { type: "proposeChipMove"; initiatorHandId: string; recipientHandId: string } // server decides kind (acquire/offer/swap)
+  | { type: "acceptChipMove"; initiatorHandId: string; recipientHandId: string }
+  | { type: "rejectChipMove"; initiatorHandId: string; recipientHandId: string }
   | { type: "ready"; ready: boolean } // preflop→river
   | { type: "flip"; handId: string } // reveal phase, own hand only
   | { type: "unclaim"; handId: string } // return own chip back to the board
   | { type: "playAgain" } // reveal phase, creator only
   | { type: "endGame" } // any game phase, creator only — returns to lobby
-  | { type: "ding" }; // ring the bell
+  | { type: "ding" } // ring the bell
+  | { type: "fuckoff" } // broadcast fuck-off reaction
+  | { type: "chat"; text: string }; // room chat message
 
 export type ServerMessage =
   | { type: "state"; state: GameState }
   | { type: "welcome"; playerId: string }
   | { type: "ended"; reason: "player_disconnected"; playerName: string }
   | { type: "ding"; playerName: string }
+  | { type: "fuckoff"; playerName: string }
   | { type: "error"; message: string };

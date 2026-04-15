@@ -1,7 +1,9 @@
 import type * as Party from "partykit/server";
 import type {
   AcquireRequest,
+  AcquireRequestKind,
   Card,
+  ChatMessage,
   ClientMessage,
   GameState,
   Hand,
@@ -37,6 +39,7 @@ function createInitialState(): ServerGameState {
     rankHistory: {},
     allCommunityCards: [],
     acquireRequests: [],
+    chatMessages: [],
   };
 }
 
@@ -193,6 +196,7 @@ function broadcastStateTo(
       score: state.score,
       rankHistory: state.rankHistory,
       acquireRequests: state.acquireRequests,
+      chatMessages: state.chatMessages,
     };
     const msg: ServerMessage = { type: "state", state: clientState };
     conn.send(JSON.stringify(msg));
@@ -202,6 +206,7 @@ function broadcastStateTo(
 export default class DingServer implements Party.Server {
   private state: ServerGameState;
   private connections: Map<string, Party.Connection> = new Map();
+  private lastChatAt: Map<string, number> = new Map();
 
   constructor(readonly room: Party.Room) {
     this.state = createInitialState();
@@ -386,102 +391,187 @@ export default class DingServer implements Party.Server {
         break;
       }
 
-      case "requestAcquire": {
+      case "proposeChipMove": {
         const gamePhases: Phase[] = ["preflop", "flop", "turn", "river"];
         if (!gamePhases.includes(this.state.phase)) return;
 
-        const requesterHand = this.state.hands.find((h) => h.id === msg.requesterHandId);
-        const targetHand = this.state.hands.find((h) => h.id === msg.targetHandId);
-        if (!requesterHand || !targetHand) return;
+        const initiatorHand = this.state.hands.find((h) => h.id === msg.initiatorHandId);
+        const recipientHand = this.state.hands.find((h) => h.id === msg.recipientHandId);
+        if (!initiatorHand || !recipientHand) return;
 
-        // Sender must own the requester hand
-        if (!player || requesterHand.playerId !== player.id) return;
+        // Sender must own the initiator hand
+        if (!player || initiatorHand.playerId !== player.id) return;
 
-        // Can't request your own chip
-        if (targetHand.playerId === player.id) return;
+        // Recipient hand must belong to a different player
+        if (recipientHand.playerId === player.id) return;
 
-        // Target must have a chip in the ranking
-        if (this.state.ranking.indexOf(msg.targetHandId) === -1) return;
+        const idxInitiator = this.state.ranking.indexOf(msg.initiatorHandId);
+        const idxRecipient = this.state.ranking.indexOf(msg.recipientHandId);
 
-        // Only one active request per target chip — first come first served
-        const takenByOther = this.state.acquireRequests.some(
-          (r) => r.targetHandId === msg.targetHandId && r.requesterId !== player.id
+        // Derive kind from current state
+        let kind: AcquireRequestKind;
+        if (idxInitiator === -1 && idxRecipient !== -1) {
+          kind = "acquire";
+        } else if (idxInitiator !== -1 && idxRecipient === -1) {
+          kind = "offer";
+        } else if (idxInitiator !== -1 && idxRecipient !== -1) {
+          kind = "swap";
+        } else {
+          // both unranked — nothing to move
+          return;
+        }
+
+        // Only one active proposal per recipient hand OR initiator hand — first come, first served
+        const collidesOnRecipient = this.state.acquireRequests.some(
+          (r) =>
+            r.recipientHandId === msg.recipientHandId &&
+            r.initiatorId !== player.id
         );
-        if (takenByOther) return;
+        if (collidesOnRecipient) return;
 
-        // Replace any existing request from this player for the same target chip
-        // so only their latest requesting hand is active
+        // Remove any existing proposal from this player touching this (initiator, recipient) pair
         this.state.acquireRequests = this.state.acquireRequests.filter(
-          (r) => !(r.requesterId === player.id && r.targetHandId === msg.targetHandId)
+          (r) =>
+            !(
+              r.initiatorId === player.id &&
+              r.initiatorHandId === msg.initiatorHandId &&
+              r.recipientHandId === msg.recipientHandId
+            )
         );
 
         this.state.acquireRequests.push({
-          requesterId: player.id,
-          requesterHandId: msg.requesterHandId,
-          targetHandId: msg.targetHandId,
+          kind,
+          initiatorId: player.id,
+          initiatorHandId: msg.initiatorHandId,
+          recipientHandId: msg.recipientHandId,
         });
 
         broadcastStateTo(this.room, this.state, this.connections);
         break;
       }
 
-      case "acceptAcquire": {
+      case "acceptChipMove": {
         const gamePhases: Phase[] = ["preflop", "flop", "turn", "river"];
         if (!gamePhases.includes(this.state.phase)) return;
 
-        const targetHand = this.state.hands.find((h) => h.id === msg.targetHandId);
-        if (!targetHand) return;
+        const recipientHand = this.state.hands.find((h) => h.id === msg.recipientHandId);
+        const initiatorHand = this.state.hands.find((h) => h.id === msg.initiatorHandId);
+        if (!recipientHand || !initiatorHand) return;
 
-        // Only the owner of the targeted hand can accept
-        if (!player || targetHand.playerId !== player.id) return;
+        // Only the owner of the recipient hand can accept
+        if (!player || recipientHand.playerId !== player.id) return;
 
-        // Request must exist
+        // Proposal must exist
         const reqIdx = this.state.acquireRequests.findIndex(
-          (r) => r.requesterHandId === msg.requesterHandId && r.targetHandId === msg.targetHandId
+          (r) =>
+            r.initiatorHandId === msg.initiatorHandId &&
+            r.recipientHandId === msg.recipientHandId
         );
         if (reqIdx === -1) return;
 
-        // Target must still have a chip
-        const idxTarget = this.state.ranking.indexOf(msg.targetHandId);
-        if (idxTarget === -1) return;
+        const proposal = this.state.acquireRequests[reqIdx];
 
-        // Capture requester's current position BEFORE mutating the array
-        const idxRequester = this.state.ranking.indexOf(msg.requesterHandId);
+        // Re-derive kind from current state and re-validate
+        const idxInitiator = this.state.ranking.indexOf(msg.initiatorHandId);
+        const idxRecipient = this.state.ranking.indexOf(msg.recipientHandId);
 
-        // Move requester's hand into target's rank slot
-        this.state.ranking[idxTarget] = msg.requesterHandId;
-
-        // Requester's old slot (if any) goes back to the board
-        if (idxRequester !== -1) {
-          this.state.ranking[idxRequester] = null;
+        let currentKind: AcquireRequestKind | null;
+        if (idxInitiator === -1 && idxRecipient !== -1) {
+          currentKind = "acquire";
+        } else if (idxInitiator !== -1 && idxRecipient === -1) {
+          currentKind = "offer";
+        } else if (idxInitiator !== -1 && idxRecipient !== -1) {
+          currentKind = "swap";
+        } else {
+          currentKind = null;
         }
 
-        // Clear all pending requests for this target hand
+        // If the proposal no longer matches reality, silently drop it
+        if (currentKind === null || currentKind !== proposal.kind) {
+          this.state.acquireRequests.splice(reqIdx, 1);
+          broadcastStateTo(this.room, this.state, this.connections);
+          return;
+        }
+
+        if (currentKind === "acquire") {
+          // initiator unranked, recipient ranked -> initiator takes recipient's slot
+          this.state.ranking[idxRecipient] = msg.initiatorHandId;
+          if (idxInitiator !== -1) this.state.ranking[idxInitiator] = null;
+        } else if (currentKind === "offer") {
+          // initiator ranked, recipient unranked -> recipient takes initiator's slot
+          this.state.ranking[idxInitiator] = msg.recipientHandId;
+        } else {
+          // swap: both ranked
+          this.state.ranking[idxInitiator] = msg.recipientHandId;
+          this.state.ranking[idxRecipient] = msg.initiatorHandId;
+        }
+
+        // Clear pending proposals touching either hand
         this.state.acquireRequests = this.state.acquireRequests.filter(
-          (r) => r.targetHandId !== msg.targetHandId
+          (r) =>
+            r.initiatorHandId !== msg.initiatorHandId &&
+            r.initiatorHandId !== msg.recipientHandId &&
+            r.recipientHandId !== msg.initiatorHandId &&
+            r.recipientHandId !== msg.recipientHandId
         );
-        // Unready both players involved
+
+        // Un-ready both players involved
         player.ready = false;
-        const requesterPlayer = this.state.players.find((p) =>
-          this.state.hands.some((h) => h.id === msg.requesterHandId && h.playerId === p.id)
+        const initiatorPlayer = this.state.players.find(
+          (p) => p.id === proposal.initiatorId
         );
-        if (requesterPlayer) requesterPlayer.ready = false;
+        if (initiatorPlayer) initiatorPlayer.ready = false;
 
         broadcastStateTo(this.room, this.state, this.connections);
         break;
       }
 
-      case "rejectAcquire": {
-        const targetHand = this.state.hands.find((h) => h.id === msg.targetHandId);
-        if (!targetHand) return;
+      case "rejectChipMove": {
+        const recipientHand = this.state.hands.find((h) => h.id === msg.recipientHandId);
+        if (!recipientHand) return;
 
-        // Only the owner of the targeted hand can reject
-        if (!player || targetHand.playerId !== player.id) return;
+        // Only the owner of the recipient hand can reject
+        if (!player || recipientHand.playerId !== player.id) return;
 
         this.state.acquireRequests = this.state.acquireRequests.filter(
-          (r) => !(r.requesterHandId === msg.requesterHandId && r.targetHandId === msg.targetHandId)
+          (r) =>
+            !(
+              r.initiatorHandId === msg.initiatorHandId &&
+              r.recipientHandId === msg.recipientHandId
+            )
         );
 
+        broadcastStateTo(this.room, this.state, this.connections);
+        break;
+      }
+
+      case "transferOwnChip": {
+        const gamePhases: Phase[] = ["preflop", "flop", "turn", "river"];
+        if (!gamePhases.includes(this.state.phase)) return;
+
+        const fromHand = this.state.hands.find((h) => h.id === msg.fromHandId);
+        const toHand = this.state.hands.find((h) => h.id === msg.toHandId);
+        if (!fromHand || !toHand) return;
+        if (!player || fromHand.playerId !== player.id || toHand.playerId !== player.id) return;
+        if (msg.fromHandId === msg.toHandId) return;
+
+        const idxFrom = this.state.ranking.indexOf(msg.fromHandId);
+        const idxTo = this.state.ranking.indexOf(msg.toHandId);
+        // fromHand must be ranked, toHand must NOT be ranked
+        if (idxFrom === -1 || idxTo !== -1) return;
+
+        this.state.ranking[idxFrom] = msg.toHandId;
+
+        // Cancel pending proposals touching either hand
+        this.state.acquireRequests = this.state.acquireRequests.filter(
+          (r) =>
+            r.initiatorHandId !== msg.fromHandId &&
+            r.initiatorHandId !== msg.toHandId &&
+            r.recipientHandId !== msg.fromHandId &&
+            r.recipientHandId !== msg.toHandId
+        );
+
+        player.ready = false;
         broadcastStateTo(this.room, this.state, this.connections);
         break;
       }
@@ -497,9 +587,9 @@ export default class DingServer implements Party.Server {
         if (idx === -1) return;
 
         this.state.ranking[idx] = null;
-        // Cancel any pending requests involving this hand
+        // Cancel any pending proposals involving this hand
         this.state.acquireRequests = this.state.acquireRequests.filter(
-          (r) => r.requesterHandId !== msg.handId && r.targetHandId !== msg.handId
+          (r) => r.initiatorHandId !== msg.handId && r.recipientHandId !== msg.handId
         );
         player.ready = false;
 
@@ -519,16 +609,40 @@ export default class DingServer implements Party.Server {
           Math.min(msg.toIndex, this.state.ranking.length - 1)
         );
 
-        // Only move to unclaimed (null) slots
-        if (this.state.ranking[toIndex] !== null) return;
-
-        // Remove from current slot if already claimed
+        const occupantId = this.state.ranking[toIndex];
         const currentIndex = this.state.ranking.indexOf(msg.handId);
-        if (currentIndex !== -1) {
-          this.state.ranking[currentIndex] = null;
+
+        if (occupantId === null) {
+          // Empty slot — move in, vacate old slot
+          if (currentIndex !== -1) {
+            this.state.ranking[currentIndex] = null;
+          }
+          this.state.ranking[toIndex] = msg.handId;
+        } else if (occupantId === msg.handId) {
+          // Moving onto own slot — no-op
+          return;
+        } else {
+          const occupantHand = this.state.hands.find((h) => h.id === occupantId);
+          if (!occupantHand) return;
+          if (occupantHand.playerId === player.id) {
+            // Own-hand occupant: atomic swap (or transfer if mover wasn't ranked)
+            if (currentIndex !== -1) {
+              this.state.ranking[currentIndex] = occupantId;
+            }
+            this.state.ranking[toIndex] = msg.handId;
+          } else {
+            // Teammate occupant — reject (client should use proposeChipMove)
+            return;
+          }
         }
 
-        this.state.ranking[toIndex] = msg.handId;
+        // Cancel pending proposals involving this hand (if any mutations happened)
+        this.state.acquireRequests = this.state.acquireRequests.filter(
+          (r) =>
+            r.initiatorHandId !== msg.handId &&
+            r.recipientHandId !== msg.handId
+        );
+
         player.ready = false;
 
         broadcastStateTo(this.room, this.state, this.connections);
@@ -646,18 +760,55 @@ export default class DingServer implements Party.Server {
         break;
       }
 
+      case "fuckoff": {
+        if (!player) return;
+        const foMsg: ServerMessage = { type: "fuckoff", playerName: player.name };
+        this.room.broadcast(JSON.stringify(foMsg));
+        break;
+      }
+
+      case "chat": {
+        if (!player) return;
+        const text = (msg.text ?? "").trim().slice(0, 200);
+        if (!text) return;
+
+        // Per-player rate limit: 1 msg/sec
+        const now = Date.now();
+        const last = this.lastChatAt.get(player.id) ?? 0;
+        if (now - last < 1000) return;
+        this.lastChatAt.set(player.id, now);
+
+        const chatMsg: ChatMessage = {
+          id: crypto.randomUUID(),
+          playerId: player.id,
+          playerName: player.name,
+          text,
+          ts: now,
+        };
+        this.state.chatMessages.push(chatMsg);
+        // Cap ring buffer at 100
+        if (this.state.chatMessages.length > 100) {
+          this.state.chatMessages = this.state.chatMessages.slice(-100);
+        }
+
+        broadcastStateTo(this.room, this.state, this.connections);
+        break;
+      }
+
       case "playAgain": {
         if (this.state.phase !== "reveal") return;
         if (!player?.isCreator) return;
 
-        // Keep players, reset everything else
+        // Keep players + chat history, reset everything else
         const players = this.state.players.map((p) => ({
           ...p,
           ready: false,
         }));
+        const chat = this.state.chatMessages;
 
         this.state = createInitialState();
         this.state.players = players;
+        this.state.chatMessages = chat;
 
         broadcastStateTo(this.room, this.state, this.connections);
         break;
@@ -671,9 +822,11 @@ export default class DingServer implements Party.Server {
           ...p,
           ready: false,
         }));
+        const chat = this.state.chatMessages;
 
         this.state = createInitialState();
         this.state.players = players;
+        this.state.chatMessages = chat;
 
         broadcastStateTo(this.room, this.state, this.connections);
         break;

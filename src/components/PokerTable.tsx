@@ -17,8 +17,8 @@ interface PokerTableProps {
   selectedSlot?: number | null;
   onHandClick?: (handId: string) => void;
   onSlotClick?: (slotIndex: number) => void;
-  // Acquire requests:
-  onAcceptAcquire?: (requesterHandId: string, targetHandId: string) => void;
+  // Chip move proposals:
+  onAcceptAcquire?: (initiatorHandId: string, recipientHandId: string) => void;
   // Reveal phase:
   onFlip?: (handId: string) => void;
 }
@@ -58,7 +58,7 @@ interface SeatProps {
   rankHistory: Record<string, (number | null)[]>;
   acquireRequests: AcquireRequest[];
   players: Player[];
-  onAcceptAcquire: (requesterHandId: string, targetHandId: string) => void;
+  onAcceptAcquire: (initiatorHandId: string, recipientHandId: string) => void;
 }
 
 function Seat({
@@ -198,7 +198,9 @@ function Seat({
 
               {/* Rank chip (current) + history chips */}
               {!isReveal && (() => {
-                const handRequests = acquireRequests.filter((r) => r.targetHandId === hand.id);
+                const handRequests = acquireRequests.filter(
+                  (r) => r.initiatorHandId === hand.id || r.recipientHandId === hand.id
+                );
                 return (
                   <div className="flex flex-col items-center gap-0.5">
                     {/* Current rank chip with optional request badge */}
@@ -216,13 +218,36 @@ function Seat({
                         />
                         {handRequests.length > 0 && (
                           <div className="absolute -top-1.5 -right-1.5 min-w-[13px] h-[13px] bg-orange-500 rounded-full text-[7px] font-black text-white flex items-center justify-center px-0.5 pointer-events-none">
-                            {/* Show the requester's current rank → target rank */}
                             {(() => {
                               const req = handRequests[0];
-                              const fromRank = rankMap.get(req.requesterHandId);
-                              return fromRank ? `${fromRank}→${rank}` : rank;
+                              const initRank = rankMap.get(req.initiatorHandId);
+                              const recRank = rankMap.get(req.recipientHandId);
+                              if (req.kind === "swap" && initRank && recRank) {
+                                return `${initRank}↔${recRank}`;
+                              }
+                              if (req.kind === "offer" && initRank) {
+                                return `${initRank}→`;
+                              }
+                              if (req.kind === "acquire" && recRank) {
+                                return `→${recRank}`;
+                              }
+                              return "!";
                             })()}
                           </div>
+                        )}
+                        {/* Return to board icon — shown when my hand is selected */}
+                        {isMe && isSelected && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onUnclaim(hand.id);
+                            }}
+                            title="Return to board"
+                            aria-label="Return chip to the board"
+                            className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-gray-800 hover:bg-gray-700 border border-gray-500 text-[9px] text-white font-bold flex items-center justify-center shadow"
+                          >
+                            ↺
+                          </button>
                         )}
                       </div>
                     ) : (
