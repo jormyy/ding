@@ -172,15 +172,67 @@ function ScorePanel({ gameState, isCreator, onPlayAgain }: ScorePanelProps) {
     return `${name} (${idx + 1})`;
   }
 
-  function isCorrectPlacement(handId: string, playerIndex: number): boolean {
-    if (!trueRanks || !gameState.trueRanking) return false;
+  function getTieGroup(handId: string): [number, number] | null {
+    if (!trueRanks || !gameState.trueRanking) return null;
     const myTrueRank = trueRanks[handId];
     // Find where this tie group starts in the true ranking (0-indexed position)
     const firstPos = gameState.trueRanking.findIndex((id) => trueRanks[id] === myTrueRank);
     const tieGroupSize = Object.values(trueRanks).filter((r) => r === myTrueRank).length;
+    return [firstPos, tieGroupSize];
+  }
+
+  function isCorrectPlacement(handId: string, playerIndex: number): boolean {
+    const group = getTieGroup(handId);
+    if (!group) return false;
+    const [firstPos, tieGroupSize] = group;
     const playerRank = playerIndex + 1;
     return playerRank >= firstPos + 1 && playerRank <= firstPos + tieGroupSize;
   }
+
+  // Per-player total displacement: sum over each of the player's claimed hands
+  // of the distance from the claimed slot to the nearest edge of that hand's
+  // true tie-group (0 when placed inside the group).
+  const displacementByPlayer = new Map<string, number>();
+  if (trueRanks && gameState.trueRanking) {
+    gameState.ranking.forEach((handId, i) => {
+      if (!handId) return;
+      const hand = handMap.get(handId);
+      if (!hand) return;
+      const group = getTieGroup(handId);
+      if (!group) return;
+      const [firstPos, tieGroupSize] = group;
+      const playerRank = i + 1;
+      let dist = 0;
+      if (playerRank < firstPos + 1) {
+        dist = firstPos + 1 - playerRank;
+      } else if (playerRank > firstPos + tieGroupSize) {
+        dist = playerRank - (firstPos + tieGroupSize);
+      }
+      displacementByPlayer.set(
+        hand.playerId,
+        (displacementByPlayer.get(hand.playerId) ?? 0) + dist
+      );
+    });
+  }
+
+  const leaderboard = Array.from(displacementByPlayer.entries())
+    .map(([playerId, total]) => ({
+      playerId,
+      name: gameState.players.find((p) => p.id === playerId)?.name ?? "?",
+      total,
+    }))
+    .sort((a, b) => a.total - b.total);
+
+  // Competition ranking: ties share a rank, next slot skips.
+  const ranked = leaderboard.map((entry) => ({
+    ...entry,
+    rank: leaderboard.findIndex((e) => e.total === entry.total) + 1,
+  }));
+
+  const minTotal = leaderboard.length > 0 ? leaderboard[0].total : 0;
+  const maxTotal =
+    leaderboard.length > 0 ? leaderboard[leaderboard.length - 1].total : 0;
+  const allPerfectLeaderboard = leaderboard.length > 0 && maxTotal === 0;
 
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 shadow-2xl w-full max-w-sm max-h-[88dvh] overflow-y-auto">
@@ -255,6 +307,43 @@ function ScorePanel({ gameState, isCreator, onPlayAgain }: ScorePanelProps) {
                 );
               })}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Per-player leaderboard */}
+      {leaderboard.length > 0 && (
+        <div className="mb-4">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
+            Player Accuracy
+          </div>
+          <div className="space-y-1">
+            {ranked.map((entry) => {
+              const isBest = entry.total === minTotal;
+              const isWorst = entry.total === maxTotal;
+              let rowClass = "bg-gray-800/60 border border-gray-700/40";
+              if (allPerfectLeaderboard) {
+                rowClass = "bg-green-900/30 border border-green-700/40";
+              } else if (isBest && !isWorst) {
+                rowClass = "bg-green-900/30 border border-green-700/40";
+              } else if (isWorst && !isBest) {
+                rowClass = "bg-red-900/20 border border-red-800/30";
+              }
+              return (
+                <div
+                  key={entry.playerId}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${rowClass}`}
+                >
+                  <span className="text-gray-500 w-4">{entry.rank}.</span>
+                  <span className="text-white font-medium truncate flex-1">
+                    {entry.name}
+                  </span>
+                  <span className="text-gray-400 font-medium tabular-nums">
+                    {entry.total}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
