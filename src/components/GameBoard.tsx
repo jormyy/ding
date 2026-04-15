@@ -170,14 +170,29 @@ export default function GameBoard({ gameState, myId, onSend, onDing, dingNotific
       return;
     }
 
-    // Clicking own different hand — swap positions (own-to-own, both must be claimed)
+    // Clicking own different hand — swap if both ranked, or replace if one is unranked
     const idxA = localRanking.indexOf(selectedHandId);
     if (idxA !== -1 && currentSlotIdx !== -1) {
+      // Both ranked → swap
       const newRanking = [...localRanking];
       newRanking[idxA] = handId;
       newRanking[currentSlotIdx] = selectedHandId;
       setLocalRanking(newRanking);
       onSend({ type: "swap", handIdA: selectedHandId, handIdB: handId });
+    } else if (idxA !== -1 && currentSlotIdx === -1) {
+      // Selected hand is ranked, clicked hand is not → move clicked hand into selected hand's slot
+      const newRanking = [...localRanking];
+      newRanking[idxA] = handId;
+      setLocalRanking(newRanking);
+      onSend({ type: "unclaim", handId: selectedHandId });
+      onSend({ type: "move", handId, toIndex: idxA });
+    } else if (idxA === -1 && currentSlotIdx !== -1) {
+      // Selected hand is unranked, clicked hand is ranked → move selected hand into clicked hand's slot
+      const newRanking = [...localRanking];
+      newRanking[currentSlotIdx] = selectedHandId;
+      setLocalRanking(newRanking);
+      onSend({ type: "unclaim", handId });
+      onSend({ type: "move", handId: selectedHandId, toIndex: currentSlotIdx });
     }
     setSelectedHandId(null);
   }
