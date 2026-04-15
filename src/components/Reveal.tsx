@@ -82,10 +82,10 @@ export default function Reveal({
               </button>
               <button
                 onClick={onFuckoff}
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 transition-all text-xl select-none"
+                className="h-9 px-3 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 transition-all text-[11px] font-black uppercase tracking-wider text-white select-none"
                 aria-label="Fuck off"
               >
-                🖕
+                fuck off
               </button>
               {/* Mobile-only chat toggle */}
               <button
