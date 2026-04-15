@@ -32,21 +32,15 @@ function playDingSound() {
 
 function playFuckoffSound() {
   try {
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = "sawtooth";
-    // descending: ~220Hz A3 -> ~110Hz A2
-    osc.frequency.setValueAtTime(220, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.5);
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.55);
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance("fuck off");
+    utter.rate = 1.1;
+    utter.pitch = 0.9;
+    utter.volume = 1;
+    window.speechSynthesis.speak(utter);
   } catch {
-    // ignore audio errors (e.g. autoplay policy)
+    // ignore audio errors (e.g. autoplay policy, unsupported browser)
   }
 }
 

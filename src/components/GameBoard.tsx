@@ -353,7 +353,7 @@ export default function GameBoard({
           />
           <div className="absolute top-2 right-2 z-20 flex gap-1">
             <button onClick={onDing} className="w-8 h-8 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 text-lg" aria-label="Ding">🔔</button>
-            <button onClick={onFuckoff} className="h-8 px-2 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 text-[10px] font-black uppercase tracking-wider text-white" aria-label="Fuck off">fuck off</button>
+            <button onClick={onFuckoff} className="w-8 h-8 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 text-lg" aria-label="Fuck off">🖕</button>
             <button onClick={() => setMobileChatOpen((v) => !v)} className="w-8 h-8 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 text-lg" aria-label="Chat">💬</button>
           </div>
           {mobileChatOpen && (
@@ -507,10 +507,10 @@ export default function GameBoard({
               </button>
               <button
                 onClick={onFuckoff}
-                className="h-9 px-3 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 transition-all text-[11px] font-black uppercase tracking-wider text-white select-none"
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 transition-all text-xl select-none"
                 aria-label="Fuck off"
               >
-                fuck off
+                🖕
               </button>
               <div className="flex flex-col items-end gap-1 pointer-events-none">
                 {dingNotifications.map((n) => (
