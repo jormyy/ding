@@ -142,9 +142,9 @@ function Seat({
         </div>
       )}
 
-      {/* Hands — always stacked horizontally */}
-      <div className={tightPadding ? "flex flex-row gap-0.5" : "flex flex-row gap-1"}>
-        {hands.map((hand, handIdx) => {
+      {/* Hands */}
+      {(() => {
+        const renderHand = (hand: Hand, handIdx: number) => {
           const rank = rankMap.get(hand.id) ?? null;
           const isSelected = selectedHandId === hand.id;
           const isDropTarget = hasSelection && !isSelected;
@@ -153,14 +153,9 @@ function Seat({
           const isClickableArea = !isReveal && (isMe || hasSelection);
 
           return (
-            <div
-              key={hand.id}
-              className="flex flex-col items-center gap-1"
-            >
+            <div key={hand.id} className="flex flex-col items-center gap-1">
               {handsPerPlayer > 1 && !isMobile && (
-                <div className="text-[9px] text-gray-600 font-medium">
-                  #{handIdx + 1}
-                </div>
+                <div className="text-[9px] text-gray-600 font-medium">#{handIdx + 1}</div>
               )}
 
               {/* Card pair — clickable as drop target */}
@@ -185,14 +180,10 @@ function Seat({
               >
                 {isReveal
                   ? hand.flipped && hand.cards.length > 0
-                    ? hand.cards.map((card, i) => (
-                        <CardFace key={i} card={card} {...cardProps} />
-                      ))
+                    ? hand.cards.map((card, i) => <CardFace key={i} card={card} {...cardProps} />)
                     : [0, 1].map((i) => <CardBack key={i} {...cardProps} />)
                   : isMe && hand.cards.length > 0
-                  ? hand.cards.map((card, i) => (
-                      <CardFace key={i} card={card} {...cardProps} />
-                    ))
+                  ? hand.cards.map((card, i) => <CardFace key={i} card={card} {...cardProps} />)
                   : [0, 1].map((i) => <CardBack key={i} {...cardProps} />)}
               </div>
 
@@ -203,7 +194,6 @@ function Seat({
                 );
                 return (
                   <div className="flex flex-col items-center gap-0.5">
-                    {/* Current rank chip with optional request badge */}
                     {rank !== null ? (
                       <div className="relative">
                         <RankChip
@@ -222,36 +212,23 @@ function Seat({
                               const req = handRequests[0];
                               const initRank = rankMap.get(req.initiatorHandId);
                               const recRank = rankMap.get(req.recipientHandId);
-                              if (req.kind === "swap" && initRank && recRank) {
-                                return `${initRank}↔${recRank}`;
-                              }
-                              if (req.kind === "offer" && initRank) {
-                                return `${initRank}→`;
-                              }
-                              if (req.kind === "acquire" && recRank) {
-                                return `→${recRank}`;
-                              }
+                              if (req.kind === "swap" && initRank && recRank) return `${initRank}↔${recRank}`;
+                              if (req.kind === "offer" && initRank) return `${initRank}→`;
+                              if (req.kind === "acquire" && recRank) return `→${recRank}`;
                               return "!";
                             })()}
                           </div>
                         )}
-                        {/* Return to board icon — shown when my hand is selected */}
                         {isMe && isSelected && (
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onUnclaim(hand.id);
-                            }}
+                            onClick={(e) => { e.stopPropagation(); onUnclaim(hand.id); }}
                             title="Return to board"
                             aria-label="Return chip to the board"
                             className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-gray-800 hover:bg-gray-700 border border-gray-500 text-[9px] text-white font-bold flex items-center justify-center shadow"
-                          >
-                            ↺
-                          </button>
+                          >↺</button>
                         )}
                       </div>
                     ) : (
-                      /* Empty placeholder when unclaimed */
                       <div
                         className={[
                           "rounded-full border-2 border-dashed flex items-center justify-center transition-all",
@@ -263,17 +240,10 @@ function Seat({
                         onClick={hasSelection && isMe ? () => onHandClick(hand.id) : undefined}
                       />
                     )}
-
-                    {/* Phase history chips */}
                     {history.length > 0 && (
                       <div className="flex gap-0.5 mt-0.5">
                         {history.map((r, phaseIdx) => (
-                          <HistoryChip
-                            key={phaseIdx}
-                            rank={r}
-                            total={totalHands}
-                            phaseLabel={PHASE_LABELS[phaseIdx] ?? ""}
-                          />
+                          <HistoryChip key={phaseIdx} rank={r} total={totalHands} phaseLabel={PHASE_LABELS[phaseIdx] ?? ""} />
                         ))}
                       </div>
                     )}
@@ -285,19 +255,34 @@ function Seat({
               {isReveal && history.length > 0 && (
                 <div className="flex gap-0.5 mt-0.5">
                   {history.map((r, phaseIdx) => (
-                    <HistoryChip
-                      key={phaseIdx}
-                      rank={r}
-                      total={totalHands}
-                      phaseLabel={PHASE_LABELS[phaseIdx] ?? ""}
-                    />
+                    <HistoryChip key={phaseIdx} rank={r} total={totalHands} phaseLabel={PHASE_LABELS[phaseIdx] ?? ""} />
                   ))}
                 </div>
               )}
             </div>
           );
-        })}
-      </div>
+        };
+
+        // Opponents with 3+ hands use a 2-row grid; everyone else is a single row
+        const useDoubleRow = !isMe && hands.length >= 3;
+        if (useDoubleRow) {
+          const split = Math.ceil(hands.length / 2);
+          const topRow = hands.slice(0, split);
+          const bottomRow = hands.slice(split);
+          const gap = tightPadding ? "gap-0.5" : "gap-1";
+          return (
+            <div className="flex flex-col gap-0.5 items-center">
+              <div className={`flex flex-row ${gap}`}>{topRow.map((h, i) => renderHand(h, i))}</div>
+              <div className={`flex flex-row ${gap}`}>{bottomRow.map((h, i) => renderHand(h, split + i))}</div>
+            </div>
+          );
+        }
+        return (
+          <div className={tightPadding ? "flex flex-row gap-0.5" : "flex flex-row gap-1"}>
+            {hands.map((hand, handIdx) => renderHand(hand, handIdx))}
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -364,12 +349,12 @@ export default function PokerTable({
     ? isLandscape
       ? (load >= 12 ? 26 : n >= 5 ? 29 : 32)
       : (load >= 12 ? 37 : n >= 5 ? 40 : 43)
-    : 41;
+    : 46;
   const yRadius = isMobile
     ? isLandscape
       ? (load >= 12 ? 28 : n >= 5 ? 32 : 36)
       : (load >= 12 ? 20 : n >= 5 ? 23 : 28)
-    : 38;
+    : 43;
   // Shrink opponent seats via CSS scale so they don't overflow the oval
   const opponentScale = isMobile
     ? Math.max(0.60, 1 - Math.max(0, load - 4) * 0.04)
