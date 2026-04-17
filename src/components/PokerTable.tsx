@@ -513,8 +513,8 @@ export default function PokerTable({
               left: `${x}%`,
               top: `${y}%`,
               transform: isMe
-                ? "translate(-50%, -50%)"
-                : `translate(-50%, -50%) scale(${opponentScale})`,
+                ? `translate(-${x}%, -${y}%)`
+                : `translate(-${x}%, -${y}%) scale(${opponentScale})`,
               zIndex: isMe ? 10 : 5,
             }}
           >

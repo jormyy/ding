@@ -64,9 +64,15 @@ export function dealCards(
     }
   }
 
-  // 5 community cards
-  const communityCards: Card[] = deck.slice(deckIndex, deckIndex + 5);
-  deckIndex += 5;
+  // Burn 1, deal flop (3), burn 1, deal turn (1), burn 1, deal river (1)
+  deckIndex++; // burn before flop
+  const flop = deck.slice(deckIndex, deckIndex + 3);
+  deckIndex += 3;
+  deckIndex++; // burn before turn
+  const turn = deck[deckIndex++];
+  deckIndex++; // burn before river
+  const river = deck[deckIndex++];
+  const communityCards: Card[] = [...flop, turn, river];
 
   return {
     playerHands,
