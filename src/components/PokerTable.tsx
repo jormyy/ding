@@ -59,6 +59,7 @@ interface SeatProps {
   acquireRequests: AcquireRequest[];
   players: Player[];
   onAcceptAcquire: (initiatorHandId: string, recipientHandId: string) => void;
+  stackHands?: boolean;
 }
 
 function Seat({
@@ -80,6 +81,7 @@ function Seat({
   acquireRequests,
   players,
   onAcceptAcquire,
+  stackHands = true,
 }: SeatProps) {
   const isFlipTurn =
     currentFlipHandId !== null &&
@@ -264,7 +266,7 @@ function Seat({
         };
 
         // Opponents with 3+ hands use a 2-row grid; everyone else is a single row
-        const useDoubleRow = !isMe && hands.length >= 3;
+        const useDoubleRow = !isMe && stackHands && hands.length >= 3;
         if (useDoubleRow) {
           const split = Math.ceil(hands.length / 2);
           const topRow = hands.slice(0, split);
@@ -491,6 +493,9 @@ export default function PokerTable({
         if (hideSelf && isMe) return null;
 
         // Opponents snap to the nearest screen edge; self uses ellipse anchor.
+        const dx = Math.abs(x - 50);
+        const dy = Math.abs(y - 50);
+        const isTopZone = !isMe && dy > dx && y < 50;
         const seatStyle: React.CSSProperties = (() => {
           if (isMe) {
             return {
@@ -501,8 +506,6 @@ export default function PokerTable({
             };
           }
           const sc = opponentScale !== 1 ? ` scale(${opponentScale})` : "";
-          const dx = Math.abs(x - 50);
-          const dy = Math.abs(y - 50);
           if (dx >= dy) {
             // Left or right edge
             return x < 50
@@ -539,6 +542,7 @@ export default function PokerTable({
               isMobile={isMobile}
               rankHistory={gameState.rankHistory ?? {}}
               acquireRequests={gameState.acquireRequests ?? []}
+              stackHands={!isTopZone}
               players={players}
               onAcceptAcquire={onAcceptAcquire}
             />
