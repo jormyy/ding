@@ -506,17 +506,17 @@ export default function PokerTable({
             };
           }
           const sc = opponentScale !== 1 ? ` scale(${opponentScale})` : "";
-          if (dx >= dy) {
-            // Left or right edge
-            return x < 50
-              ? { left: 0, top: `${y}%`, transform: `translate(0%, -50%)${sc}`, zIndex: 5 }
-              : { right: 0, top: `${y}%`, transform: `translate(0%, -50%)${sc}`, zIndex: 5 };
-          } else {
-            // Top or bottom edge
-            return y < 50
-              ? { top: 0, left: `${x}%`, transform: `translate(-50%, 0%)${sc}`, zIndex: 5 }
-              : { bottom: 0, left: `${x}%`, transform: `translate(-50%, 0%)${sc}`, zIndex: 5 };
+          // Top zone: anchor to top edge so seat opens downward and doesn't cover community cards
+          if (dy > dx && y < 50) {
+            return { top: 0, left: `${x}%`, transform: `translate(-50%, 0%)${sc}`, zIndex: 5 };
           }
+          // All other opponents: use translate(-x%, -y%) so the seat opens toward the center
+          return {
+            left: `${x}%`,
+            top: `${y}%`,
+            transform: `translate(-${x}%, -${y}%)${sc}`,
+            zIndex: 5,
+          };
         })();
 
         return (
