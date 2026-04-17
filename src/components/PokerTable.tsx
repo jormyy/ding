@@ -490,18 +490,37 @@ export default function PokerTable({
 
         if (hideSelf && isMe) return null;
 
+        // Opponents snap to the nearest screen edge; self uses ellipse anchor.
+        const seatStyle: React.CSSProperties = (() => {
+          if (isMe) {
+            return {
+              left: `${x}%`,
+              top: `${y}%`,
+              transform: `translate(-${x}%, -${y}%)`,
+              zIndex: 10,
+            };
+          }
+          const sc = opponentScale !== 1 ? ` scale(${opponentScale})` : "";
+          const dx = Math.abs(x - 50);
+          const dy = Math.abs(y - 50);
+          if (dx >= dy) {
+            // Left or right edge
+            return x < 50
+              ? { left: 0, top: `${y}%`, transform: `translate(0%, -50%)${sc}`, zIndex: 5 }
+              : { right: 0, top: `${y}%`, transform: `translate(0%, -50%)${sc}`, zIndex: 5 };
+          } else {
+            // Top or bottom edge
+            return y < 50
+              ? { top: 0, left: `${x}%`, transform: `translate(-50%, 0%)${sc}`, zIndex: 5 }
+              : { bottom: 0, left: `${x}%`, transform: `translate(-50%, 0%)${sc}`, zIndex: 5 };
+          }
+        })();
+
         return (
           <div
             key={player.id}
             className="absolute"
-            style={{
-              left: `${x}%`,
-              top: `${y}%`,
-              transform: isMe
-                ? `translate(-${x}%, -${y}%)`
-                : `translate(-${x}%, -${y}%) scale(${opponentScale})`,
-              zIndex: isMe ? 10 : 5,
-            }}
+            style={seatStyle}
           >
             <Seat
               player={player}
