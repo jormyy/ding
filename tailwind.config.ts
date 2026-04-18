@@ -8,7 +8,18 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        serif: ["var(--font-playfair)", "Georgia", "serif"],
+      },
       colors: {
+        gold: {
+          DEFAULT: "#c9a54a",
+          bright: "#f5e6b8",
+          top: "#f0d278",
+        },
+        ink: "#2a1a08",
+        rail: "#78350f",
         felt: {
           50: "#f0fdf4",
           100: "#dcfce7",
