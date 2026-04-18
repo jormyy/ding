@@ -1,46 +1,54 @@
 # Ding
 
-A multiplayer poker-based prediction game where players work together to rank hands across multiple betting rounds.
+A multiplayer collaborative poker game where players work together to rank all hands in order of true strength across multiple betting rounds.
 
 ## How to Play
 
 ### Setup
 
 - Create a room or join one with a 4-character room code
-- The room creator can configure how many hands each player gets (1–6, limits apply based on player count)
-- The game starts once the creator hits Start with at least 2 players
+- Enter a display name when you join
+- The room creator configures hands per player (1–6, capped based on player count) and starts the game once at least 2 players are present
 
 ### Phases
 
-Each game progresses through the standard poker betting rounds:
-
 **Preflop → Flop → Turn → River → Reveal**
 
-At each phase, community cards are revealed (0, 3, 4, then 5 cards). Before advancing, every player must rank all hands on the ranking board — slot 1 being the best hand, slot N being the worst.
+Community cards are progressively revealed (0, 3, 4, then 5 cards). Before advancing each phase, every player must fill every slot on the ranking board and ready up.
 
 You can only see your own hole cards. Teammates' hands are face-down until the Reveal phase.
 
 ### Ranking Board
 
-Each hand occupies one numbered slot. You rank all hands at the table — both yours and your teammates'. Every slot must be filled before anyone can ready up and advance.
+Each hand occupies one numbered slot (1 = best, N = worst). You rank all hands at the table — both yours and your teammates'. Every slot must be filled and every player must be ready before the phase advances.
 
-### Chip Requests
+### Chip Moves
 
-You can request a teammate's chip from any slot. They can accept or reject. If accepted, their chip moves to your position and your old chip opens up. Pending requests clear when the phase advances.
+There are three ways to move chips between players:
+
+- **Acquire** — Request a teammate's chip for yourself
+- **Offer** — Offer one of your chips to a teammate
+- **Swap** — Propose exchanging your chip with a teammate's chip
+
+They can accept or reject. Pending requests clear when the phase advances.
+
+You can also move chips between your own hands directly, or unclaim a chip to return it to the board.
 
 ### Reveal
 
-Hands flip one at a time, from worst-ranked to best-ranked. Only the hand's owner can flip it when it's their turn. Once all hands are revealed, scores are calculated.
+Hands flip one at a time, worst-ranked first. Only the hand's owner can flip it when it's their turn. After all hands are revealed, the inversion count is calculated.
 
 ### Winning
 
-Ding is a collaborative game. The team **wins** by achieving a **perfect board** — every hand ranked exactly where it belongs. Any mistakes (inversions) mean the team loses.
+The team **wins** with a **perfect board** — every hand ranked exactly where it belongs according to true poker hand strength. Any inversions mean a loss.
 
-The inversion count shown at the results screen is a diagnostic metric showing how many pair-orderings were wrong, useful for post-game discussion, but it doesn't change the outcome: perfect board or loss.
+The inversion count is a diagnostic metric showing how many pairwise rankings were wrong, useful for post-game discussion.
 
-### Ding
+### Other Controls
 
-Hit the bell button to play a sound for everyone in the room.
+- **Bell (Ding)** — Plays a synthesized chord for everyone in the room
+- **Chat** — Persistent room chat, available throughout the game
+- **Lobby kick** — The room creator can remove players before the game starts
 
 ---
 
@@ -57,9 +65,13 @@ Hit the bell button to play a sound for everyone in the room.
 
 ### Architecture
 
-The PartyKit server is the single source of truth for all game state. It holds unmasked card data, validates all player actions, computes true poker rankings via pokersolver, and broadcasts masked state to each client (hiding opponent hole cards until reveal).
+**Server as single source of truth.** The PartyKit server (`party/index.ts`) holds the full unmasked game state — all hole cards, community cards, rankings, and chip positions. It validates every player action, computes true poker rankings via pokersolver, and broadcasts a masked view to each client that hides opponents' hole cards until they're flipped in the Reveal phase.
 
-The Next.js client handles rendering and user interactions. Local optimistic state is used for drag-and-drop responsiveness; the server confirms or corrects after each action.
+**Optimistic client state.** The Next.js client uses local optimistic state for drag-and-drop responsiveness. The server confirms or corrects after each action.
+
+**Persistent player identity.** Each player is assigned a UUID (stored in sessionStorage) on first join. On reconnect, the server matches by this ID and restores the player's game state, so disconnects mid-round don't lose your seat. Kicked players are tracked by ID and blocked from rejoining.
+
+**Reveal ordering.** The true ranking is computed from final 5-card hands plus community cards. Hands flip worst-to-best (last slot to first slot). Inversion count = number of pairwise ordering mistakes in the team's ranking vs. the true ranking.
 
 ## Development
 
@@ -68,12 +80,12 @@ npm install
 npm run dev
 ```
 
-This starts both the Next.js dev server and the PartyKit dev server concurrently.
+Starts both the Next.js dev server (localhost:3000) and the PartyKit dev server (localhost:1999) concurrently.
 
 ## Deployment
 
-The Next.js app can be deployed to any standard host (e.g. Vercel). The PartyKit server deploys separately:
+Deploy the Next.js app to any standard host (e.g. Vercel). Deploy the PartyKit server separately:
 
 ```bash
-npx partykit deploy
+npm run party:deploy
 ```
