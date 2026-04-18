@@ -5,12 +5,14 @@ interface ReadyButtonProps {
   onToggle: (ready: boolean) => void;
   allPlayersReady: boolean;
   disabled?: boolean;
+  small?: boolean;
 }
 
 export default function ReadyButton({
   isReady,
   onToggle,
   disabled = false,
+  small = false,
 }: ReadyButtonProps) {
   const canClick = !disabled || isReady;
 
@@ -19,7 +21,10 @@ export default function ReadyButton({
       onClick={() => canClick && onToggle(!isReady)}
       disabled={!canClick}
       title={disabled && !isReady ? "Claim all rank chips first" : undefined}
-      className="px-8 py-3 rounded-xl font-black text-sm tracking-wide transition-all duration-150 active:scale-95"
+      className={[
+        "rounded-xl font-black tracking-wide transition-all duration-150 active:scale-95",
+        small ? "px-4 py-1.5 text-xs" : "px-8 py-3 text-sm",
+      ].join(" ")}
       style={
         !canClick
           ? { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.25)", cursor: "not-allowed" }

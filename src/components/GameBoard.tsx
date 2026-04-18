@@ -6,7 +6,7 @@ import PokerTable from "./PokerTable";
 import ReadyButton from "./ReadyButton";
 import ChatPanel from "./ChatPanel";
 import { CardFace } from "./CardFace";
-import RankChip from "./RankChip";
+import RankChip, { HistoryChip } from "./RankChip";
 
 interface GameBoardProps {
   gameState: GameState;
@@ -528,6 +528,7 @@ export default function GameBoard({
             <PokerTable
               gameState={displayState}
               myId={myId}
+              hideSelf={true}
               onUnclaim={handleUnclaim}
               selectedHandId={selectedHandId}
               selectedSlot={selectedSlot}
@@ -594,6 +595,111 @@ export default function GameBoard({
                 </div>
               </div>
             ) : null}
+
+            {/* My dock — bottom center */}
+            <div
+              className="absolute z-10 flex items-center"
+              style={{
+                bottom: 14,
+                left: "50%",
+                transform: "translateX(-50%)",
+                gap: 16,
+                background: "linear-gradient(180deg, rgba(20,70,40,0.95) 0%, rgba(6,30,16,0.98) 100%)",
+                border: "2px solid #c9a54a",
+                borderRadius: 14,
+                padding: "10px 20px",
+                boxShadow: "0 12px 40px rgba(0,0,0,0.55), 0 0 30px rgba(201,165,74,0.2)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <div className="flex-shrink-0">
+                <div style={{ fontSize: 10, color: "#2fb873", letterSpacing: 2.5, fontWeight: 900, textTransform: "uppercase" }}>Your Hands</div>
+                <div style={{ fontSize: 12, color: "#f5e6b8", fontFamily: "'Playfair Display', serif", fontWeight: 700, marginTop: 2 }}>
+                  {myHands.filter(h => rankMap.get(h.id) !== undefined).length}/{myHands.length} placed
+                </div>
+              </div>
+              {myHands.map((hand, i) => {
+                const rank = rankMap.get(hand.id) ?? null;
+                const isSelected = selectedHandId === hand.id;
+                const history = (gameState.rankHistory ?? {})[hand.id] ?? [];
+                return (
+                  <div key={hand.id} className="flex items-center" style={{ gap: 16 }}>
+                    {i > 0 && <div style={{ width: 1, height: 56, background: "rgba(255,255,255,0.1)", flexShrink: 0 }} />}
+                    <div className="flex flex-col items-center" style={{ gap: 4 }}>
+                      <div style={{ fontSize: 9, color: "#9fc5a8", fontWeight: 800, letterSpacing: 1 }}>HAND #{i + 1}</div>
+                      <div
+                        className={[
+                          "flex gap-1 rounded-lg p-0.5 cursor-pointer transition-all",
+                          isSelected ? "ring-2 ring-yellow-400 bg-yellow-400/10" : "hover:ring-1 hover:ring-green-500/40",
+                        ].join(" ")}
+                        onClick={() => handleHandClick(hand.id)}
+                      >
+                        {hand.cards.map((card, j) => <CardFace key={j} card={card} small />)}
+                      </div>
+                      {rank !== null ? (
+                        <RankChip
+                          rank={rank}
+                          total={totalHands}
+                          isOwn
+                          isSelected={isSelected}
+                          hasSelection={hasSelection}
+                          onClick={() => handleHandClick(hand.id)}
+                          onDoubleClick={() => handleUnclaim(hand.id)}
+                        />
+                      ) : (
+                        <div
+                          className={[
+                            "w-8 h-8 rounded-full border-2 border-dashed flex items-center justify-center transition-all",
+                            hasSelection ? "border-yellow-400/60 cursor-pointer hover:border-yellow-400 hover:bg-yellow-400/10" : "border-gray-700/40",
+                          ].join(" ")}
+                          onClick={hasSelection ? () => handleHandClick(hand.id) : undefined}
+                        />
+                      )}
+                      {history.length > 0 && (
+                        <div className="flex gap-0.5">
+                          {history.map((r, phaseIdx) => (
+                            <HistoryChip key={phaseIdx} rank={r} total={totalHands} phaseLabel={["Pre", "Flop", "Turn", "River"][phaseIdx] ?? ""} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Ready pill — bottom right */}
+            <div
+              className="absolute z-10 flex items-center"
+              style={{
+                bottom: 14,
+                right: 20,
+                gap: 10,
+                background: "rgba(0,0,0,0.5)",
+                borderRadius: 22,
+                padding: "6px 10px 6px 14px",
+                border: "1px solid rgba(255,255,255,0.08)",
+              }}
+            >
+              <div style={{ display: "flex", gap: 3 }}>
+                {gameState.players.map((p) => (
+                  <div
+                    key={p.id}
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: p.ready ? "#2fb873" : "rgba(255,255,255,0.15)",
+                      boxShadow: p.ready ? "0 0 6px rgba(47,184,115,0.5)" : "none",
+                    }}
+                  />
+                ))}
+              </div>
+              <div style={{ fontSize: 11, color: "#9fc5a8", fontWeight: 700 }}>
+                {gameState.players.filter(p => p.ready).length}/{gameState.players.length}
+              </div>
+              <ReadyButton isReady={isReady} onToggle={handleReady} allPlayersReady={allReady} disabled={hasUnclaimedSlots} small />
+            </div>
           </div>
         </div>
 
@@ -798,15 +904,6 @@ export default function GameBoard({
         </div>
       )}
 
-      {/* Bottom bar: ready button */}
-      <div className="flex-none px-4 py-2.5 flex items-center justify-center" style={{ borderTop: "1px solid rgba(201,165,74,0.15)", background: "rgba(10,24,19,0.97)" }}>
-        <ReadyButton
-          isReady={isReady}
-          onToggle={handleReady}
-          allPlayersReady={allReady}
-          disabled={hasUnclaimedSlots}
-        />
-      </div>
     </div>
   );
 }
