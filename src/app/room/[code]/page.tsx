@@ -122,6 +122,11 @@ export default function RoomPage() {
             setFuckoffNotifications((prev) => prev.filter((n) => n.id !== id));
           }, 2500);
         } else if (msg.type === "error") {
+          if (msg.message === "Removed by host") {
+            socketRef.current?.close();
+            router.push("/");
+            return;
+          }
           setConnectionError(msg.message);
         }
       } catch {

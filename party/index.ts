@@ -207,6 +207,7 @@ export default class DingServer implements Party.Server {
   private state: ServerGameState;
   private connections: Map<string, Party.Connection> = new Map();
   private lastChatAt: Map<string, number> = new Map();
+  private kickedPids: Set<string> = new Set();
 
   constructor(readonly room: Party.Room) {
     this.state = createInitialState();
@@ -273,6 +274,13 @@ export default class DingServer implements Party.Server {
 
     switch (msg.type) {
       case "join": {
+        if (this.kickedPids.has(msg.pid)) {
+          const errMsg: ServerMessage = { type: "error", message: "Removed by host" };
+          sender.send(JSON.stringify(errMsg));
+          sender.close();
+          return;
+        }
+
         // Check if this is a reconnecting player (matched by persistent ID)
         const existingPlayer = this.state.players.find((p) => p.id === msg.pid);
         if (existingPlayer) {
@@ -849,6 +857,7 @@ export default class DingServer implements Party.Server {
         if (msg.playerId === player.id) return;
         const target = this.state.players.find((p) => p.id === msg.playerId);
         if (!target) return;
+        this.kickedPids.add(target.id);
         const targetConn = this.connections.get(target.connId);
         if (targetConn) {
           const errMsg: ServerMessage = { type: "error", message: "Removed by host" };
