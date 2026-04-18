@@ -19,28 +19,6 @@
   .animate-fade-out {
     animation: fade-out 2.5s ease-in forwards;
   }
-
-  .card-flip {
-    transform-style: preserve-3d;
-    transition: transform 0.6s ease-in-out;
-  }
-
-  .card-flip.flipped {
-    transform: rotateY(180deg);
-  }
-
-  .card-face {
-    backface-visibility: hidden;
-  }
-
-  .card-back-face {
-    backface-visibility: hidden;
-    transform: rotateY(180deg);
-  }
-
-  .perspective {
-    perspective: 1000px;
-  }
 }
 
 /* Prevent rubber-band scroll on iOS */

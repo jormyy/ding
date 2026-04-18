@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import PartySocket from "partysocket";
 import type { ClientMessage, GameState, ServerMessage } from "@/lib/types";
 import NameModal from "@/components/NameModal";
@@ -46,6 +46,7 @@ function playFuckoffSound() {
 
 export default function RoomPage() {
   const params = useParams();
+  const router = useRouter();
   const code = (params.code as string).toUpperCase();
 
   const [playerName, setPlayerName] = useState<string | null>(null);
@@ -157,6 +158,14 @@ export default function RoomPage() {
     setShowNameModal(false);
   }
 
+  function handleLeave() {
+    sendMessage({ type: "leave" });
+    socketRef.current?.close();
+    sessionStorage.removeItem("ding-player-id");
+    sessionStorage.removeItem("ding-player-name");
+    router.push("/");
+  }
+
   // Name modal
   if (showNameModal) {
     return <NameModal onSubmit={handleNameSubmit} />;
@@ -204,6 +213,7 @@ export default function RoomPage() {
         myId={myId}
         code={code}
         onSend={sendMessage}
+        onLeave={handleLeave}
       />
     );
   }

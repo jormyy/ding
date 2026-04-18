@@ -216,6 +216,17 @@ export default class DingServer implements Party.Server {
     return this.state.players.find((p) => p.connId === connId);
   }
 
+  private removePlayerFromLobby(targetId: string): void {
+    if (this.state.phase !== "lobby") return;
+    const idx = this.state.players.findIndex((p) => p.id === targetId);
+    if (idx === -1) return;
+    const [removed] = this.state.players.splice(idx, 1);
+    if (removed.isCreator && this.state.players.length > 0) {
+      this.state.players[0].isCreator = true;
+    }
+    this.lastChatAt.delete(targetId);
+  }
+
   onConnect(conn: Party.Connection) {
     // Accept all connections — game/lobby validation happens in the join handler
     this.connections.set(conn.id, conn);
@@ -830,6 +841,31 @@ export default class DingServer implements Party.Server {
         this.state.chatMessages = chat;
 
         broadcastStateTo(this.room, this.state, this.connections);
+        break;
+      }
+
+      case "kick": {
+        if (!player?.isCreator || this.state.phase !== "lobby") return;
+        if (msg.playerId === player.id) return;
+        const target = this.state.players.find((p) => p.id === msg.playerId);
+        if (!target) return;
+        const targetConn = this.connections.get(target.connId);
+        if (targetConn) {
+          const errMsg: ServerMessage = { type: "error", message: "Removed by host" };
+          targetConn.send(JSON.stringify(errMsg));
+          targetConn.close();
+        }
+        this.removePlayerFromLobby(target.id);
+        broadcastStateTo(this.room, this.state, this.connections);
+        break;
+      }
+
+      case "leave": {
+        if (this.state.phase !== "lobby") return;
+        if (!player) return;
+        this.removePlayerFromLobby(player.id);
+        broadcastStateTo(this.room, this.state, this.connections);
+        sender.close();
         break;
       }
     }

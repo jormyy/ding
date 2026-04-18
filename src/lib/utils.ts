@@ -34,10 +34,6 @@ export function cardToPokersolverStr(card: Card): string {
   return rankMap[card.rank] + suitMap[card.suit];
 }
 
-export function cardToDisplayString(card: Card): string {
-  return `${card.rank}${card.suit}`;
-}
-
 export function getSuitSymbol(suit: Suit): string {
   const symbols: Record<Suit, string> = {
     H: "♥",
@@ -47,11 +43,6 @@ export function getSuitSymbol(suit: Suit): string {
   };
   return symbols[suit];
 }
-
-export function isRedSuit(suit: Suit): boolean {
-  return suit === "H" || suit === "D";
-}
-
 
 export function getRankDisplay(rank: Rank): string {
   return rank === "T" ? "10" : rank;

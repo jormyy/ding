@@ -8,6 +8,7 @@ interface LobbyProps {
   myId: string;
   code: string;
   onSend: (msg: ClientMessage) => void;
+  onLeave: () => void;
 }
 
 const D = {
@@ -23,7 +24,7 @@ const D = {
   accent: "#2fb873",
 };
 
-export default function Lobby({ gameState, myId, code, onSend }: LobbyProps) {
+export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyProps) {
   const [copied, setCopied] = useState(false);
 
   const myPlayer = gameState.players.find((p) => p.id === myId);
@@ -144,6 +145,30 @@ export default function Lobby({ gameState, myId, code, onSend }: LobbyProps) {
               {!p.connected && (
                 <div className="text-[9px] font-bold" style={{ color: D.muted }}>away</div>
               )}
+              {isCreator && p.id !== myId && (
+                <button
+                  onClick={() => onSend({ type: "kick", playerId: p.id })}
+                  aria-label={`Remove ${p.name}`}
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold leading-none transition-colors"
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    color: D.muted,
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(224,112,112,0.15)";
+                    e.currentTarget.style.color = "#e07070";
+                    e.currentTarget.style.borderColor = "rgba(224,112,112,0.35)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                    e.currentTarget.style.color = D.muted;
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+                  }}
+                >
+                  ×
+                </button>
+              )}
             </div>
           ))}
           {/* Empty seats */}
@@ -202,20 +227,38 @@ export default function Lobby({ gameState, myId, code, onSend }: LobbyProps) {
         <div className="flex-1" />
 
         {isCreator ? (
-          <button
-            onClick={handleStart}
-            disabled={!canStart}
-            className="w-full py-4 rounded-xl font-black text-sm tracking-wide transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={canStart
-              ? { background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink, boxShadow: `0 3px 0 ${D.rail}, 0 6px 16px rgba(0,0,0,0.35)` }
-              : { background: "rgba(255,255,255,0.06)", color: D.muted, border: "1px solid rgba(255,255,255,0.08)" }}
-          >
-            {canStart ? "Start the game" : "Need at least 2 players"}
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={handleStart}
+              disabled={!canStart}
+              className="w-full py-4 rounded-xl font-black text-sm tracking-wide transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={canStart
+                ? { background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink, boxShadow: `0 3px 0 ${D.rail}, 0 6px 16px rgba(0,0,0,0.35)` }
+                : { background: "rgba(255,255,255,0.06)", color: D.muted, border: "1px solid rgba(255,255,255,0.08)" }}
+            >
+              {canStart ? "Start the game" : "Need at least 2 players"}
+            </button>
+            <button
+              onClick={onLeave}
+              className="w-full text-xs font-bold py-1.5 transition-colors hover:underline"
+              style={{ background: "transparent", color: D.muted, border: "none" }}
+            >
+              Leave table
+            </button>
+          </div>
         ) : (
-          <div className="flex flex-col items-center gap-3 py-4">
-            <div className="w-7 h-7 border-2 rounded-full animate-spin" style={{ borderColor: D.accent, borderTopColor: "transparent" }} />
-            <p className="text-sm" style={{ color: D.sub }}>Waiting for the host to start…</p>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col items-center gap-3 py-4">
+              <div className="w-7 h-7 border-2 rounded-full animate-spin" style={{ borderColor: D.accent, borderTopColor: "transparent" }} />
+              <p className="text-sm" style={{ color: D.sub }}>Waiting for the host to start…</p>
+            </div>
+            <button
+              onClick={onLeave}
+              className="w-full py-3 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95"
+              style={{ background: "transparent", color: D.muted, border: "1px solid rgba(255,255,255,0.1)" }}
+            >
+              Leave table
+            </button>
           </div>
         )}
       </div>

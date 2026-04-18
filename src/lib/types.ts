@@ -90,7 +90,9 @@ export type ClientMessage =
   | { type: "endGame" } // any game phase, creator only — returns to lobby
   | { type: "ding" } // ring the bell
   | { type: "fuckoff" } // broadcast fuck-off reaction
-  | { type: "chat"; text: string }; // room chat message
+  | { type: "chat"; text: string } // room chat message
+  | { type: "kick"; playerId: string } // lobby only, creator only
+  | { type: "leave" }; // lobby only
 
 export type ServerMessage =
   | { type: "state"; state: GameState }
