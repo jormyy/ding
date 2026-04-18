@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import type { ClientMessage, GameState } from "@/lib/types";
-import PlayerList from "./PlayerList";
 
 interface LobbyProps {
   gameState: GameState;
@@ -11,6 +9,19 @@ interface LobbyProps {
   code: string;
   onSend: (msg: ClientMessage) => void;
 }
+
+const D = {
+  panel: "linear-gradient(180deg, rgba(20,60,36,0.92) 0%, rgba(10,40,22,0.96) 100%)",
+  panelBorder: "rgba(201,165,74,0.28)",
+  gold: "#c9a54a",
+  goldBright: "#f5e6b8",
+  goldTop: "#f0d278",
+  ink: "#2a1a08",
+  rail: "#78350f",
+  sub: "#9fc5a8",
+  muted: "#6a8a72",
+  accent: "#2fb873",
+};
 
 export default function Lobby({ gameState, myId, code, onSend }: LobbyProps) {
   const [copied, setCopied] = useState(false);
@@ -39,102 +50,172 @@ export default function Lobby({ gameState, myId, code, onSend }: LobbyProps) {
     onSend({ type: "configure", handsPerPlayer: n });
   }
 
+  const playerCount = gameState.players.length;
+  const maxHands = playerCount <= 2 ? 6 : playerCount <= 4 ? 4 : 3;
+
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center p-4 sm:p-6" style={{ backgroundImage: "url('/felt.png')", backgroundRepeat: "repeat", backgroundSize: "256px 256px" }}>
+    <div
+      className="min-h-[100dvh] flex flex-col sm:flex-row overflow-hidden"
+      style={{ backgroundColor: "#0a1813" }}
+    >
+      {/* Left — felt showpiece */}
+      <div
+        className="flex-1 flex items-center justify-center relative min-h-[40vh] sm:min-h-0"
+        style={{
+          backgroundImage: "url('/felt.png')",
+          backgroundRepeat: "repeat",
+          backgroundSize: "256px 256px",
+          backgroundColor: "#0a3820",
+        }}
+      >
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: "radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(0,0,0,0.5) 100%)" }}
+        />
+        <div className="relative z-10 text-center px-4">
+          <div className="font-serif font-black leading-none" style={{ fontSize: 64, color: D.goldBright, letterSpacing: "-0.02em" }}>Ding</div>
+          <div className="text-[10px] font-bold tracking-[0.4em] uppercase mt-1" style={{ color: D.sub }}>Waiting Room</div>
 
-      <div className="relative z-10 w-full max-w-md space-y-4">
-        {/* Header */}
-        <div className="flex justify-center">
-          <Image src="/logo.png" alt="Ding" width={200} height={200} priority />
-        </div>
-
-        {/* Room Code */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-2xl">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-400 text-sm font-medium">Room Code</span>
+          <div
+            className="mt-10 rounded-2xl inline-block px-10 py-7"
+            style={{
+              background: D.panel,
+              border: `1px solid ${D.panelBorder}`,
+              boxShadow: "0 16px 48px rgba(0,0,0,0.5)",
+            }}
+          >
+            <div className="text-[10px] font-black tracking-[0.4em] uppercase" style={{ color: D.sub }}>Room Code</div>
+            <div
+              className="font-serif font-black leading-none my-3"
+              style={{ fontSize: 72, color: D.goldBright, letterSpacing: "0.15em", paddingLeft: "0.15em" }}
+            >
+              {code}
+            </div>
             <button
               onClick={handleCopyLink}
-              className="text-green-400 hover:text-green-300 text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold transition-all"
+              style={{ background: "rgba(255,255,255,0.07)", color: D.sub, border: `1px solid ${D.panelBorder}` }}
             >
-              {copied ? "✓ Copied!" : "Copy Link"}
+              {copied ? "✓ Copied!" : "⧉ Copy invite link"}
             </button>
           </div>
-          <div className="text-4xl font-black tracking-[0.3em] text-white text-center py-2">
-            {code}
-          </div>
-          <p className="text-gray-600 text-xs text-center mt-1">
-            Share this code with friends
-          </p>
+
+          <p className="mt-5 text-sm" style={{ color: D.sub }}>Share the code. First one in is the dealer.</p>
+        </div>
+      </div>
+
+      {/* Right rail */}
+      <div
+        className="flex-none w-full sm:w-[380px] flex flex-col gap-4 p-5 overflow-y-auto"
+        style={{ background: "#0a1813", borderLeft: `1px solid ${D.panelBorder}` }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <span className="font-serif text-xl font-bold" style={{ color: D.goldBright }}>At the table</span>
+          <span className="text-xs font-bold" style={{ color: D.sub }}>
+            {gameState.players.length}
+            <span style={{ color: D.muted }}> · min 2</span>
+          </span>
         </div>
 
-        {/* Players */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-2xl">
-          <h2 className="text-white font-bold mb-3">
-            Players ({gameState.players.length})
-          </h2>
-          <PlayerList players={gameState.players} myId={myId} />
-
-          {gameState.players.length < 2 && (
-            <p className="text-gray-600 text-sm text-center mt-3">
-              Waiting for at least 2 players...
-            </p>
-          )}
-        </div>
-
-        {/* Creator controls */}
-        {isCreator && (
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-2xl space-y-4">
-            <h2 className="text-white font-bold">Game Settings</h2>
-
-            <div>
-              <label className="text-gray-400 text-sm mb-2 block">
-                Hands per player
-              </label>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5, 6].map((n) => {
-                  const playerCount = gameState.players.length;
-                  const maxHands = playerCount <= 2 ? 6 : playerCount <= 4 ? 4 : 3;
-                  const disabled = n > maxHands;
-                  const title = n > 4
-                    ? "Only available with 2 players"
-                    : n > 3
-                    ? "Only available with 4 or fewer players"
-                    : undefined;
-                  return (
-                    <button
-                      key={n}
-                      onClick={() => !disabled && handleSetHands(n)}
-                      disabled={disabled}
-                      title={title}
-                      className={`flex-1 py-2 rounded-lg font-bold text-lg transition-all ${
-                        gameState.handsPerPlayer === n
-                          ? "bg-green-600 text-white"
-                          : disabled
-                          ? "bg-gray-800/40 text-gray-700 cursor-not-allowed"
-                          : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white"
-                      }`}
-                    >
-                      {n}
-                    </button>
-                  );
-                })}
+        {/* Roster */}
+        <div className="flex flex-col gap-1.5">
+          {gameState.players.map((p, i) => (
+            <div
+              key={p.id}
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+              style={{ background: "rgba(10,30,18,0.6)", border: "1px solid rgba(255,255,255,0.06)" }}
+            >
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0"
+                style={i === 0
+                  ? { background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink }
+                  : { background: "rgba(255,255,255,0.1)", color: D.sub }}
+              >
+                {p.name[0].toUpperCase()}
               </div>
+              <div className="flex-1 min-w-0 text-sm font-bold truncate" style={{ color: D.goldBright }}>
+                {p.name}
+                {p.id === myId && <span className="ml-1.5 text-xs font-medium" style={{ color: D.accent }}>(you)</span>}
+              </div>
+              {i === 0 && (
+                <div className="text-[9px] font-black tracking-widest uppercase" style={{ color: D.gold }}>Host</div>
+              )}
+              {!p.connected && (
+                <div className="text-[9px] font-bold" style={{ color: D.muted }}>away</div>
+              )}
             </div>
-
-            <button
-              onClick={handleStart}
-              disabled={!canStart}
-              className="w-full bg-green-600 hover:bg-green-500 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-all duration-150 active:scale-95 text-lg shadow-lg shadow-green-900/30"
+          ))}
+          {/* Empty seats */}
+          {Array.from({ length: Math.max(0, 8 - gameState.players.length) }).map((_, i) => (
+            <div
+              key={`empty-${i}`}
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+              style={{ border: "1px dashed rgba(255,255,255,0.1)" }}
             >
-              {canStart ? "Start Game" : "Need at least 2 players"}
-            </button>
+              <div className="w-8 h-8 rounded-full flex-shrink-0" style={{ border: "1.5px dashed rgba(255,255,255,0.15)" }} />
+              <div className="text-sm" style={{ color: D.muted }}>Empty seat</div>
+              <div className="ml-auto text-xs" style={{ color: D.muted }}>Seat {gameState.players.length + i + 1}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Hands per player (creator only) */}
+        {isCreator && (
+          <div
+            className="rounded-xl p-4"
+            style={{ background: "rgba(10,30,18,0.6)", border: "1px solid rgba(255,255,255,0.06)" }}
+          >
+            <div className="text-[10px] font-black tracking-[0.25em] uppercase mb-3" style={{ color: D.sub }}>
+              Hands per player
+            </div>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5, 6].map((n) => {
+                const disabled = n > maxHands;
+                const active = gameState.handsPerPlayer === n;
+                return (
+                  <button
+                    key={n}
+                    onClick={() => !disabled && handleSetHands(n)}
+                    disabled={disabled}
+                    className="flex-1 aspect-square rounded-lg font-black text-lg font-serif transition-all"
+                    style={active
+                      ? { background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink, border: "none" }
+                      : disabled
+                      ? { background: "rgba(0,0,0,0.2)", color: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.06)", cursor: "not-allowed" }
+                      : { background: "rgba(0,0,0,0.3)", color: D.goldBright, border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer" }}
+                  >
+                    {n}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs mt-2" style={{ color: D.muted }}>
+              {gameState.players.length}p × {gameState.handsPerPlayer}h ={" "}
+              <span className="font-bold" style={{ color: D.goldBright }}>
+                {gameState.players.length * gameState.handsPerPlayer} hands to rank
+              </span>
+            </p>
           </div>
         )}
 
-        {!isCreator && (
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-2xl text-center">
-            <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-gray-400">Waiting for the host to start...</p>
+        <div className="flex-1" />
+
+        {isCreator ? (
+          <button
+            onClick={handleStart}
+            disabled={!canStart}
+            className="w-full py-4 rounded-xl font-black text-sm tracking-wide transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={canStart
+              ? { background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink, boxShadow: `0 3px 0 ${D.rail}, 0 6px 16px rgba(0,0,0,0.35)` }
+              : { background: "rgba(255,255,255,0.06)", color: D.muted, border: "1px solid rgba(255,255,255,0.08)" }}
+          >
+            {canStart ? "Start the game" : "Need at least 2 players"}
+          </button>
+        ) : (
+          <div className="flex flex-col items-center gap-3 py-4">
+            <div className="w-7 h-7 border-2 rounded-full animate-spin" style={{ borderColor: D.accent, borderTopColor: "transparent" }} />
+            <p className="text-sm" style={{ color: D.sub }}>Waiting for the host to start…</p>
           </div>
         )}
       </div>

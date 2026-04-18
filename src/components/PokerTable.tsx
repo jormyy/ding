@@ -93,35 +93,38 @@ function Seat({
   return (
     <div
       className={[
-        "flex flex-col items-center rounded-xl border transition-all",
+        "flex flex-col items-center rounded-xl transition-all",
         tightPadding ? "gap-0.5 px-1 py-1" : isMobile ? "gap-1 px-1.5 py-1.5" : "gap-1.5 px-2 py-2",
-        isMe
-          ? "bg-green-950/70 border-green-700/50 shadow-lg shadow-green-900/30"
-          : "bg-gray-950/70 border-gray-700/30",
-        isFlipTurn
-          ? "border-yellow-500/80 shadow-lg shadow-yellow-500/20 animate-[pulse_2s_ease-in-out_infinite]"
-          : "",
+        isFlipTurn ? "animate-[pulse_2s_ease-in-out_infinite]" : "",
       ]
         .filter(Boolean)
         .join(" ")}
+      style={{
+        background: isMe
+          ? "linear-gradient(180deg, rgba(20,70,40,0.85) 0%, rgba(8,34,20,0.95) 100%)"
+          : "rgba(6,28,16,0.72)",
+        border: isFlipTurn
+          ? "1.5px solid rgba(255,215,0,0.8)"
+          : isMe
+          ? "1.5px solid #c9a54a"
+          : "1.5px solid rgba(255,255,255,0.08)",
+        boxShadow: isMe
+          ? "0 6px 18px rgba(201,165,74,0.2)"
+          : "0 2px 6px rgba(0,0,0,0.3)",
+        backdropFilter: "blur(4px)",
+      }}
     >
       {/* Player name */}
-      <div className="text-center leading-tight">
+      <div className="flex items-center gap-1 leading-tight">
+        {player.ready && !isReveal && (
+          <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#2fb873" }} />
+        )}
         <div
-          className={`text-[10px] font-bold truncate ${nameMaxW} ${
-            isMe ? "text-green-300" : "text-gray-300"
-          }`}
+          className={`text-[10px] font-black truncate uppercase tracking-wide ${nameMaxW}`}
+          style={{ color: isMe ? "#f5e6b8" : "#9fc5a8" }}
         >
           {player.name}
         </div>
-        {isMe && (
-          <div className="text-green-700 text-[8px] uppercase tracking-wider">
-            you
-          </div>
-        )}
-        {player.ready && !isReveal && (
-          <div className="text-green-500 text-[8px] font-bold">✓</div>
-        )}
       </div>
 
       {/* Reveal flip prompt */}
@@ -414,7 +417,7 @@ export default function PokerTable({
         }}
       >
         {/* Rail inner line */}
-        <div className="absolute inset-3 rounded-[50%] border border-green-700/20 pointer-events-none" />
+        <div className="absolute inset-3 rounded-[50%] pointer-events-none" style={{ border: "1px solid rgba(201,165,74,0.15)" }} />
       </div>
 
       {/* Community cards + board rank slots — on the table surface */}

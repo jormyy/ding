@@ -43,28 +43,38 @@ export default function Reveal({
   }
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-gray-950">
+    <div className="h-[100dvh] flex flex-col" style={{ background: "#0a1813" }}>
       {/* Header */}
-      <div className="flex-none border-b border-gray-800 bg-gray-950/90 backdrop-blur-sm px-3 py-2 flex items-center justify-between">
-        <span className="text-base font-black text-white tracking-tight">DING</span>
-        <span className="text-yellow-400 text-[10px] font-bold uppercase tracking-widest">
-          Reveal
+      <div
+        className="flex-none px-4 py-2 flex items-center justify-between"
+        style={{
+          background: "linear-gradient(180deg, rgba(20,60,36,0.95) 0%, rgba(10,40,22,0.98) 100%)",
+          borderBottom: "1px solid rgba(201,165,74,0.2)",
+          height: 54,
+        }}
+      >
+        <span className="font-serif font-black" style={{ fontSize: 22, color: "#f5e6b8" }}>Ding</span>
+        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#c9a54a" }}>
+          The Reveal
         </span>
-        {allFlipped && (
+        {allFlipped ? (
           <button
             onClick={() => setViewingBoard((v) => !v)}
-            className="text-xs font-bold px-2 py-1 rounded-lg border transition-colors border-gray-700 text-gray-400 hover:text-white hover:border-gray-500"
+            className="text-xs font-bold px-3 py-1 rounded-lg transition-colors"
+            style={{ border: "1px solid rgba(201,165,74,0.3)", color: "#9fc5a8" }}
           >
             {viewingBoard ? "Results" : "Board"}
           </button>
+        ) : (
+          <div className="w-16" />
         )}
-        {!allFlipped && <div className="w-12" />}
       </div>
 
       {/* Main area: table + chat sidebar */}
       <div className="flex-1 min-h-0 flex overflow-hidden">
         <div className="flex-1 min-w-0 flex items-center justify-center overflow-hidden relative">
-          <div className="relative w-full aspect-square sm:aspect-auto sm:h-full">
+          <div className="relative w-full aspect-square sm:aspect-auto sm:h-full"
+               style={{ background: "url('/felt.png') repeat, #0a3820", backgroundSize: "256px 256px" }}>
             <PokerTable
               gameState={gameState}
               myId={myId}
@@ -118,7 +128,7 @@ export default function Reveal({
 
           {/* Score overlay */}
           {allFlipped && !viewingBoard && (
-            <div className="absolute inset-0 bg-gray-950/80 backdrop-blur-sm flex items-center justify-center z-30 p-4">
+            <div className="absolute inset-0 flex items-center justify-center z-30 p-4" style={{ background: "rgba(5,18,10,0.85)", backdropFilter: "blur(6px)" }}>
               <ScorePanel
                 gameState={gameState}
                 isCreator={isCreator}
@@ -143,7 +153,7 @@ export default function Reveal({
         </div>
 
         {/* Desktop chat sidebar — full height */}
-        <div className="hidden sm:flex flex-none w-64 border-l border-gray-800 bg-gray-950 flex-col overflow-hidden">
+        <div className="hidden sm:flex flex-none w-64 flex-col overflow-hidden" style={{ borderLeft: "1px solid rgba(201,165,74,0.18)", background: "#0a1813" }}>
           <ChatPanel messages={gameState.chatMessages ?? []} myId={myId} onSend={handleSendChat} />
         </div>
       </div>
@@ -234,78 +244,90 @@ function ScorePanel({ gameState, isCreator, onPlayAgain }: ScorePanelProps) {
     leaderboard.length > 0 ? leaderboard[leaderboard.length - 1].total : 0;
   const allPerfectLeaderboard = leaderboard.length > 0 && maxTotal === 0;
 
+  const D = {
+    gold: "#c9a54a", goldBright: "#f5e6b8", goldTop: "#f0d278",
+    ink: "#2a1a08", rail: "#78350f",
+    panel: "linear-gradient(180deg, rgba(20,60,36,0.92) 0%, rgba(10,40,22,0.96) 100%)",
+    panelBorder: "rgba(201,165,74,0.28)",
+    sub: "#9fc5a8", muted: "#6a8a72", accent: "#2fb873", danger: "#c06060",
+  };
+
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 shadow-2xl w-full max-w-sm max-h-[88dvh] overflow-y-auto">
+    <div
+      className="rounded-2xl p-6 shadow-2xl w-full max-w-lg max-h-[88dvh] overflow-y-auto flex flex-col gap-5"
+      style={{ background: D.panel, border: `1px solid ${D.panelBorder}` }}
+    >
       {/* Score */}
-      <div className="text-center mb-4">
-        <div className={`text-6xl font-black mb-1 ${isPerfect ? "text-green-400" : "text-white"}`}>
+      <div className="text-center">
+        <div className="text-[10px] font-black uppercase tracking-[0.4em]" style={{ color: D.gold }}>The Reveal</div>
+        <div
+          className="font-serif font-black leading-none my-2"
+          style={{
+            fontSize: 80,
+            background: `linear-gradient(180deg, ${D.goldBright} 0%, ${D.gold} 100%)`,
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+          }}
+        >
           {score}
         </div>
-        <div className="text-gray-400 text-sm font-medium">
+        <div className="text-base font-semibold" style={{ color: D.goldBright }}>
           {isPerfect
             ? "Perfect! Zero inversions."
             : score === 1
-            ? "1 inversion — almost!"
+            ? "1 inversion — one swap from perfect"
             : `${score} inversions`}
         </div>
       </div>
 
       {/* True vs player ranking */}
       {gameState.trueRanking && (
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
-              Your Ranking
+        <div className="rounded-xl p-4" style={{ background: "rgba(0,0,0,0.35)" }}>
+          <div className="text-[10px] font-black uppercase tracking-[0.25em] mb-3" style={{ color: D.gold }}>True Ranking</div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-widest mb-2" style={{ color: D.muted }}>Your order</div>
+              <div className="space-y-1">
+                {gameState.ranking.map((handId, i) => {
+                  if (!handId) return null;
+                  const hand = handMap.get(handId);
+                  if (!hand) return null;
+                  const correct = isCorrectPlacement(handId, i);
+                  return (
+                    <div
+                      key={handId}
+                      className="flex items-center gap-1.5 px-2 py-1 rounded text-xs"
+                      style={correct
+                        ? { background: "rgba(47,184,115,0.12)", border: "1px solid rgba(47,184,115,0.3)" }
+                        : { background: "rgba(192,96,96,0.12)", border: "1px solid rgba(192,96,96,0.25)" }}
+                    >
+                      <span className="w-4" style={{ color: D.muted }}>{i + 1}.</span>
+                      <span className="font-medium truncate flex-1" style={{ color: D.goldBright }}>{getHandLabel(hand)}</span>
+                      <span style={{ color: correct ? D.accent : D.danger }}>{correct ? "✓" : "✗"}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div className="space-y-1">
-              {gameState.ranking.map((handId, i) => {
-                if (!handId) return null;
-                const hand = handMap.get(handId);
-                if (!hand) return null;
-                const correct = isCorrectPlacement(handId, i);
-                return (
-                  <div
-                    key={handId}
-                    className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
-                      correct
-                        ? "bg-green-900/30 border border-green-700/40"
-                        : "bg-red-900/20 border border-red-800/30"
-                    }`}
-                  >
-                    <span className="text-gray-500 w-4">{i + 1}.</span>
-                    <span className="text-white font-medium truncate flex-1">
-                      {getHandLabel(hand)}
-                    </span>
-                    <span className={correct ? "text-green-400" : "text-red-400"}>
-                      {correct ? "✓" : "✗"}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
-              True Ranking
-            </div>
-            <div className="space-y-1">
-              {gameState.trueRanking.map((handId, i) => {
-                const hand = handMap.get(handId);
-                if (!hand) return null;
-                const displayRank = trueRanks?.[handId] ?? i + 1;
-                return (
-                  <div
-                    key={handId}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded text-xs bg-gray-800/60 border border-gray-700/40"
-                  >
-                    <span className="text-gray-500 w-4">{displayRank}.</span>
-                    <span className="text-white font-medium truncate flex-1">
-                      {getHandLabel(hand)}
-                    </span>
-                  </div>
-                );
-              })}
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-widest mb-2" style={{ color: D.muted }}>True order</div>
+              <div className="space-y-1">
+                {gameState.trueRanking.map((handId, i) => {
+                  const hand = handMap.get(handId);
+                  if (!hand) return null;
+                  const displayRank = trueRanks?.[handId] ?? i + 1;
+                  return (
+                    <div
+                      key={handId}
+                      className="flex items-center gap-1.5 px-2 py-1 rounded text-xs"
+                      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+                    >
+                      <span className="w-4" style={{ color: D.muted }}>{displayRank}.</span>
+                      <span className="font-medium truncate flex-1" style={{ color: D.goldBright }}>{getHandLabel(hand)}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -313,33 +335,26 @@ function ScorePanel({ gameState, isCreator, onPlayAgain }: ScorePanelProps) {
 
       {/* Per-player leaderboard */}
       {leaderboard.length > 0 && (
-        <div className="mb-4">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
-            Player Accuracy
-          </div>
-          <div className="space-y-1">
+        <div className="rounded-xl p-4" style={{ background: "rgba(0,0,0,0.35)" }}>
+          <div className="text-[10px] font-black uppercase tracking-[0.25em] mb-3" style={{ color: D.gold }}>Player Accuracy</div>
+          <div className="grid grid-cols-2 gap-2">
             {ranked.map((entry) => {
               const isBest = entry.total === minTotal;
-              const isWorst = entry.total === maxTotal;
-              let rowClass = "bg-gray-800/60 border border-gray-700/40";
-              if (allPerfectLeaderboard) {
-                rowClass = "bg-green-900/30 border border-green-700/40";
-              } else if (isBest && !isWorst) {
-                rowClass = "bg-green-900/30 border border-green-700/40";
-              } else if (isWorst && !isBest) {
-                rowClass = "bg-red-900/20 border border-red-800/30";
-              }
+              const isWorst = entry.total === maxTotal && !allPerfectLeaderboard;
               return (
                 <div
                   key={entry.playerId}
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${rowClass}`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                  style={allPerfectLeaderboard || isBest
+                    ? { background: "rgba(47,184,115,0.12)", border: "1px solid rgba(47,184,115,0.3)" }
+                    : isWorst
+                    ? { background: "rgba(192,96,96,0.1)", border: "1px solid rgba(192,96,96,0.2)" }
+                    : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
                 >
-                  <span className="text-gray-500 w-4">{entry.rank}.</span>
-                  <span className="text-white font-medium truncate flex-1">
-                    {entry.name}
-                  </span>
-                  <span className="text-gray-400 font-medium tabular-nums">
-                    {entry.total}
+                  <span className="text-xs font-black w-5" style={{ color: isBest ? D.gold : isWorst ? D.danger : D.muted }}>#{entry.rank}</span>
+                  <span className="flex-1 text-sm font-bold truncate" style={{ color: D.goldBright }}>{entry.name}</span>
+                  <span className="text-sm font-black tabular-nums font-serif" style={{ color: isBest ? D.goldBright : isWorst ? D.danger : D.sub }}>
+                    {entry.total} off
                   </span>
                 </div>
               );
@@ -352,13 +367,18 @@ function ScorePanel({ gameState, isCreator, onPlayAgain }: ScorePanelProps) {
       {isCreator ? (
         <button
           onClick={onPlayAgain}
-          className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition-all active:scale-95"
+          className="w-full py-4 rounded-xl font-black text-sm tracking-wide transition-all active:scale-95"
+          style={{
+            background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`,
+            color: D.ink,
+            boxShadow: `0 3px 0 ${D.rail}, 0 6px 16px rgba(0,0,0,0.35)`,
+          }}
         >
-          Play Again
+          Deal again
         </button>
       ) : (
-        <p className="text-center text-gray-500 text-sm">
-          Waiting for host to start another game...
+        <p className="text-center text-sm" style={{ color: D.muted }}>
+          Waiting for host to start another game…
         </p>
       )}
     </div>

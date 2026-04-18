@@ -12,20 +12,27 @@ export default function ReadyButton({
   onToggle,
   disabled = false,
 }: ReadyButtonProps) {
+  const canClick = !disabled || isReady;
+
   return (
     <button
-      onClick={() => !disabled && onToggle(!isReady)}
-      disabled={disabled && !isReady}
-      title={disabled ? "Claim all rank chips first" : undefined}
-      className={`px-8 py-3 rounded-xl font-bold text-lg transition-all duration-150 active:scale-95 shadow-lg ${
-        disabled && !isReady
-          ? "bg-gray-800 text-gray-600 cursor-not-allowed shadow-none"
+      onClick={() => canClick && onToggle(!isReady)}
+      disabled={!canClick}
+      title={disabled && !isReady ? "Claim all rank chips first" : undefined}
+      className="px-8 py-3 rounded-xl font-black text-sm tracking-wide transition-all duration-150 active:scale-95"
+      style={
+        !canClick
+          ? { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.25)", cursor: "not-allowed" }
           : isReady
-          ? "bg-green-600 hover:bg-green-500 text-white shadow-green-900/50"
-          : "bg-gray-700 hover:bg-gray-600 text-gray-200 shadow-gray-900/50"
-      }`}
+          ? { background: "#2fb873", color: "#04221a", boxShadow: "0 3px 0 #1a5c3a, 0 6px 16px rgba(0,0,0,0.3)" }
+          : {
+              background: "linear-gradient(180deg, #f0d278, #c9a54a)",
+              color: "#2a1a08",
+              boxShadow: "0 3px 0 #78350f, 0 6px 16px rgba(0,0,0,0.35)",
+            }
+      }
     >
-      {isReady ? "✓ Ready!" : "Ready?"}
+      {isReady ? "✓ Ready!" : "READY →"}
     </button>
   );
 }

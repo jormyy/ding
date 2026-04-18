@@ -11,6 +11,7 @@ import RankChip from "./RankChip";
 interface GameBoardProps {
   gameState: GameState;
   myId: string;
+  code?: string;
   onSend: (msg: ClientMessage) => void;
   onDing: () => void;
   dingNotifications: { id: string; playerName: string }[];
@@ -21,6 +22,7 @@ interface GameBoardProps {
 export default function GameBoard({
   gameState,
   myId,
+  code,
   onSend,
   onDing,
   dingNotifications,
@@ -315,25 +317,28 @@ export default function GameBoard({
   // ── Mobile landscape: full-width table (opponents only) + own hands at bottom ──
   if (isMobileLandscape) {
     return (
-      <div className="h-[100dvh] flex flex-col bg-gray-950">
+      <div className="h-[100dvh] flex flex-col" style={{ background: "#0a1813" }}>
         {toastEl}
         {/* Header */}
-        <div className="flex-none border-b border-gray-800 bg-gray-950/90 px-3 py-1 flex items-center justify-between">
-          <span className="text-sm font-black text-white tracking-tight">DING</span>
+        <div
+          className="flex-none px-3 py-1 flex items-center justify-between"
+          style={{ borderBottom: "1px solid rgba(201,165,74,0.18)", background: "rgba(10,40,22,0.95)" }}
+        >
+          <span className="font-serif font-black" style={{ fontSize: 16, color: "#f5e6b8" }}>Ding</span>
           <div className="flex items-center gap-2">
             {phaseLabels.map((phase) => (
-              <div key={phase} className={`text-[9px] font-bold uppercase tracking-widest ${gameState.phase === phase ? "text-green-400" : "text-gray-700"}`}>
+              <div key={phase} className="text-[9px] font-black uppercase tracking-widest" style={{ color: gameState.phase === phase ? "#c9a54a" : "rgba(255,255,255,0.2)" }}>
                 {phase === "preflop" ? "pre" : phase}
               </div>
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-green-400 text-[10px] font-bold uppercase tracking-widest">
+            <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#2fb873" }}>
               {gameState.phase === "preflop" ? "pre-flop" : gameState.phase}
             </span>
             {isCreator && (confirmingEnd
-              ? <button onClick={handleEndGameClick} className="text-[10px] font-black bg-red-600 text-white px-2 py-0.5 rounded-full">sure?</button>
-              : <button onClick={handleEndGameClick} className="text-[10px] font-bold text-gray-600 hover:text-red-400">end</button>
+              ? <button onClick={handleEndGameClick} className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ background: "#c06060", color: "#fff" }}>sure?</button>
+              : <button onClick={handleEndGameClick} className="text-[10px] font-bold" style={{ color: "#c06060" }}>end</button>
             )}
           </div>
         </div>
@@ -371,7 +376,7 @@ export default function GameBoard({
         </div>
 
         {/* Own hands strip */}
-        <div className="flex-none border-t border-gray-800 bg-gray-950 px-3 py-1.5">
+        <div className="flex-none px-3 py-1.5" style={{ borderTop: "1px solid rgba(201,165,74,0.15)", background: "#0a1813" }}>
           {/* Requests row (if any) */}
           {incomingRequests.length > 0 && (
             <div className="flex gap-3 mb-1.5 overflow-x-auto">
@@ -433,58 +438,93 @@ export default function GameBoard({
     );
   }
 
+  const phaseSteps = ["Pre-flop", "Flop", "Turn", "River", "Reveal"];
+  const currentPhaseIdx = phaseLabels.indexOf(gameState.phase as typeof phaseLabels[number]);
+  const totalHands2 = gameState.ranking.length;
+
   return (
-    <div className="h-[100dvh] flex flex-col bg-gray-950">
+    <div className="h-[100dvh] flex flex-col" style={{ background: "#0a1813" }}>
       {toastEl}
       {/* Header */}
-      <div className="flex-none border-b border-gray-800 bg-gray-950/90 backdrop-blur-sm px-3 py-2 flex items-center justify-between">
-        <span className="text-base font-black text-white tracking-tight">DING</span>
-        <div className="flex items-center gap-2">
-          {phaseLabels.map((phase) => (
-            <div
-              key={phase}
-              className={`flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-widest transition-colors ${
-                gameState.phase === phase ? "text-green-400" : "text-gray-700"
-              }`}
+      <div
+        className="flex-none flex items-center px-4 gap-3"
+        style={{
+          height: 54,
+          background: "linear-gradient(180deg, rgba(20,60,36,0.95) 0%, rgba(10,40,22,0.98) 100%)",
+          borderBottom: "1px solid rgba(201,165,74,0.2)",
+          flexShrink: 0,
+        }}
+      >
+        <span className="font-serif font-black" style={{ fontSize: 22, color: "#f5e6b8" }}>Ding</span>
+        <div className="w-px h-5 bg-white/10" />
+        {code && <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: "#c9a54a" }}>Room {code}</span>}
+
+        {/* Phase progress */}
+        <div className="flex-1 flex items-center justify-center gap-0">
+          {phaseSteps.map((label, i) => {
+            const done = i < currentPhaseIdx;
+            const active = i === currentPhaseIdx;
+            return (
+              <div key={label} className="flex items-center">
+                <div
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl transition-colors"
+                  style={{ background: active ? "rgba(201,165,74,0.15)" : "transparent" }}
+                >
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{
+                      background: active ? "#c9a54a" : done ? "#2fb873" : "rgba(255,255,255,0.15)",
+                      boxShadow: active ? "0 0 10px #c9a54a" : "none",
+                    }}
+                  />
+                  <span
+                    className="text-[10px] font-black tracking-wider uppercase hidden sm:inline"
+                    style={{
+                      color: active ? "#f5e6b8" : done ? "#2fb873" : "rgba(255,255,255,0.3)",
+                    }}
+                  >
+                    {label}
+                  </span>
+                </div>
+                {i < phaseSteps.length - 1 && (
+                  <div className="w-3 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <span className="text-[10px] font-bold hidden sm:block" style={{ color: "#6a8a72" }}>
+          {gameState.players.length}p · {gameState.handsPerPlayer}h · {totalHands2}
+        </span>
+
+        {isCreator && (
+          confirmingEnd ? (
+            <button
+              onClick={handleEndGameClick}
+              className="text-[11px] font-black px-3 py-1 rounded-full transition-all"
+              style={{ background: "#c06060", color: "#fff" }}
             >
-              <div
-                className={`w-1.5 h-1.5 rounded-full ${
-                  gameState.phase === phase ? "bg-green-400" : "bg-gray-700"
-                }`}
-              />
-              <span className="hidden sm:inline">{phase === "preflop" ? "pre" : phase}</span>
-            </div>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-green-400 text-[10px] font-bold uppercase tracking-widest">
-            {gameState.phase === "preflop" ? "pre-flop" : gameState.phase}
-          </span>
-          {isCreator && (
-            confirmingEnd ? (
-              <button
-                onClick={handleEndGameClick}
-                className="text-[10px] font-black bg-red-600 hover:bg-red-500 active:bg-red-700 text-white px-2 py-0.5 rounded-full transition-all"
-              >
-                sure?
-              </button>
-            ) : (
-              <button
-                onClick={handleEndGameClick}
-                className="text-[10px] font-bold text-gray-600 hover:text-red-400 transition-colors"
-              >
-                end
-              </button>
-            )
-          )}
-        </div>
+              sure?
+            </button>
+          ) : (
+            <button
+              onClick={handleEndGameClick}
+              className="text-[11px] font-bold transition-colors"
+              style={{ color: "#c06060" }}
+            >
+              End
+            </button>
+          )
+        )}
       </div>
 
       {/* Main area: table + requests panel side by side */}
       <div className="flex-1 min-h-0 flex overflow-hidden">
         {/* Poker Table */}
         <div className="flex-1 min-w-0 flex items-center justify-center overflow-hidden">
-          <div className="relative w-full aspect-square sm:aspect-auto sm:h-full">
+          <div className="relative w-full aspect-square sm:aspect-auto sm:h-full"
+               style={{ background: "url('/felt.png') repeat, #0a3820", backgroundSize: "256px 256px" }}>
             <PokerTable
               gameState={displayState}
               myId={myId}
@@ -558,13 +598,13 @@ export default function GameBoard({
         </div>
 
         {/* Sidebar — hidden on mobile, visible on sm+. Top half: requests. Bottom half: chat. */}
-        <div className="hidden sm:flex flex-none w-64 border-l border-gray-800 bg-gray-950 flex-col overflow-hidden">
+        <div className="hidden sm:flex flex-none w-64 flex-col overflow-hidden" style={{ background: "#0a1813", borderLeft: "1px solid rgba(201,165,74,0.18)" }}>
           {/* Requests half */}
           <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-            <div className="flex-none px-3 py-2 border-b border-gray-800 flex items-center gap-2">
-              <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">Requests</span>
+            <div className="flex-none px-3 py-2 flex items-center gap-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: "#c9a54a" }}>Requests</span>
               {incomingRequests.length > 0 && (
-                <span className="bg-orange-500 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center" style={{ background: "#e08030" }}>
                   {incomingRequests.length}
                 </span>
               )}
@@ -621,35 +661,36 @@ export default function GameBoard({
                   return (
                     <div
                       key={`${req.initiatorHandId}-${req.recipientHandId}`}
-                      className="bg-gray-900 border border-gray-700 rounded-xl p-3 flex flex-col gap-2"
+                      className="rounded-xl p-3 flex flex-col gap-2"
+                      style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,165,74,0.2)" }}
                     >
                       <div className="flex items-center gap-2">
                         {badgeRank !== undefined && (
                           <div
-                            className={[
-                              "w-8 h-8 rounded-full border-2 font-black text-sm flex items-center justify-center flex-shrink-0",
-                              badgeRank === 1
-                                ? "bg-amber-500 border-amber-300 text-amber-950"
-                                : badgeRank === localRanking.length
-                                ? "bg-red-950 border-red-800 text-red-300"
-                                : "bg-gray-700 border-gray-500 text-white",
-                            ].join(" ")}
+                            className="w-8 h-8 rounded-full border-2 font-black text-sm flex items-center justify-center flex-shrink-0"
+                            style={badgeRank === 1
+                              ? { background: "#c9a54a", borderColor: "#f0d278", color: "#2a1a08" }
+                              : badgeRank === localRanking.length
+                              ? { background: "#4a1014", borderColor: "#a84040", color: "#ffb0b4" }
+                              : { background: "#374151", borderColor: "#6b7280", color: "#fff" }}
                           >
                             {badgeRank}
                           </div>
                         )}
-                        <p className="text-sm text-gray-100 leading-snug">{body}</p>
+                        <p className="text-sm leading-snug" style={{ color: "#f5e6b8" }}>{body}</p>
                       </div>
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleAcceptAcquire(req.initiatorHandId, req.recipientHandId)}
-                          className="flex-1 bg-green-600 hover:bg-green-500 active:bg-green-700 text-white text-xs font-bold py-1.5 rounded-lg transition-colors"
+                          className="flex-1 text-white text-xs font-bold py-1.5 rounded-lg transition-colors active:scale-95"
+                          style={{ background: "#2fb873" }}
                         >
                           Accept
                         </button>
                         <button
                           onClick={() => handleRejectAcquire(req.initiatorHandId, req.recipientHandId)}
-                          className="flex-1 bg-gray-700 hover:bg-gray-600 active:bg-gray-800 text-gray-200 text-xs font-bold py-1.5 rounded-lg transition-colors"
+                          className="flex-1 text-xs font-bold py-1.5 rounded-lg transition-colors"
+                          style={{ background: "rgba(255,255,255,0.06)", color: "#9fc5a8" }}
                         >
                           Reject
                         </button>
@@ -662,7 +703,7 @@ export default function GameBoard({
           </div>
 
           {/* Chat half */}
-          <div className="flex-1 min-h-0 border-t border-gray-800 flex flex-col overflow-hidden">
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
             <ChatPanel messages={gameState.chatMessages ?? []} myId={myId} onSend={handleSendChat} />
           </div>
         </div>
@@ -670,7 +711,7 @@ export default function GameBoard({
 
       {/* Mobile-only requests section */}
       {incomingRequests.length > 0 && (
-        <div className="sm:hidden flex-none border-t border-gray-800 bg-gray-950 px-3 py-2 flex flex-col gap-2 max-h-40 overflow-y-auto">
+        <div className="sm:hidden flex-none px-3 py-2 flex flex-col gap-2 max-h-40 overflow-y-auto" style={{ background: "#0a1813", borderTop: "1px solid rgba(201,165,74,0.15)" }}>
           <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">
             Requests
             <span className="ml-1.5 bg-orange-500 text-white text-[10px] font-black rounded-full px-1.5 py-0.5">
@@ -758,7 +799,7 @@ export default function GameBoard({
       )}
 
       {/* Bottom bar: ready button */}
-      <div className="flex-none border-t border-gray-800 bg-gray-950/90 backdrop-blur-sm px-4 py-2.5 flex items-center justify-center">
+      <div className="flex-none px-4 py-2.5 flex items-center justify-center" style={{ borderTop: "1px solid rgba(201,165,74,0.15)", background: "rgba(10,24,19,0.97)" }}>
         <ReadyButton
           isReady={isReady}
           onToggle={handleReady}

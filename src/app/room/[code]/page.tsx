@@ -226,6 +226,7 @@ export default function RoomPage() {
     <GameBoard
       gameState={gameState}
       myId={myId}
+      code={code}
       onSend={sendMessage}
       onDing={sendDing}
       dingNotifications={dingNotifications}
