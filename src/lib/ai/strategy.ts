@@ -40,6 +40,11 @@ export type BotMemo = {
   belief: BeliefState;
   mood: Mood;
   lastRankingSig: string;
+  // Expressive-behavior tracking
+  prevMyProposals: Set<string>;    // reqKeys present last tick for proposals I initiated
+  prevHandSlots: Map<string, number>; // handId -> slot from previous tick
+  expressionCooldownUntil: number; // ms timestamp; ding/fuckoff gated by this
+  stallTicks: number;              // consecutive ticks where everyone ranked but not all ready
 };
 
 export function newBotMemo(): BotMemo {
@@ -53,6 +58,10 @@ export function newBotMemo(): BotMemo {
     belief: newBeliefState(),
     mood: newMood(),
     lastRankingSig: "",
+    prevMyProposals: new Set(),
+    prevHandSlots: new Map(),
+    expressionCooldownUntil: 0,
+    stallTicks: 0,
   };
 }
 
@@ -176,6 +185,91 @@ export function decideAction(
   const signals = extractSignals(state, memo.belief, myPlayerId);
   const traitsM = moodAdjustedTraits(traits, memo.mood);
   const me = state.players.find((p) => p.id === myPlayerId);
+
+  // === 1b. EXPRESSIVE EVENTS — ding / fuckoff before the normal pipeline ===
+  // Detect rejected proposals: a key in prevMyProposals that is no longer
+  // present in state.acquireRequests AND the ranking didn't change to reflect
+  // acceptance. Best-effort — we mark "rejected-ish" and let traits decide.
+  const currentMyProposalKeys = new Set<string>();
+  for (const r of state.acquireRequests) {
+    if (r.initiatorId === myPlayerId) {
+      currentMyProposalKeys.add(reqKey(r.initiatorHandId, r.recipientHandId));
+    }
+  }
+  let myProposalVanished = false;
+  for (const k of memo.prevMyProposals) {
+    if (!currentMyProposalKeys.has(k)) {
+      myProposalVanished = true;
+      break;
+    }
+  }
+  memo.prevMyProposals = currentMyProposalKeys;
+
+  // Detect teammate churn on a hand I had high belief confidence in.
+  let confidentChurn = false;
+  for (const h of state.hands) {
+    if (h.playerId === myPlayerId) continue;
+    const prevSlot = memo.prevHandSlots.get(h.id);
+    const curSlot = state.ranking.indexOf(h.id);
+    if (prevSlot !== undefined && prevSlot !== -1 && curSlot !== -1 && prevSlot !== curSlot) {
+      const conf = memo.belief.handConfidence.get(h.id) ?? 0;
+      if (conf > 0.5) confidentChurn = true;
+    }
+  }
+  // Refresh slot snapshot.
+  memo.prevHandSlots.clear();
+  for (let i = 0; i < state.ranking.length; i++) {
+    const hid = state.ranking[i];
+    if (hid) memo.prevHandSlots.set(hid, i);
+  }
+
+  // Stall tracking: all ranked but someone isn't ready.
+  const allRankedNow = state.ranking.every((s) => s !== null);
+  const someoneNotReady = state.players.some((p) => p.connected && !p.ready);
+  if (allRankedNow && someoneNotReady) memo.stallTicks++;
+  else memo.stallTicks = 0;
+
+  // Express if cooldown elapsed.
+  if (Date.now() >= memo.expressionCooldownUntil) {
+    // Fuckoff: rejected + skeptical/frustrated personalities.
+    if (myProposalVanished) {
+      const frustration = (1 - traitsM.agreeableness) * 0.6
+        + traitsM.neuroticism * 0.3
+        + memo.mood.concern * 0.3;
+      if (Math.random() < frustration) {
+        memo.expressionCooldownUntil = Date.now() + 4000;
+        memo.idleTicks = 0;
+        return { type: "fuckoff" };
+      }
+    }
+    // Ding: confident-hand churn makes helpful/extraverted bots complain.
+    if (confidentChurn) {
+      const complaint = traitsM.extraversion * 0.5 + traitsM.helpfulness * 0.3
+        + memo.mood.concern * 0.2;
+      if (Math.random() < complaint) {
+        memo.expressionCooldownUntil = Date.now() + 3000;
+        memo.idleTicks = 0;
+        return { type: "ding" };
+      }
+    }
+    // Stall ding: if team is ranked but not all ready, extraverts nudge.
+    if (memo.stallTicks >= 2) {
+      const nudge = traitsM.extraversion * 0.3 + (1 - traitsM.conscientiousness) * 0.15;
+      if (Math.random() < nudge) {
+        memo.expressionCooldownUntil = Date.now() + 4000;
+        memo.idleTicks = 0;
+        return { type: "ding" };
+      }
+    }
+    // Passive: high-concern low-agreeable bots sometimes fuckoff at nothing.
+    if (memo.mood.concern > 0.6 && traitsM.agreeableness < 0.4) {
+      if (Math.random() < 0.05 * traitsM.extraversion) {
+        memo.expressionCooldownUntil = Date.now() + 6000;
+        memo.idleTicks = 0;
+        return { type: "fuckoff" };
+      }
+    }
+  }
 
   // === 2. EVALUATION ===
   const candidates: Candidate[] = [];
@@ -328,9 +422,13 @@ export function decideAction(
 
   // === 3. SELECTION ===
   if (candidates.length === 0) {
-    if (Math.random() < (1 - traitsM.conscientiousness) * 0.04) {
-      memo.idleTicks++;
-      return { type: "ding" };
+    if (Date.now() >= memo.expressionCooldownUntil) {
+      const dingP = (1 - traitsM.conscientiousness) * 0.04 + traitsM.extraversion * 0.08;
+      if (Math.random() < dingP) {
+        memo.expressionCooldownUntil = Date.now() + 3500;
+        memo.idleTicks++;
+        return { type: "ding" };
+      }
     }
     memo.idleTicks++;
     return null;
