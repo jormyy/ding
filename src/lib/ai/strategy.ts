@@ -444,6 +444,23 @@ export function decideAction(
     return { type: "ready", ready: true };
   }
 
+  // "Everyone else is waiting on me" stall breaker. If every other connected
+  // player is ready and my own hands are placed, don't let a stray
+  // proposal/swap candidate keep me dithering — ready up after a tick or two.
+  const myHandsPlaced = myHands.every((h) => state.ranking.indexOf(h.id) !== -1);
+  const othersAllReady = state.players
+    .filter((p) => p.id !== myPlayerId && p.connected)
+    .every((p) => p.ready);
+  if (
+    !alreadyReady &&
+    myHandsPlaced &&
+    othersAllReady &&
+    effectiveAllRanked &&
+    memo.idleTicks >= 1
+  ) {
+    return { type: "ready", ready: true };
+  }
+
   // === 3. SELECTION ===
   if (candidates.length === 0) {
     const dingP = (1 - traitsM.conscientiousness) * 0.08 + traitsM.extraversion * 0.18;
