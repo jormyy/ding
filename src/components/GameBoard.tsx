@@ -104,6 +104,9 @@ export default function GameBoard({
     const recipientHand = gameState.hands.find((h) => h.id === req.recipientHandId);
     return recipientHand?.playerId === myId;
   });
+  const outgoingRequests = (gameState.acquireRequests ?? []).filter(
+    (req) => req.initiatorId === myId,
+  );
 
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
 
@@ -283,6 +286,10 @@ export default function GameBoard({
     onSend({ type: "rejectChipMove", initiatorHandId, recipientHandId });
   }
 
+  function handleCancelAcquire(initiatorHandId: string, recipientHandId: string) {
+    onSend({ type: "cancelChipMove", initiatorHandId, recipientHandId });
+  }
+
   function handleReady(ready: boolean) {
     onSend({ type: "ready", ready });
   }
@@ -378,7 +385,7 @@ export default function GameBoard({
         {/* Own hands strip */}
         <div className="flex-none px-3 py-1.5" style={{ borderTop: "1px solid rgba(201,165,74,0.15)", background: "#0a1813" }}>
           {/* Requests row (if any) */}
-          {incomingRequests.length > 0 && (
+          {(incomingRequests.length > 0 || outgoingRequests.length > 0) && (
             <div className="flex gap-3 mb-1.5 overflow-x-auto">
               {incomingRequests.map((req) => {
                 const name = gameState.players.find((p) => p.id === req.initiatorId)?.name ?? "?";
@@ -397,6 +404,26 @@ export default function GameBoard({
                     <span className="text-[10px] text-gray-300">{label}</span>
                     <button onClick={() => handleAcceptAcquire(req.initiatorHandId, req.recipientHandId)} className="bg-green-600 text-white text-[9px] font-bold px-2 py-0.5 rounded">✓</button>
                     <button onClick={() => handleRejectAcquire(req.initiatorHandId, req.recipientHandId)} className="bg-gray-700 text-gray-200 text-[9px] font-bold px-2 py-0.5 rounded">✕</button>
+                  </div>
+                );
+              })}
+              {outgoingRequests.map((req) => {
+                const recipientHand = gameState.hands.find((h) => h.id === req.recipientHandId);
+                const recipientName = gameState.players.find((p) => p.id === recipientHand?.playerId)?.name ?? "?";
+                const recipientRank = rankMap.get(req.recipientHandId);
+                const initiatorRank = rankMap.get(req.initiatorHandId);
+                let label: React.ReactNode;
+                if (req.kind === "acquire") {
+                  label = (<>→ <span className="font-bold text-white">{recipientName}</span> for <span className="text-orange-300 font-bold">#{recipientRank}</span></>);
+                } else if (req.kind === "offer") {
+                  label = (<>→ <span className="font-bold text-white">{recipientName}</span> offer <span className="text-orange-300 font-bold">#{initiatorRank}</span></>);
+                } else {
+                  label = (<>→ <span className="font-bold text-white">{recipientName}</span> swap <span className="text-orange-300 font-bold">#{initiatorRank}</span>↔<span className="text-orange-300 font-bold">#{recipientRank}</span></>);
+                }
+                return (
+                  <div key={`out-${req.initiatorHandId}-${req.recipientHandId}`} className="flex items-center gap-1.5 flex-none opacity-80">
+                    <span className="text-[10px] text-gray-400">{label}</span>
+                    <button onClick={() => handleCancelAcquire(req.initiatorHandId, req.recipientHandId)} className="bg-gray-700 text-gray-200 text-[9px] font-bold px-2 py-0.5 rounded">cancel</button>
                   </div>
                 );
               })}
@@ -717,8 +744,8 @@ export default function GameBoard({
             </div>
 
             <div className="flex-1 overflow-y-auto px-2 py-2 flex flex-col gap-2">
-              {incomingRequests.length === 0 ? (
-                <p className="text-gray-600 text-xs text-center mt-4">No incoming requests</p>
+              {incomingRequests.length === 0 && outgoingRequests.length === 0 ? (
+                <p className="text-gray-600 text-xs text-center mt-4">No requests</p>
               ) : (
                 incomingRequests.map((req) => {
                   const initiatorName =
@@ -805,6 +832,91 @@ export default function GameBoard({
                   );
                 })
               )}
+
+              {outgoingRequests.length > 0 && (
+                <>
+                  <div className="flex items-center gap-2 mt-2 px-1">
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: "#6a8a72" }}>Sent</span>
+                    <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
+                  </div>
+                  {outgoingRequests.map((req) => {
+                    const recipientHand = gameState.hands.find((h) => h.id === req.recipientHandId);
+                    const recipientName =
+                      gameState.players.find((p) => p.id === recipientHand?.playerId)?.name ?? "?";
+                    const recipientRank = rankMap.get(req.recipientHandId);
+                    const initiatorRank = rankMap.get(req.initiatorHandId);
+                    const badgeRank =
+                      req.kind === "offer"
+                        ? initiatorRank
+                        : req.kind === "acquire"
+                        ? recipientRank
+                        : initiatorRank;
+
+                    let body: React.ReactNode;
+                    if (req.kind === "acquire") {
+                      body = (
+                        <>
+                          {"Asking "}
+                          <span className="font-bold text-white">{recipientName}</span>
+                          {" for "}
+                          <span className="font-bold text-orange-300">#{recipientRank}</span>
+                        </>
+                      );
+                    } else if (req.kind === "offer") {
+                      body = (
+                        <>
+                          {"Offering "}
+                          <span className="font-bold text-orange-300">#{initiatorRank}</span>
+                          {" to "}
+                          <span className="font-bold text-white">{recipientName}</span>
+                        </>
+                      );
+                    } else {
+                      body = (
+                        <>
+                          {"Swap with "}
+                          <span className="font-bold text-white">{recipientName}</span>
+                          {": "}
+                          <span className="font-bold text-orange-300">#{initiatorRank}</span>
+                          {" ↔ "}
+                          <span className="font-bold text-orange-300">#{recipientRank}</span>
+                        </>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={`out-${req.initiatorHandId}-${req.recipientHandId}`}
+                        className="rounded-xl p-3 flex flex-col gap-2"
+                        style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(201,165,74,0.18)" }}
+                      >
+                        <div className="flex items-center gap-2">
+                          {badgeRank !== undefined && (
+                            <div
+                              className="w-7 h-7 rounded-full border-2 font-black text-xs flex items-center justify-center flex-shrink-0 opacity-70"
+                              style={badgeRank === 1
+                                ? { background: "#c9a54a", borderColor: "#f0d278", color: "#2a1a08" }
+                                : badgeRank === localRanking.length
+                                ? { background: "#4a1014", borderColor: "#a84040", color: "#ffb0b4" }
+                                : { background: "#374151", borderColor: "#6b7280", color: "#fff" }}
+                            >
+                              {badgeRank}
+                            </div>
+                          )}
+                          <p className="text-xs leading-snug" style={{ color: "#9fc5a8" }}>{body}</p>
+                        </div>
+                        <button
+                          onClick={() => handleCancelAcquire(req.initiatorHandId, req.recipientHandId)}
+                          className="text-xs font-bold py-1.5 rounded-lg transition-colors"
+                          style={{ background: "rgba(255,255,255,0.06)", color: "#c9a54a" }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
             </div>
           </div>
 
@@ -816,13 +928,15 @@ export default function GameBoard({
       </div>
 
       {/* Mobile-only requests section */}
-      {incomingRequests.length > 0 && (
+      {(incomingRequests.length > 0 || outgoingRequests.length > 0) && (
         <div className="sm:hidden flex-none px-3 py-2 flex flex-col gap-2 max-h-40 overflow-y-auto" style={{ background: "#0a1813", borderTop: "1px solid rgba(201,165,74,0.15)" }}>
           <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">
             Requests
-            <span className="ml-1.5 bg-orange-500 text-white text-[10px] font-black rounded-full px-1.5 py-0.5">
-              {incomingRequests.length}
-            </span>
+            {incomingRequests.length > 0 && (
+              <span className="ml-1.5 bg-orange-500 text-white text-[10px] font-black rounded-full px-1.5 py-0.5">
+                {incomingRequests.length}
+              </span>
+            )}
           </span>
           {incomingRequests.map((req) => {
             const initiatorName = gameState.players.find((p) => p.id === req.initiatorId)?.name ?? "?";
@@ -898,6 +1012,56 @@ export default function GameBoard({
                     Reject
                   </button>
                 </div>
+              </div>
+            );
+          })}
+          {outgoingRequests.map((req) => {
+            const recipientHand = gameState.hands.find((h) => h.id === req.recipientHandId);
+            const recipientName = gameState.players.find((p) => p.id === recipientHand?.playerId)?.name ?? "?";
+            const recipientRank = rankMap.get(req.recipientHandId);
+            const initiatorRank = rankMap.get(req.initiatorHandId);
+            const badgeRank =
+              req.kind === "offer"
+                ? initiatorRank
+                : req.kind === "acquire"
+                ? recipientRank
+                : initiatorRank;
+
+            let body: React.ReactNode;
+            if (req.kind === "acquire") {
+              body = (<>{"Asking "}<span className="font-bold text-white">{recipientName}</span>{" for "}<span className="font-bold text-orange-300">#{recipientRank}</span></>);
+            } else if (req.kind === "offer") {
+              body = (<>{"Offering "}<span className="font-bold text-orange-300">#{initiatorRank}</span>{" to "}<span className="font-bold text-white">{recipientName}</span></>);
+            } else {
+              body = (<>{"Swap with "}<span className="font-bold text-white">{recipientName}</span>{": "}<span className="font-bold text-orange-300">#{initiatorRank}</span>{"↔"}<span className="font-bold text-orange-300">#{recipientRank}</span></>);
+            }
+
+            return (
+              <div
+                key={`out-${req.initiatorHandId}-${req.recipientHandId}`}
+                className="flex items-center gap-2 opacity-80"
+              >
+                {badgeRank !== undefined && (
+                  <div
+                    className={[
+                      "w-7 h-7 rounded-full border-2 font-black text-xs flex items-center justify-center flex-shrink-0 opacity-70",
+                      badgeRank === 1
+                        ? "bg-amber-500 border-amber-300 text-amber-950"
+                        : badgeRank === localRanking.length
+                        ? "bg-red-950 border-red-800 text-red-300"
+                        : "bg-gray-700 border-gray-500 text-white",
+                    ].join(" ")}
+                  >
+                    {badgeRank}
+                  </div>
+                )}
+                <p className="text-xs text-gray-400 flex-1 leading-snug">{body}</p>
+                <button
+                  onClick={() => handleCancelAcquire(req.initiatorHandId, req.recipientHandId)}
+                  className="bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs font-bold px-2.5 py-1 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
               </div>
             );
           })}

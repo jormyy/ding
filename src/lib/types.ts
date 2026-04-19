@@ -83,6 +83,7 @@ export type ClientMessage =
   | { type: "proposeChipMove"; initiatorHandId: string; recipientHandId: string } // server decides kind (acquire/offer/swap)
   | { type: "acceptChipMove"; initiatorHandId: string; recipientHandId: string }
   | { type: "rejectChipMove"; initiatorHandId: string; recipientHandId: string }
+  | { type: "cancelChipMove"; initiatorHandId: string; recipientHandId: string } // initiator withdraws their own proposal
   | { type: "ready"; ready: boolean } // preflop→river
   | { type: "flip"; handId: string } // reveal phase, own hand only
   | { type: "unclaim"; handId: string } // return own chip back to the board

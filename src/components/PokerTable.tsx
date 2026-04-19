@@ -86,7 +86,10 @@ function Seat({
   const isFlipTurn =
     currentFlipHandId !== null &&
     hands.some((h) => h.id === currentFlipHandId);
-  const canFlip = isFlipTurn && isMe;
+  // Owner flips their own hand. If owner is disconnected, any other connected
+  // player can flip on their behalf so reveal doesn't stall — the server
+  // enforces the same rule.
+  const canFlip = isFlipTurn && (isMe || !player.connected);
 
   const nameMaxW = isMobile ? "max-w-[60px]" : "max-w-[120px]";
   const cardProps = isMobile ? { tiny: true as const } : { small: true as const };
@@ -123,10 +126,19 @@ function Seat({
         )}
         <div
           className={`text-[10px] font-black truncate uppercase tracking-wide ${nameMaxW}`}
-          style={{ color: isMe ? "#f5e6b8" : "#9fc5a8" }}
+          style={{ color: isMe ? "#f5e6b8" : !player.connected ? "rgba(159,197,168,0.5)" : "#9fc5a8" }}
         >
           {player.name}
         </div>
+        {!player.connected && (
+          <span
+            className="text-[8px] font-black uppercase tracking-widest flex-shrink-0"
+            style={{ color: "#c06060" }}
+            title="Disconnected"
+          >
+            offline
+          </span>
+        )}
       </div>
 
       {/* Reveal flip prompt */}

@@ -565,6 +565,27 @@ export default class DingServer implements Party.Server {
         break;
       }
 
+      case "cancelChipMove": {
+        if (!player) return;
+
+        // Only the initiator can cancel their own proposal. Match on the
+        // (initiatorId, initiatorHandId, recipientHandId) triple so one player
+        // can't cancel a request someone else sent.
+        const before = this.state.acquireRequests.length;
+        this.state.acquireRequests = this.state.acquireRequests.filter(
+          (r) =>
+            !(
+              r.initiatorId === player.id &&
+              r.initiatorHandId === msg.initiatorHandId &&
+              r.recipientHandId === msg.recipientHandId
+            )
+        );
+        if (this.state.acquireRequests.length === before) return;
+
+        broadcastStateTo(this.room, this.state, this.connections);
+        break;
+      }
+
       case "transferOwnChip": {
         const gamePhases: Phase[] = ["preflop", "flop", "turn", "river"];
         if (!gamePhases.includes(this.state.phase)) return;
@@ -753,9 +774,16 @@ export default class DingServer implements Party.Server {
         const handToFlip = this.state.hands.find((h) => h.id === handToFlipId);
         if (!handToFlip) return;
 
-        // Must be the owner of this hand
+        // Owner flips their own hand. If the owner is disconnected, any
+        // connected player can flip on their behalf so reveal doesn't stall.
+        // Mirrors the ready-advance rule (line ~683) that skips disconnected
+        // players.
         const senderPlayer = this.getPlayerByConn(sender.id);
-        if (!senderPlayer || handToFlip.playerId !== senderPlayer.id) return;
+        if (!senderPlayer) return;
+        const owner = this.state.players.find((p) => p.id === handToFlip.playerId);
+        if (owner?.connected) {
+          if (handToFlip.playerId !== senderPlayer.id) return;
+        }
 
         handToFlip.flipped = true;
         this.state.revealIndex++;
