@@ -44,7 +44,7 @@ export type BotMemo = {
   prevMyProposals: Set<string>;    // reqKeys present last tick for proposals I initiated
   myRejectedKeys: Set<string>;     // my own proposals that were rejected — don't re-propose this phase
   prevHandSlots: Map<string, number>; // handId -> slot from previous tick
-  expressionCooldownUntil: number; // ms timestamp; ding/fuckoff gated by this
+  expressionCooldownUntil: number; // legacy — kept for compat; no longer gates expression
   stallTicks: number;              // consecutive ticks where everyone ranked but not all ready
 };
 
@@ -193,9 +193,9 @@ export function decideAction(
   // Low-conscientiousness / low-neuroticism bots give up faster; Worriers
   // hold out longer. In [0, 1].
   const resignationRaw =
-    memo.myRejectedKeys.size * 0.18 +
-    Math.min(8, memo.idleTicks) * 0.06 +
-    Math.min(10, memo.decisionCount) * 0.025;
+    memo.myRejectedKeys.size * 0.54 +
+    Math.min(8, memo.idleTicks) * 0.18 +
+    Math.min(10, memo.decisionCount) * 0.075;
   const resignation = Math.max(0, Math.min(1,
     resignationRaw * (1.2 - 0.4 * traitsM.conscientiousness - 0.3 * traitsM.neuroticism)
   ));
@@ -245,45 +245,36 @@ export function decideAction(
   if (allRankedNow && someoneNotReady) memo.stallTicks++;
   else memo.stallTicks = 0;
 
-  // Express if cooldown elapsed.
-  if (Date.now() >= memo.expressionCooldownUntil) {
-    // Fuckoff: rejected + skeptical/frustrated personalities.
-    if (myProposalVanished) {
-      const frustration = (1 - traitsM.agreeableness) * 0.6
-        + traitsM.neuroticism * 0.3
-        + memo.mood.concern * 0.3;
-      if (Math.random() < frustration) {
-        memo.expressionCooldownUntil = Date.now() + 4000;
-        memo.idleTicks = 0;
-        return { type: "fuckoff" };
-      }
+  // Express freely — no cooldown. Bots spam ding/fuckoff when their
+  // personality + mood say so.
+  if (myProposalVanished) {
+    const frustration = (1 - traitsM.agreeableness) * 0.7
+      + traitsM.neuroticism * 0.35
+      + memo.mood.concern * 0.35;
+    if (Math.random() < frustration) {
+      memo.idleTicks = 0;
+      return { type: "fuckoff" };
     }
-    // Ding: confident-hand churn makes helpful/extraverted bots complain.
-    if (confidentChurn) {
-      const complaint = traitsM.extraversion * 0.5 + traitsM.helpfulness * 0.3
-        + memo.mood.concern * 0.2;
-      if (Math.random() < complaint) {
-        memo.expressionCooldownUntil = Date.now() + 3000;
-        memo.idleTicks = 0;
-        return { type: "ding" };
-      }
+  }
+  if (confidentChurn) {
+    const complaint = traitsM.extraversion * 0.6 + traitsM.helpfulness * 0.35
+      + memo.mood.concern * 0.25;
+    if (Math.random() < complaint) {
+      memo.idleTicks = 0;
+      return { type: "ding" };
     }
-    // Stall ding: if team is ranked but not all ready, extraverts nudge.
-    if (memo.stallTicks >= 2) {
-      const nudge = traitsM.extraversion * 0.3 + (1 - traitsM.conscientiousness) * 0.15;
-      if (Math.random() < nudge) {
-        memo.expressionCooldownUntil = Date.now() + 4000;
-        memo.idleTicks = 0;
-        return { type: "ding" };
-      }
+  }
+  if (memo.stallTicks >= 2) {
+    const nudge = traitsM.extraversion * 0.4 + (1 - traitsM.conscientiousness) * 0.2;
+    if (Math.random() < nudge) {
+      memo.idleTicks = 0;
+      return { type: "ding" };
     }
-    // Passive: high-concern low-agreeable bots sometimes fuckoff at nothing.
-    if (memo.mood.concern > 0.6 && traitsM.agreeableness < 0.4) {
-      if (Math.random() < 0.05 * traitsM.extraversion) {
-        memo.expressionCooldownUntil = Date.now() + 6000;
-        memo.idleTicks = 0;
-        return { type: "fuckoff" };
-      }
+  }
+  if (memo.mood.concern > 0.5 && traitsM.agreeableness < 0.45) {
+    if (Math.random() < 0.12 * traitsM.extraversion) {
+      memo.idleTicks = 0;
+      return { type: "fuckoff" };
     }
   }
 
@@ -448,13 +439,10 @@ export function decideAction(
 
   // === 3. SELECTION ===
   if (candidates.length === 0) {
-    if (Date.now() >= memo.expressionCooldownUntil) {
-      const dingP = (1 - traitsM.conscientiousness) * 0.04 + traitsM.extraversion * 0.08;
-      if (Math.random() < dingP) {
-        memo.expressionCooldownUntil = Date.now() + 3500;
-        memo.idleTicks++;
-        return { type: "ding" };
-      }
+    const dingP = (1 - traitsM.conscientiousness) * 0.08 + traitsM.extraversion * 0.18;
+    if (Math.random() < dingP) {
+      memo.idleTicks++;
+      return { type: "ding" };
     }
     memo.idleTicks++;
     return null;

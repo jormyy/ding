@@ -92,6 +92,11 @@ export class BotController {
         rec.firstActionPhase = state.phase;
         delay += firstActionDelayMs(rec.traits);
       }
+      // Bot-to-bot trading is 10x faster — only when there's a pending chip-move
+      // proposal where both sides are bots and this bot is one of them.
+      if (this.hasActiveBotBotTradeFor(pid, state)) {
+        delay = Math.round(delay / 10);
+      }
       const now = Date.now();
       const minAt = Math.max(now + delay, rec.earliestNextActionAt);
       const wait = Math.max(0, minAt - now);
@@ -118,11 +123,13 @@ export class BotController {
         msg.type !== "ready" &&
         msg.type !== "flip" &&
         Math.random() < rec.traits.hesitationProb;
+      const botBotTrade = this.isBotBotTradeMsg(playerId, msg);
       if (hesitated) {
         const cooldown = Math.round(thinkDelayMs(rec.traits, 0.5) / 2);
         rec.earliestNextActionAt = Date.now() + cooldown;
       } else {
-        const cooldown = thinkDelayMs(rec.traits, 0.3);
+        let cooldown = thinkDelayMs(rec.traits, 0.3);
+        if (botBotTrade) cooldown = Math.round(cooldown / 10);
         rec.earliestNextActionAt = Date.now() + cooldown;
         this.opts.dispatch(playerId, msg);
       }
@@ -141,6 +148,40 @@ export class BotController {
         this.tick(playerId);
       }, wait);
     }
+  }
+
+  // True if there's a pending chip-move proposal in state where the initiator
+  // is a bot AND the recipient hand is owned by a bot AND this playerId is
+  // one of the two. Trades with humans return false. Placing chips from the
+  // board is not a proposal, so unaffected.
+  private hasActiveBotBotTradeFor(pid: string, state: GameState): boolean {
+    for (const r of state.acquireRequests) {
+      const rh = state.hands.find((h) => h.id === r.recipientHandId);
+      if (!rh) continue;
+      const recipientPid = rh.playerId;
+      const initBot = this.isBot(r.initiatorId);
+      const recBot = this.isBot(recipientPid);
+      if (!initBot || !recBot) continue;
+      if (r.initiatorId === pid || recipientPid === pid) return true;
+    }
+    return false;
+  }
+
+  private isBotBotTradeMsg(pid: string, msg: ClientMessage): boolean {
+    if (
+      msg.type !== "proposeChipMove" &&
+      msg.type !== "acceptChipMove" &&
+      msg.type !== "rejectChipMove" &&
+      msg.type !== "cancelChipMove"
+    ) return false;
+    const state = this.opts.getState();
+    const init = state.hands.find((h) => h.id === msg.initiatorHandId);
+    const rec = state.hands.find((h) => h.id === msg.recipientHandId);
+    if (!init || !rec) return false;
+    const initBot = this.isBot(init.playerId);
+    const recBot = this.isBot(rec.playerId);
+    if (!initBot || !recBot) return false;
+    return init.playerId === pid || rec.playerId === pid;
   }
 
   dispose(): void {

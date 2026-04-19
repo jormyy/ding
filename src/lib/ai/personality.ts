@@ -73,13 +73,16 @@ export function randomTraits(archetype?: Archetype): { traits: Traits; archetype
 
 // Pacing windows derived from traits + current decision difficulty.
 // difficulty in [0,1] comes from entropy of top-candidate utilities.
+// Global pacing multiplier — bots act ~3x faster than raw trait values imply.
+const PACE_SCALE = 1 / 3;
+
 export function thinkDelayMs(traits: Traits, difficulty: number): number {
   const jit = rand(0.85, 1.2);
-  return Math.round((traits.baseThinkMs + difficulty * traits.thinkPerDifficultyMs) * jit);
+  return Math.round((traits.baseThinkMs + difficulty * traits.thinkPerDifficultyMs) * jit * PACE_SCALE);
 }
 
 export function firstActionDelayMs(traits: Traits): number {
-  return Math.round(traits.baseThinkMs * rand(0.8, 1.6));
+  return Math.round(traits.baseThinkMs * rand(0.8, 1.6) * PACE_SCALE);
 }
 
 const NAMES = [
