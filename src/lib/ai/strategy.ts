@@ -189,6 +189,17 @@ export function decideAction(
   const traitsM = moodAdjustedTraits(traits, memo.mood);
   const me = state.players.find((p) => p.id === myPlayerId);
 
+  // Resignation: rises with rejected/vanished proposals and idle ticks.
+  // Low-conscientiousness / low-neuroticism bots give up faster; Worriers
+  // hold out longer. In [0, 1].
+  const resignationRaw =
+    memo.myRejectedKeys.size * 0.18 +
+    Math.min(8, memo.idleTicks) * 0.06 +
+    Math.min(10, memo.decisionCount) * 0.025;
+  const resignation = Math.max(0, Math.min(1,
+    resignationRaw * (1.2 - 0.4 * traitsM.conscientiousness - 0.3 * traitsM.neuroticism)
+  ));
+
   // === 1b. EXPRESSIVE EVENTS — ding / fuckoff before the normal pipeline ===
   // Detect rejected proposals: a key in prevMyProposals that is no longer
   // present in state.acquireRequests AND the ranking didn't change to reflect
@@ -288,7 +299,10 @@ export function decideAction(
     const after = rankingAfterChipMove(state.ranking, p.initiatorHandId, p.recipientHandId, p.kind);
     const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
     const initDefer = deferralWeight(memo.belief, signals, p.initiatorHandId);
-    const acceptBoost = traitsM.agreeableness * 0.3 + initDefer * 0.2 * traitsM.trustInTeammates;
+    // Resignation bumps acceptBoost — when we're tired, marginal trades look fine.
+    const acceptBoost = traitsM.agreeableness * 0.3
+      + initDefer * 0.2 * traitsM.trustInTeammates
+      + resignation * 0.4;
     candidates.push({
       msg: { type: "acceptChipMove", initiatorHandId: p.initiatorHandId, recipientHandId: p.recipientHandId },
       score,
@@ -401,7 +415,10 @@ export function decideAction(
       const util = utilityFor(score, traitsM, { teamOnlyBenefit: score.teamInversionDelta })
         - deferPenalty + extraversionBonus;
 
-      if (score.teamInversionDelta > 0.3) {
+      // As resignation rises, require a steeper improvement before proposing
+      // — and eventually stop proposing at all.
+      const proposeBar = 0.3 + resignation * 2.0;
+      if (resignation < 0.7 && score.teamInversionDelta > proposeBar) {
         candidates.push({
           msg: { type: "proposeChipMove", initiatorHandId: h.id, recipientHandId: otherId },
           score,
@@ -415,7 +432,8 @@ export function decideAction(
   const alreadyReady = !!me?.ready;
   if (allRanked && proposalsToMe.length === 0 && !alreadyReady) {
     const readyU = 0.2 + 0.4 * traitsM.decisiveness + 0.2 * memo.mood.focus
-      - 0.3 * memo.mood.concern;
+      - 0.3 * memo.mood.concern
+      + resignation * 1.5; // give up → just lock in what we've got
     candidates.push({
       msg: { type: "ready", ready: true },
       score: { teamInversionDelta: 0.05, confidence: 0.5 },
@@ -423,7 +441,8 @@ export function decideAction(
     });
   }
 
-  if (allRanked && !alreadyReady && memo.idleTicks >= 6) {
+  // Hard stall breaker — always ready eventually so the game doesn't freeze.
+  if (allRanked && !alreadyReady && (memo.idleTicks >= 6 || resignation >= 0.85)) {
     return { type: "ready", ready: true };
   }
 
