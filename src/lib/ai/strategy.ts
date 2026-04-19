@@ -419,9 +419,16 @@ export function decideAction(
     }
   }
 
-  const allRanked = state.ranking.every((s) => s !== null);
+  // An unranked hand that belongs to a disconnected player can't be placed
+  // during non-reveal phases, so don't wait on it before readying up.
+  const unrankedHands = state.hands.filter((h) => state.ranking.indexOf(h.id) === -1);
+  const onlyOfflineUnranked = unrankedHands.every((h) => {
+    const owner = state.players.find((p) => p.id === h.playerId);
+    return owner ? !owner.connected : true;
+  });
+  const effectiveAllRanked = state.ranking.every((s) => s !== null) || onlyOfflineUnranked;
   const alreadyReady = !!me?.ready;
-  if (allRanked && proposalsToMe.length === 0 && !alreadyReady) {
+  if (effectiveAllRanked && proposalsToMe.length === 0 && !alreadyReady) {
     const readyU = 0.2 + 0.4 * traitsM.decisiveness + 0.2 * memo.mood.focus
       - 0.3 * memo.mood.concern
       + resignation * 1.5; // give up → just lock in what we've got
@@ -433,7 +440,7 @@ export function decideAction(
   }
 
   // Hard stall breaker — always ready eventually so the game doesn't freeze.
-  if (allRanked && !alreadyReady && (memo.idleTicks >= 6 || resignation >= 0.85)) {
+  if (effectiveAllRanked && !alreadyReady && (memo.idleTicks >= 6 || resignation >= 0.85)) {
     return { type: "ready", ready: true };
   }
 
@@ -466,7 +473,10 @@ export function decideAction(
   }
   const top = pool.slice(0, 3);
 
-  if (!(haveUnranked && haveEmpty) && top[0].utility <= 0 && top[0].msg.type !== "ready") {
+  // Never stall when a proposal targets me — must accept or reject so the
+  // table can move on.
+  const mustRespond = proposalsToMe.length > 0;
+  if (!mustRespond && !(haveUnranked && haveEmpty) && top[0].utility <= 0 && top[0].msg.type !== "ready") {
     memo.idleTicks++;
     return null;
   }
