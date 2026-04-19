@@ -53,6 +53,10 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
 
   const playerCount = gameState.players.length;
   const maxHands = Math.floor(22 / playerCount);
+  const canAddBot =
+    isCreator &&
+    playerCount < 8 &&
+    Math.floor(22 / (playerCount + 1)) >= gameState.handsPerPlayer;
 
   return (
     <div
@@ -137,6 +141,7 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
               </div>
               <div className="flex-1 min-w-0 text-sm font-bold truncate" style={{ color: D.goldBright }}>
                 {p.name}
+                {p.isBot && <span className="ml-1.5" title="Bot">🤖</span>}
                 {p.id === myId && <span className="ml-1.5 text-xs font-medium" style={{ color: D.accent }}>(you)</span>}
               </div>
               {i === 0 && (
@@ -184,6 +189,21 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
             </div>
           ))}
         </div>
+
+        {isCreator && (
+          <button
+            onClick={() => onSend({ type: "addBot" })}
+            disabled={!canAddBot}
+            className="w-full py-2 rounded-xl text-xs font-bold tracking-wide transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              background: "rgba(10,30,18,0.6)",
+              color: D.goldBright,
+              border: `1px dashed ${D.panelBorder}`,
+            }}
+          >
+            + Add bot 🤖
+          </button>
+        )}
 
         {/* Hands per player (creator only) */}
         {isCreator && (

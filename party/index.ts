@@ -13,12 +13,13 @@ import type {
 } from "../src/lib/types";
 import { cardToPokersolverStr } from "../src/lib/utils";
 import { createDeck, dealCards, shuffleDeck } from "../src/lib/deckUtils";
+import { BotController } from "./bots";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Hand: PokerHand } = require("pokersolver");
 
 // Full server-side state (cards are never masked here)
-interface ServerGameState extends GameState {
+export interface ServerGameState extends GameState {
   // hands here contain ALL cards (unmasked)
   allCommunityCards: Card[]; // all 5, we slice for broadcast
   acquireRequests: AcquireRequest[];
@@ -47,7 +48,6 @@ function computeTrueRanking(
   hands: Hand[],
   communityCards: Card[]
 ): string[] {
-  // Solve each hand with pokersolver
   const solvedHands: Array<{ id: string; solved: ReturnType<typeof PokerHand.solve> }> = hands.map((h) => {
     const cardStrs = [
       ...h.cards.map(cardToPokersolverStr),
@@ -56,13 +56,11 @@ function computeTrueRanking(
     return { id: h.id, solved: PokerHand.solve(cardStrs) };
   });
 
-  // Sort from best to worst
-  // pokersolver: higher rank = better hand
   solvedHands.sort((a, b) => {
     const winners = PokerHand.winners([a.solved, b.solved]);
-    if (winners.length === 2) return 0; // tie
-    if (winners[0] === a.solved) return -1; // a is better
-    return 1; // b is better
+    if (winners.length === 2) return 0;
+    if (winners[0] === a.solved) return -1;
+    return 1;
   });
 
   return solvedHands.map((h) => h.id);
@@ -91,7 +89,7 @@ function computeTrueRanks(
       const prev = solvedMap.get(trueRanking[i - 1])!;
       const curr = solvedMap.get(trueRanking[i])!;
       const winners = PokerHand.winners([prev, curr]);
-      if (winners.length !== 2) rank++; // not a tie
+      if (winners.length !== 2) rank++;
       ranks[trueRanking[i]] = rank;
     }
   }
@@ -104,9 +102,7 @@ function countInversions(
   hands: Hand[],
   communityCards: Card[]
 ): number {
-  // Only score claimed slots
   const claimedRanking = playerRanking.filter((id): id is string => id !== null);
-  // Build solved map for tie detection
   const solvedMap = new Map<string, ReturnType<typeof PokerHand.solve>>();
   for (const hand of hands) {
     const cardStrs = [
@@ -116,7 +112,6 @@ function countInversions(
     solvedMap.set(hand.id, PokerHand.solve(cardStrs));
   }
 
-  // Build true position map (ties share same rank)
   const truePosMap = new Map<string, number>();
   let pos = 0;
   for (let i = 0; i < trueRanking.length; i++) {
@@ -127,7 +122,6 @@ function countInversions(
       const curr = solvedMap.get(trueRanking[i])!;
       const winners = PokerHand.winners([prev, curr]);
       if (winners.length === 2) {
-        // tie — same position
         truePosMap.set(trueRanking[i], pos);
       } else {
         pos++;
@@ -141,12 +135,7 @@ function countInversions(
     for (let j = i + 1; j < claimedRanking.length; j++) {
       const posI = truePosMap.get(claimedRanking[i])!;
       const posJ = truePosMap.get(claimedRanking[j])!;
-      // i should come before j (lower index = better = lower true pos number)
-      // inversion if posI > posJ (i is actually worse than j)
-      if (posI > posJ) {
-        inversions++;
-      }
-      // if equal (tied) — not an inversion
+      if (posI > posJ) inversions++;
     }
   }
   return inversions;
@@ -159,16 +148,12 @@ function maskHandsForPlayer(
 ): Hand[] {
   return hands.map((hand) => {
     if (hand.playerId === playerId) return hand;
-    if (hand.flipped && phase === "reveal") return hand; // revealed to everyone
+    if (hand.flipped && phase === "reveal") return hand;
     return { ...hand, cards: [] };
   });
 }
 
-function broadcastStateTo(
-  room: Party.Room,
-  state: ServerGameState,
-  connections: Map<string, Party.Connection>
-) {
+export function buildClientState(state: ServerGameState, playerId: string): GameState {
   const communityCardsToShow =
     state.phase === "preflop"
       ? []
@@ -180,26 +165,50 @@ function broadcastStateTo(
       ? state.allCommunityCards.slice(0, 5)
       : [];
 
+  return {
+    phase: state.phase,
+    players: state.players,
+    handsPerPlayer: state.handsPerPlayer,
+    communityCards: communityCardsToShow,
+    ranking: state.ranking,
+    hands: maskHandsForPlayer(state.hands, playerId, state.phase),
+    revealIndex: state.revealIndex,
+    trueRanking: state.trueRanking,
+    trueRanks: state.trueRanks,
+    score: state.score,
+    rankHistory: state.rankHistory,
+    acquireRequests: state.acquireRequests,
+    chatMessages: state.chatMessages,
+  };
+}
+
+function broadcastStateTo(
+  room: Party.Room,
+  state: ServerGameState,
+  connections: Map<string, Party.Connection>
+) {
   for (const [connId, conn] of Array.from(connections.entries())) {
     const player = state.players.find((p) => p.connId === connId);
-    const maskedHands = maskHandsForPlayer(state.hands, player?.id ?? "", state.phase);
-    const clientState: GameState = {
-      phase: state.phase,
-      players: state.players,
-      handsPerPlayer: state.handsPerPlayer,
-      communityCards: communityCardsToShow,
-      ranking: state.ranking,
-      hands: maskedHands,
-      revealIndex: state.revealIndex,
-      trueRanking: state.trueRanking,
-      trueRanks: state.trueRanks,
-      score: state.score,
-      rankHistory: state.rankHistory,
-      acquireRequests: state.acquireRequests,
-      chatMessages: state.chatMessages,
-    };
+    const clientState = buildClientState(state, player?.id ?? "");
     const msg: ServerMessage = { type: "state", state: clientState };
     conn.send(JSON.stringify(msg));
+  }
+}
+
+function assertRankingInvariant(state: ServerGameState) {
+  const claimed = state.ranking.filter((r): r is string => r !== null);
+  const unique = new Set(claimed);
+  if (unique.size !== claimed.length) {
+    // eslint-disable-next-line no-console
+    console.error("[ding] ranking has duplicate hand ids", claimed);
+  }
+  if (state.hands.length > 0 && state.ranking.length !== state.hands.length) {
+    // eslint-disable-next-line no-console
+    console.error(
+      "[ding] ranking length mismatch",
+      state.ranking.length,
+      state.hands.length
+    );
   }
 }
 
@@ -208,9 +217,15 @@ export default class DingServer implements Party.Server {
   private connections: Map<string, Party.Connection> = new Map();
   private lastChatAt: Map<string, number> = new Map();
   private kickedPids: Set<string> = new Set();
+  private botController: BotController;
 
   constructor(readonly room: Party.Room) {
     this.state = createInitialState();
+    this.botController = new BotController({
+      getState: () => this.state,
+      dispatch: (playerId, msg) => this.dispatchBotAction(playerId, msg),
+      mask: (playerId) => buildClientState(this.state, playerId),
+    });
   }
 
   private getPlayerByConn(connId: string): Player | undefined {
@@ -223,13 +238,30 @@ export default class DingServer implements Party.Server {
     if (idx === -1) return;
     const [removed] = this.state.players.splice(idx, 1);
     if (removed.isCreator && this.state.players.length > 0) {
-      this.state.players[0].isCreator = true;
+      // Promote the first connected human if possible; otherwise just the first.
+      const nextHuman = this.state.players.find((p) => p.connected && !p.isBot);
+      const next = nextHuman ?? this.state.players[0];
+      next.isCreator = true;
     }
     this.lastChatAt.delete(targetId);
+    if (removed.isBot) {
+      this.botController.removeBot(removed.id);
+    }
+  }
+
+  private broadcast(): void {
+    assertRankingInvariant(this.state);
+    broadcastStateTo(this.room, this.state, this.connections);
+    this.botController.notifyStateChanged();
+  }
+
+  private dispatchBotAction(playerId: string, msg: ClientMessage): void {
+    const player = this.state.players.find((p) => p.id === playerId);
+    if (!player) return;
+    this.handlePlayerAction(player, msg);
   }
 
   onConnect(conn: Party.Connection) {
-    // Accept all connections — game/lobby validation happens in the join handler
     this.connections.set(conn.id, conn);
   }
 
@@ -237,28 +269,36 @@ export default class DingServer implements Party.Server {
     this.connections.delete(conn.id);
 
     const player = this.getPlayerByConn(conn.id);
-    if (!player) return;
-
-    if (this.state.phase === "lobby") {
-      // Mark disconnected rather than removing, so others can see they left
-      player.connected = false;
-
-      // If the creator disconnected and others are still connected, reassign
-      if (player.isCreator) {
-        const nextConnected = this.state.players.find((p) => p.connected);
-        if (nextConnected) {
-          player.isCreator = false;
-          nextConnected.isCreator = true;
+    if (player) {
+      if (this.state.phase === "lobby") {
+        player.connected = false;
+        if (player.isCreator) {
+          const nextConnected = this.state.players.find(
+            (p) => p.connected && !p.isBot
+          );
+          if (nextConnected) {
+            player.isCreator = false;
+            nextConnected.isCreator = true;
+          }
         }
+      } else {
+        player.connected = false;
+        player.ready = false;
       }
+      this.broadcast();
+    }
 
-      broadcastStateTo(this.room, this.state, this.connections);
-    } else {
-      // Mid-game disconnect — mark disconnected and continue, don't end the game
-      player.connected = false;
-      player.ready = false; // reset ready so the phase doesn't get stuck
-
-      broadcastStateTo(this.room, this.state, this.connections);
+    // If nobody is watching, stop the bot timers. State persists; if a human
+    // reconnects we'll rebuild the bots' controller records lazily via addBot
+    // calls or accept that bots sit idle until the next game is configured.
+    if (this.connections.size === 0) {
+      this.botController.dispose();
+      // Fresh controller ready for any future activity.
+      this.botController = new BotController({
+        getState: () => this.state,
+        dispatch: (playerId, msg) => this.dispatchBotAction(playerId, msg),
+        mask: (playerId) => buildClientState(this.state, playerId),
+      });
     }
   }
 
@@ -270,77 +310,105 @@ export default class DingServer implements Party.Server {
       return;
     }
 
-    const player = this.getPlayerByConn(sender.id);
+    if (msg.type === "join") {
+      this.handleJoin(msg, sender);
+      return;
+    }
 
+    const player = this.getPlayerByConn(sender.id);
+    if (!player) return;
+    this.handlePlayerAction(player, msg, sender);
+  }
+
+  private handleJoin(
+    msg: Extract<ClientMessage, { type: "join" }>,
+    sender: Party.Connection
+  ): void {
+    if (this.kickedPids.has(msg.pid)) {
+      const errMsg: ServerMessage = { type: "error", message: "Removed by host" };
+      sender.send(JSON.stringify(errMsg));
+      sender.close();
+      return;
+    }
+
+    const existingPlayer = this.state.players.find((p) => p.id === msg.pid);
+    if (existingPlayer) {
+      existingPlayer.connId = sender.id;
+      existingPlayer.connected = true;
+      sender.send(JSON.stringify({ type: "welcome", playerId: existingPlayer.id } as ServerMessage));
+      this.broadcast();
+      return;
+    }
+
+    const existingByConn = this.getPlayerByConn(sender.id);
+    if (existingByConn) {
+      sender.send(JSON.stringify({ type: "welcome", playerId: existingByConn.id } as ServerMessage));
+      this.broadcast();
+      return;
+    }
+
+    if (this.state.phase !== "lobby") {
+      const errMsg: ServerMessage = {
+        type: "error",
+        message: "Game already in progress",
+      };
+      sender.send(JSON.stringify(errMsg));
+      sender.close();
+      return;
+    }
+
+    const isCreator = this.state.players.length === 0;
+    const newPlayer: Player = {
+      id: msg.pid,
+      connId: sender.id,
+      name: msg.name,
+      isCreator,
+      ready: false,
+      connected: true,
+    };
+    this.state.players.push(newPlayer);
+    sender.send(JSON.stringify({ type: "welcome", playerId: newPlayer.id } as ServerMessage));
+    this.broadcast();
+  }
+
+  private handlePlayerAction(
+    player: Player,
+    msg: ClientMessage,
+    sender?: Party.Connection
+  ): void {
     switch (msg.type) {
       case "join": {
-        if (this.kickedPids.has(msg.pid)) {
-          const errMsg: ServerMessage = { type: "error", message: "Removed by host" };
-          sender.send(JSON.stringify(errMsg));
-          sender.close();
-          return;
-        }
-
-        // Check if this is a reconnecting player (matched by persistent ID)
-        const existingPlayer = this.state.players.find((p) => p.id === msg.pid);
-        if (existingPlayer) {
-          existingPlayer.connId = sender.id;
-          existingPlayer.connected = true;
-          sender.send(JSON.stringify({ type: "welcome", playerId: existingPlayer.id } as ServerMessage));
-          broadcastStateTo(this.room, this.state, this.connections);
-          return;
-        }
-
-        if (player) {
-          // Already joined with this connection — re-send welcome + state
-          sender.send(JSON.stringify({ type: "welcome", playerId: player.id } as ServerMessage));
-          broadcastStateTo(this.room, this.state, this.connections);
-          return;
-        }
-
-        // New player — only allowed in lobby
-        if (this.state.phase !== "lobby") {
-          const errMsg: ServerMessage = {
-            type: "error",
-            message: "Game already in progress",
-          };
-          sender.send(JSON.stringify(errMsg));
-          sender.close();
-          return;
-        }
-
-        const isCreator = this.state.players.length === 0;
-        const newPlayer: Player = {
-          id: msg.pid,
-          connId: sender.id,
-          name: msg.name,
-          isCreator,
-          ready: false,
-          connected: true,
-        };
-        this.state.players.push(newPlayer);
-        sender.send(JSON.stringify({ type: "welcome", playerId: newPlayer.id } as ServerMessage));
-        broadcastStateTo(this.room, this.state, this.connections);
-        break;
+        // handled in handleJoin
+        return;
       }
 
       case "configure": {
-        if (!player?.isCreator || this.state.phase !== "lobby") return;
+        if (!player.isCreator || this.state.phase !== "lobby") return;
         const playerCount = this.state.players.length;
-        // 52 cards - 3 burns - 5 community = 44 cards for hands → 22 total hands max
         const maxHands = Math.floor(22 / playerCount);
         const n = Math.max(1, Math.min(maxHands, msg.handsPerPlayer));
         this.state.handsPerPlayer = n;
-        broadcastStateTo(this.room, this.state, this.connections);
+        this.broadcast();
+        break;
+      }
+
+      case "addBot": {
+        if (!player.isCreator || this.state.phase !== "lobby") return;
+        if (this.state.players.length >= 8) return;
+        const newCount = this.state.players.length + 1;
+        if (Math.floor(22 / newCount) < this.state.handsPerPlayer) return;
+        const botPlayer = this.botController.addBot();
+        botPlayer.isBot = true;
+        this.state.players.push(botPlayer);
+        this.broadcast();
         break;
       }
 
       case "start": {
-        if (!player?.isCreator || this.state.phase !== "lobby") return;
+        if (!player.isCreator || this.state.phase !== "lobby") return;
         const connectedPlayers = this.state.players.filter((p) => p.connected);
         if (connectedPlayers.length < 2) return;
 
-        // Drop disconnected players before starting
         this.state.players = connectedPlayers;
 
         const deck = shuffleDeck(createDeck());
@@ -351,9 +419,7 @@ export default class DingServer implements Party.Server {
           this.state.handsPerPlayer
         );
 
-        // Build hands array — ranking starts as all-null (slots on the board)
         const hands: Hand[] = [];
-
         for (const playerId of playerIds) {
           for (let h = 0; h < this.state.handsPerPlayer; h++) {
             const handId = `${playerId}-${h}`;
@@ -367,7 +433,6 @@ export default class DingServer implements Party.Server {
         }
 
         const totalHands = hands.length;
-
         this.state.hands = hands;
         this.state.ranking = Array(totalHands).fill(null);
         this.state.rankHistory = {};
@@ -379,25 +444,22 @@ export default class DingServer implements Party.Server {
         this.state.trueRanks = null;
         this.state.score = null;
 
-        // Reset ready states
         for (const p of this.state.players) {
           p.ready = false;
         }
 
-        broadcastStateTo(this.room, this.state, this.connections);
+        this.broadcast();
         break;
       }
 
       case "swap": {
-        // Only allowed for swapping your own hands (handsPerPlayer > 1)
         const swapPhases: Phase[] = ["preflop", "flop", "turn", "river"];
         if (!swapPhases.includes(this.state.phase)) return;
 
         const handA = this.state.hands.find((h) => h.id === msg.handIdA);
         const handB = this.state.hands.find((h) => h.id === msg.handIdB);
         if (!handA || !handB) return;
-        // Sender must own BOTH hands
-        if (!player || handA.playerId !== player.id || handB.playerId !== player.id) return;
+        if (handA.playerId !== player.id || handB.playerId !== player.id) return;
 
         const idxA = this.state.ranking.indexOf(msg.handIdA);
         const idxB = this.state.ranking.indexOf(msg.handIdB);
@@ -407,7 +469,7 @@ export default class DingServer implements Party.Server {
         this.state.ranking[idxB] = msg.handIdA;
         player.ready = false;
 
-        broadcastStateTo(this.room, this.state, this.connections);
+        this.broadcast();
         break;
       }
 
@@ -419,16 +481,12 @@ export default class DingServer implements Party.Server {
         const recipientHand = this.state.hands.find((h) => h.id === msg.recipientHandId);
         if (!initiatorHand || !recipientHand) return;
 
-        // Sender must own the initiator hand
-        if (!player || initiatorHand.playerId !== player.id) return;
-
-        // Recipient hand must belong to a different player
+        if (initiatorHand.playerId !== player.id) return;
         if (recipientHand.playerId === player.id) return;
 
         const idxInitiator = this.state.ranking.indexOf(msg.initiatorHandId);
         const idxRecipient = this.state.ranking.indexOf(msg.recipientHandId);
 
-        // Derive kind from current state
         let kind: AcquireRequestKind;
         if (idxInitiator === -1 && idxRecipient !== -1) {
           kind = "acquire";
@@ -437,11 +495,9 @@ export default class DingServer implements Party.Server {
         } else if (idxInitiator !== -1 && idxRecipient !== -1) {
           kind = "swap";
         } else {
-          // both unranked — nothing to move
           return;
         }
 
-        // Only one active proposal per recipient hand OR initiator hand — first come, first served
         const collidesOnRecipient = this.state.acquireRequests.some(
           (r) =>
             r.recipientHandId === msg.recipientHandId &&
@@ -449,7 +505,6 @@ export default class DingServer implements Party.Server {
         );
         if (collidesOnRecipient) return;
 
-        // Remove any existing proposal from this player touching this (initiator, recipient) pair
         this.state.acquireRequests = this.state.acquireRequests.filter(
           (r) =>
             !(
@@ -466,7 +521,7 @@ export default class DingServer implements Party.Server {
           recipientHandId: msg.recipientHandId,
         });
 
-        broadcastStateTo(this.room, this.state, this.connections);
+        this.broadcast();
         break;
       }
 
@@ -477,11 +532,8 @@ export default class DingServer implements Party.Server {
         const recipientHand = this.state.hands.find((h) => h.id === msg.recipientHandId);
         const initiatorHand = this.state.hands.find((h) => h.id === msg.initiatorHandId);
         if (!recipientHand || !initiatorHand) return;
+        if (recipientHand.playerId !== player.id) return;
 
-        // Only the owner of the recipient hand can accept
-        if (!player || recipientHand.playerId !== player.id) return;
-
-        // Proposal must exist
         const reqIdx = this.state.acquireRequests.findIndex(
           (r) =>
             r.initiatorHandId === msg.initiatorHandId &&
@@ -490,8 +542,6 @@ export default class DingServer implements Party.Server {
         if (reqIdx === -1) return;
 
         const proposal = this.state.acquireRequests[reqIdx];
-
-        // Re-derive kind from current state and re-validate
         const idxInitiator = this.state.ranking.indexOf(msg.initiatorHandId);
         const idxRecipient = this.state.ranking.indexOf(msg.recipientHandId);
 
@@ -506,27 +556,22 @@ export default class DingServer implements Party.Server {
           currentKind = null;
         }
 
-        // If the proposal no longer matches reality, silently drop it
         if (currentKind === null || currentKind !== proposal.kind) {
           this.state.acquireRequests.splice(reqIdx, 1);
-          broadcastStateTo(this.room, this.state, this.connections);
+          this.broadcast();
           return;
         }
 
         if (currentKind === "acquire") {
-          // initiator unranked, recipient ranked -> initiator takes recipient's slot
           this.state.ranking[idxRecipient] = msg.initiatorHandId;
           if (idxInitiator !== -1) this.state.ranking[idxInitiator] = null;
         } else if (currentKind === "offer") {
-          // initiator ranked, recipient unranked -> recipient takes initiator's slot
           this.state.ranking[idxInitiator] = msg.recipientHandId;
         } else {
-          // swap: both ranked
           this.state.ranking[idxInitiator] = msg.recipientHandId;
           this.state.ranking[idxRecipient] = msg.initiatorHandId;
         }
 
-        // Clear pending proposals touching either hand
         this.state.acquireRequests = this.state.acquireRequests.filter(
           (r) =>
             r.initiatorHandId !== msg.initiatorHandId &&
@@ -535,23 +580,20 @@ export default class DingServer implements Party.Server {
             r.recipientHandId !== msg.recipientHandId
         );
 
-        // Un-ready both players involved
         player.ready = false;
         const initiatorPlayer = this.state.players.find(
           (p) => p.id === proposal.initiatorId
         );
         if (initiatorPlayer) initiatorPlayer.ready = false;
 
-        broadcastStateTo(this.room, this.state, this.connections);
+        this.broadcast();
         break;
       }
 
       case "rejectChipMove": {
         const recipientHand = this.state.hands.find((h) => h.id === msg.recipientHandId);
         if (!recipientHand) return;
-
-        // Only the owner of the recipient hand can reject
-        if (!player || recipientHand.playerId !== player.id) return;
+        if (recipientHand.playerId !== player.id) return;
 
         this.state.acquireRequests = this.state.acquireRequests.filter(
           (r) =>
@@ -561,16 +603,11 @@ export default class DingServer implements Party.Server {
             )
         );
 
-        broadcastStateTo(this.room, this.state, this.connections);
+        this.broadcast();
         break;
       }
 
       case "cancelChipMove": {
-        if (!player) return;
-
-        // Only the initiator can cancel their own proposal. Match on the
-        // (initiatorId, initiatorHandId, recipientHandId) triple so one player
-        // can't cancel a request someone else sent.
         const before = this.state.acquireRequests.length;
         this.state.acquireRequests = this.state.acquireRequests.filter(
           (r) =>
@@ -582,7 +619,7 @@ export default class DingServer implements Party.Server {
         );
         if (this.state.acquireRequests.length === before) return;
 
-        broadcastStateTo(this.room, this.state, this.connections);
+        this.broadcast();
         break;
       }
 
@@ -593,17 +630,15 @@ export default class DingServer implements Party.Server {
         const fromHand = this.state.hands.find((h) => h.id === msg.fromHandId);
         const toHand = this.state.hands.find((h) => h.id === msg.toHandId);
         if (!fromHand || !toHand) return;
-        if (!player || fromHand.playerId !== player.id || toHand.playerId !== player.id) return;
+        if (fromHand.playerId !== player.id || toHand.playerId !== player.id) return;
         if (msg.fromHandId === msg.toHandId) return;
 
         const idxFrom = this.state.ranking.indexOf(msg.fromHandId);
         const idxTo = this.state.ranking.indexOf(msg.toHandId);
-        // fromHand must be ranked, toHand must NOT be ranked
         if (idxFrom === -1 || idxTo !== -1) return;
 
         this.state.ranking[idxFrom] = msg.toHandId;
 
-        // Cancel pending proposals touching either hand
         this.state.acquireRequests = this.state.acquireRequests.filter(
           (r) =>
             r.initiatorHandId !== msg.fromHandId &&
@@ -613,7 +648,7 @@ export default class DingServer implements Party.Server {
         );
 
         player.ready = false;
-        broadcastStateTo(this.room, this.state, this.connections);
+        this.broadcast();
         break;
       }
 
@@ -622,19 +657,18 @@ export default class DingServer implements Party.Server {
         if (!unclaimPhases.includes(this.state.phase)) return;
 
         const hand = this.state.hands.find((h) => h.id === msg.handId);
-        if (!hand || !player || hand.playerId !== player.id) return;
+        if (!hand || hand.playerId !== player.id) return;
 
         const idx = this.state.ranking.indexOf(msg.handId);
         if (idx === -1) return;
 
         this.state.ranking[idx] = null;
-        // Cancel any pending proposals involving this hand
         this.state.acquireRequests = this.state.acquireRequests.filter(
           (r) => r.initiatorHandId !== msg.handId && r.recipientHandId !== msg.handId
         );
         player.ready = false;
 
-        broadcastStateTo(this.room, this.state, this.connections);
+        this.broadcast();
         break;
       }
 
@@ -643,7 +677,7 @@ export default class DingServer implements Party.Server {
         if (!gamePhasess.includes(this.state.phase)) return;
 
         const hand = this.state.hands.find((h) => h.id === msg.handId);
-        if (!hand || !player || hand.playerId !== player.id) return;
+        if (!hand || hand.playerId !== player.id) return;
 
         const toIndex = Math.max(
           0,
@@ -654,30 +688,25 @@ export default class DingServer implements Party.Server {
         const currentIndex = this.state.ranking.indexOf(msg.handId);
 
         if (occupantId === null) {
-          // Empty slot — move in, vacate old slot
           if (currentIndex !== -1) {
             this.state.ranking[currentIndex] = null;
           }
           this.state.ranking[toIndex] = msg.handId;
         } else if (occupantId === msg.handId) {
-          // Moving onto own slot — no-op
           return;
         } else {
           const occupantHand = this.state.hands.find((h) => h.id === occupantId);
           if (!occupantHand) return;
           if (occupantHand.playerId === player.id) {
-            // Own-hand occupant: atomic swap (or transfer if mover wasn't ranked)
             if (currentIndex !== -1) {
               this.state.ranking[currentIndex] = occupantId;
             }
             this.state.ranking[toIndex] = msg.handId;
           } else {
-            // Teammate occupant — reject (client should use proposeChipMove)
             return;
           }
         }
 
-        // Cancel pending proposals involving this hand (if any mutations happened)
         this.state.acquireRequests = this.state.acquireRequests.filter(
           (r) =>
             r.initiatorHandId !== msg.handId &&
@@ -686,24 +715,20 @@ export default class DingServer implements Party.Server {
 
         player.ready = false;
 
-        broadcastStateTo(this.room, this.state, this.connections);
+        this.broadcast();
         break;
       }
 
       case "ready": {
         const gamePhases: Phase[] = ["preflop", "flop", "turn", "river"];
         if (!gamePhases.includes(this.state.phase)) return;
-        if (!player) return;
 
-        // Don't allow readying up while any rank slots are unclaimed
         if (msg.ready && this.state.ranking.some((slot) => slot === null)) return;
 
         player.ready = msg.ready;
 
-        // Check if all connected players ready (skip disconnected)
         const allReady = this.state.players.every((p) => !p.connected || p.ready);
         if (allReady) {
-          // Snapshot rank history for the current phase
           for (const hand of this.state.hands) {
             const idx = this.state.ranking.indexOf(hand.id);
             if (!this.state.rankHistory[hand.id]) {
@@ -712,7 +737,6 @@ export default class DingServer implements Party.Server {
             this.state.rankHistory[hand.id].push(idx === -1 ? null : idx + 1);
           }
 
-          // Advance phase
           const phaseOrder: Phase[] = [
             "preflop",
             "flop",
@@ -723,12 +747,9 @@ export default class DingServer implements Party.Server {
           const currentIndex = phaseOrder.indexOf(this.state.phase as Phase);
           const nextPhase = phaseOrder[currentIndex + 1];
 
-          // Clear all pending acquire requests on phase change
           this.state.acquireRequests = [];
 
           if (nextPhase === "reveal") {
-            // Keep the river ranking intact — it drives flip order and scoring
-            // Compute true ranking and per-hand true ranks (ties share same number)
             this.state.trueRanking = computeTrueRanking(
               this.state.hands,
               this.state.allCommunityCards
@@ -740,49 +761,38 @@ export default class DingServer implements Party.Server {
             );
             this.state.revealIndex = 0;
           } else {
-            // Reset ranking — coins go back to the board at the start of each phase
             this.state.ranking = Array(this.state.hands.length).fill(null);
           }
 
           this.state.phase = nextPhase;
 
-          // Reset ready states
           for (const p of this.state.players) {
             p.ready = false;
           }
         }
 
-        broadcastStateTo(this.room, this.state, this.connections);
+        this.broadcast();
         break;
       }
 
       case "flip": {
         if (this.state.phase !== "reveal") return;
-        if (this.state.score !== null) return; // already done
+        if (this.state.score !== null) return;
 
         const totalHands = this.state.hands.length;
         if (this.state.revealIndex >= totalHands) return;
 
-        // Server determines which hand is up — no client validation needed
         const currentRevealIdx =
           this.state.ranking.length - 1 - this.state.revealIndex;
         const handToFlipId = this.state.ranking[currentRevealIdx];
-
-        // Nulls should not exist at reveal (auto-filled), but guard anyway
         if (!handToFlipId) return;
 
         const handToFlip = this.state.hands.find((h) => h.id === handToFlipId);
         if (!handToFlip) return;
 
-        // Owner flips their own hand. If the owner is disconnected, any
-        // connected player can flip on their behalf so reveal doesn't stall.
-        // Mirrors the ready-advance rule (line ~683) that skips disconnected
-        // players.
-        const senderPlayer = this.getPlayerByConn(sender.id);
-        if (!senderPlayer) return;
         const owner = this.state.players.find((p) => p.id === handToFlip.playerId);
         if (owner?.connected) {
-          if (handToFlip.playerId !== senderPlayer.id) return;
+          if (handToFlip.playerId !== player.id) return;
         }
 
         handToFlip.flipped = true;
@@ -797,30 +807,26 @@ export default class DingServer implements Party.Server {
           );
         }
 
-        broadcastStateTo(this.room, this.state, this.connections);
+        this.broadcast();
         break;
       }
 
       case "ding": {
-        if (!player) return;
         const dingMsg: ServerMessage = { type: "ding", playerName: player.name };
         this.room.broadcast(JSON.stringify(dingMsg));
         break;
       }
 
       case "fuckoff": {
-        if (!player) return;
         const foMsg: ServerMessage = { type: "fuckoff", playerName: player.name };
         this.room.broadcast(JSON.stringify(foMsg));
         break;
       }
 
       case "chat": {
-        if (!player) return;
         const text = (msg.text ?? "").trim().slice(0, 200);
         if (!text) return;
 
-        // Per-player rate limit: 1 msg/sec
         const now = Date.now();
         const last = this.lastChatAt.get(player.id) ?? 0;
         if (now - last < 1000) return;
@@ -834,20 +840,18 @@ export default class DingServer implements Party.Server {
           ts: now,
         };
         this.state.chatMessages.push(chatMsg);
-        // Cap ring buffer at 100
         if (this.state.chatMessages.length > 100) {
           this.state.chatMessages = this.state.chatMessages.slice(-100);
         }
 
-        broadcastStateTo(this.room, this.state, this.connections);
+        this.broadcast();
         break;
       }
 
       case "playAgain": {
         if (this.state.phase !== "reveal") return;
-        if (!player?.isCreator) return;
+        if (!player.isCreator) return;
 
-        // Keep players + chat history, reset everything else
         const players = this.state.players.map((p) => ({
           ...p,
           ready: false,
@@ -858,13 +862,13 @@ export default class DingServer implements Party.Server {
         this.state.players = players;
         this.state.chatMessages = chat;
 
-        broadcastStateTo(this.room, this.state, this.connections);
+        this.broadcast();
         break;
       }
 
       case "endGame": {
         if (this.state.phase === "lobby") return;
-        if (!player?.isCreator) return;
+        if (!player.isCreator) return;
 
         const players = this.state.players.map((p) => ({
           ...p,
@@ -876,33 +880,34 @@ export default class DingServer implements Party.Server {
         this.state.players = players;
         this.state.chatMessages = chat;
 
-        broadcastStateTo(this.room, this.state, this.connections);
+        this.broadcast();
         break;
       }
 
       case "kick": {
-        if (!player?.isCreator || this.state.phase !== "lobby") return;
+        if (!player.isCreator || this.state.phase !== "lobby") return;
         if (msg.playerId === player.id) return;
         const target = this.state.players.find((p) => p.id === msg.playerId);
         if (!target) return;
         this.kickedPids.add(target.id);
-        const targetConn = this.connections.get(target.connId);
-        if (targetConn) {
-          const errMsg: ServerMessage = { type: "error", message: "Removed by host" };
-          targetConn.send(JSON.stringify(errMsg));
-          targetConn.close();
+        if (!target.isBot) {
+          const targetConn = this.connections.get(target.connId);
+          if (targetConn) {
+            const errMsg: ServerMessage = { type: "error", message: "Removed by host" };
+            targetConn.send(JSON.stringify(errMsg));
+            targetConn.close();
+          }
         }
         this.removePlayerFromLobby(target.id);
-        broadcastStateTo(this.room, this.state, this.connections);
+        this.broadcast();
         break;
       }
 
       case "leave": {
         if (this.state.phase !== "lobby") return;
-        if (!player) return;
         this.removePlayerFromLobby(player.id);
-        broadcastStateTo(this.room, this.state, this.connections);
-        sender.close();
+        this.broadcast();
+        if (sender) sender.close();
         break;
       }
     }

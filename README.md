@@ -49,6 +49,7 @@ The inversion count is a diagnostic metric showing how many pairwise rankings we
 - **Bell (Ding)** — Plays a synthesized chord for everyone in the room
 - **Chat** — Persistent room chat, available throughout the game
 - **Lobby kick** — The room creator can remove players before the game starts
+- **Add bot** — The room creator can add AI bots (🤖) from the lobby. Bots place their chips, propose trades, ready up each phase, and flip their own hands in reveal. Kick them the same way you kick a human.
 
 ---
 
@@ -72,6 +73,14 @@ The inversion count is a diagnostic metric showing how many pairwise rankings we
 **Persistent player identity.** Each player is assigned a UUID (stored in sessionStorage) on first join. On reconnect, the server matches by this ID and restores the player's game state, so disconnects mid-round don't lose your seat. Kicked players are tracked by ID and blocked from rejoining.
 
 **Reveal ordering.** The true ranking is computed from final 5-card hands plus community cards. Hands flip worst-to-best (last slot to first slot). Inversion count = number of pairwise ordering mistakes in the team's ranking vs. the true ranking.
+
+**AI bots.** Bots live server-side as first-class `Player` records with `isBot: true` and synthetic connection IDs — they never open a WebSocket. A `BotController` (`party/bots.ts`) schedules per-bot think ticks after every state change; each tick calls a pure `decideAction` (`src/lib/ai/strategy.ts`) over the same masked view a human sees, and dispatches any resulting `ClientMessage` through the same action handler humans use. Strength estimates come from a Monte Carlo rollout (`src/lib/ai/handStrength.ts`) with a preflop heuristic fast path. Personalities (`aggression`, `stubbornness`, `chaos`, `greed`, pacing) add drama without changing the math brain.
+
+A headless harness (`scripts/simulate.ts`) drives N-game batches through the same `DingServer`/`BotController` plumbing and prints per-game stats plus aggregate metrics:
+
+```bash
+npx tsx scripts/simulate.ts --games 50 --bots 5 --hands 4
+```
 
 ## Development
 

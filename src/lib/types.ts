@@ -30,6 +30,7 @@ export type Player = {
   isCreator: boolean; // first to join — has start/configure controls
   ready: boolean;
   connected: boolean;
+  isBot?: boolean;
 };
 
 export type Phase =
@@ -93,7 +94,8 @@ export type ClientMessage =
   | { type: "fuckoff" } // broadcast fuck-off reaction
   | { type: "chat"; text: string } // room chat message
   | { type: "kick"; playerId: string } // lobby only, creator only
-  | { type: "leave" }; // lobby only
+  | { type: "leave" } // lobby only
+  | { type: "addBot" }; // lobby only, creator only — server picks a name
 
 export type ServerMessage =
   | { type: "state"; state: GameState }
