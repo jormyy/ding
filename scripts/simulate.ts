@@ -9,7 +9,7 @@
 
 import DingServer, { buildClientState, type ServerGameState } from "../party/index";
 import { decideAction, newBotMemo, type BotMemo } from "../src/lib/ai/strategy";
-import { randomPersonality, type Personality } from "../src/lib/ai/personality";
+import { randomTraits, type Traits } from "../src/lib/ai/personality";
 import type { ClientMessage, ServerMessage } from "../src/lib/types";
 
 // ---- arg parsing ----
@@ -130,7 +130,7 @@ async function runOneGame(gameIdx: number): Promise<{
 
   server.onMessage(JSON.stringify({ type: "start" } as ClientMessage), ctl as never);
 
-  const ctlPersonality: Personality = randomPersonality();
+  const ctlTraits: Traits = randomTraits().traits;
   const ctlMemo: BotMemo = newBotMemo();
 
   // Ctl-tick + timeout reaper loop
@@ -155,7 +155,7 @@ async function runOneGame(gameIdx: number): Promise<{
 
     // Drive control bot
     const masked = buildClientState(s, "ctl-pid-" + gameIdx);
-    const msg = decideAction(masked, "ctl-pid-" + gameIdx, ctlPersonality, ctlMemo, {
+    const msg = decideAction(masked, "ctl-pid-" + gameIdx, ctlTraits, ctlMemo, {
       nSims: NSIMS,
     });
     if (msg) {

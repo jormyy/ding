@@ -1,15 +1,23 @@
 import type { ClientMessage, GameState, Player } from "../src/lib/types";
 import { decideAction, newBotMemo, type BotMemo } from "../src/lib/ai/strategy";
-import { pickBotName, randomPersonality, type Personality } from "../src/lib/ai/personality";
+import {
+  pickBotName,
+  randomTraits,
+  thinkDelayMs,
+  firstActionDelayMs,
+  type Traits,
+} from "../src/lib/ai/personality";
+import type { Archetype } from "../src/lib/ai/archetypes";
 
 type BotRecord = {
   player: Player;
-  personality: Personality;
+  traits: Traits;
+  archetype: Archetype;
   memo: BotMemo;
   timer: ReturnType<typeof setTimeout> | null;
-  pending: boolean; // a tick is currently scheduled
-  earliestNextActionAt: number; // ms timestamp — floor between actions
-  firstActionPhase: string; // phase for which firstAction delay is still owed
+  pending: boolean;
+  earliestNextActionAt: number;
+  firstActionPhase: string;
 };
 
 export type BotControllerOptions = {
@@ -20,7 +28,7 @@ export type BotControllerOptions = {
 };
 
 export class BotController {
-  private bots: Map<string, BotRecord> = new Map(); // playerId -> record
+  private bots: Map<string, BotRecord> = new Map();
   private disposed = false;
 
   constructor(private opts: BotControllerOptions) {}
@@ -34,9 +42,7 @@ export class BotController {
   }
 
   addBot(idFactory?: () => string): Player {
-    const takenNames = new Set(
-      this.opts.getState().players.map((p) => p.name)
-    );
+    const takenNames = new Set(this.opts.getState().players.map((p) => p.name));
     const name = pickBotName(takenNames);
     const pid = (idFactory && idFactory()) || `bot-${crypto.randomUUID()}`;
     const connId = `bot:${pid}`;
@@ -48,9 +54,11 @@ export class BotController {
       ready: false,
       connected: true,
     };
+    const { traits, archetype } = randomTraits();
     this.bots.set(pid, {
       player,
-      personality: randomPersonality(),
+      traits,
+      archetype,
       memo: newBotMemo(),
       timer: null,
       pending: false,
@@ -71,25 +79,19 @@ export class BotController {
     if (this.disposed) return;
     const state = this.opts.getState();
     const livePids = new Set(state.players.map((p) => p.id));
-    // Clean up bots the server removed
     for (const pid of Array.from(this.bots.keys())) {
       if (!livePids.has(pid)) this.removeBot(pid);
     }
-    // Schedule each bot to think
     const gamePhases = ["preflop", "flop", "turn", "river"];
     for (const [pid, rec] of Array.from(this.bots.entries())) {
       if (rec.pending) continue;
       rec.pending = true;
-      const [lo, hi] = rec.personality.thinkMs;
-      let delay = lo + Math.random() * (hi - lo);
-      // First-action delay: once per game phase, add extra wait so bots
-      // don't instantly grab chips the moment a phase opens.
+      // Base pacing — difficulty modulates later once we've evaluated.
+      let delay = thinkDelayMs(rec.traits, 0.3);
       if (gamePhases.includes(state.phase) && rec.firstActionPhase !== state.phase) {
         rec.firstActionPhase = state.phase;
-        const [flo, fhi] = rec.personality.firstActionMs;
-        delay += flo + Math.random() * (fhi - flo);
+        delay += firstActionDelayMs(rec.traits);
       }
-      // Floor between actions — a flurry of state changes can't shorten the wait.
       const now = Date.now();
       const minAt = Math.max(now + delay, rec.earliestNextActionAt);
       const wait = Math.max(0, minAt - now);
@@ -106,27 +108,31 @@ export class BotController {
     const rec = this.bots.get(playerId);
     if (!rec) return;
     const masked = this.opts.mask(playerId);
-    const msg = decideAction(masked, playerId, rec.personality, rec.memo, {
+    const msg = decideAction(masked, playerId, rec.traits, rec.memo, {
       nSims: this.opts.nSims,
     });
     if (msg) {
-      // Set floor so the next action is at least thinkMs away, even if a
-      // burst of state changes fires notifyStateChanged in the meantime.
-      const [lo, hi] = rec.personality.thinkMs;
-      const cooldown = lo + Math.random() * (hi - lo);
-      rec.earliestNextActionAt = Date.now() + cooldown;
-      this.opts.dispatch(playerId, msg);
-      // dispatch triggers notifyStateChanged → next tick scheduled there
+      // Hesitation: occasionally cancel the emit and reschedule — looks like
+      // a bot reconsidering. Only for non-critical actions.
+      const hesitated =
+        msg.type !== "ready" &&
+        msg.type !== "flip" &&
+        Math.random() < rec.traits.hesitationProb;
+      if (hesitated) {
+        const cooldown = Math.round(thinkDelayMs(rec.traits, 0.5) / 2);
+        rec.earliestNextActionAt = Date.now() + cooldown;
+      } else {
+        const cooldown = thinkDelayMs(rec.traits, 0.3);
+        rec.earliestNextActionAt = Date.now() + cooldown;
+        this.opts.dispatch(playerId, msg);
+      }
     } else {
-      // Reschedule a follow-up tick so we keep nudging forward.
-      // Only in game phases where action may still be needed.
       const state = this.opts.getState();
       if (state.phase === "lobby") return;
       if (state.phase === "reveal" && state.score !== null) return;
       if (rec.pending) return;
       rec.pending = true;
-      const [lo, hi] = rec.personality.thinkMs;
-      const delay = lo + Math.random() * (hi - lo);
+      const delay = thinkDelayMs(rec.traits, 0.3);
       const now = Date.now();
       const wait = Math.max(delay, rec.earliestNextActionAt - now);
       rec.timer = setTimeout(() => {

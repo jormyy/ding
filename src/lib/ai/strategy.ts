@@ -1,14 +1,45 @@
-import type { Card, ClientMessage, GameState, Hand } from "../types";
+// Cooperative-bot pipeline.
+//
+//   1. Perception → update BeliefState from public placements.
+//   2. Evaluation → score candidate actions by team-EV (inversion reduction).
+//   3. Selection  → softmax over top actions, modulated by Traits + Mood.
+
+import type { ClientMessage, GameState, Hand } from "../types";
 import { estimateStrength } from "./handStrength";
-import type { Personality } from "./personality";
+import type { Traits } from "./personality";
+import {
+  newBeliefState,
+  perceiveState,
+  onPhaseBoundary as beliefOnPhaseBoundary,
+  type BeliefState,
+} from "./belief";
+import {
+  scoreAction,
+  rankingAfterMove,
+  rankingAfterSwap,
+  rankingAfterChipMove,
+  type ActionScore,
+} from "./ev";
+import { extractSignals, deferralWeight } from "./signals";
+import {
+  newMood,
+  moodAdjustedTraits,
+  onTeammateChurn,
+  onTeamConverged,
+  onPhaseBoundary as moodOnPhaseBoundary,
+  type Mood,
+} from "./mood";
 
 export type BotMemo = {
   estimates: Map<string, number>;
-  estimatesPhase: string;       // phase when estimates were computed
-  lastActionPhase: string;       // phase we last took an action in
-  idleTicks: number;             // consecutive ticks with no action in current phase
-  decisionCount: number;         // total decisions in current phase (soft cap)
-  recentlyRejected: Set<string>; // initiatorHandId|recipientHandId pairs we rejected
+  estimatesPhase: string;
+  lastActionPhase: string;
+  idleTicks: number;
+  decisionCount: number;
+  recentlyRejected: Set<string>;
+  belief: BeliefState;
+  mood: Mood;
+  lastRankingSig: string;
 };
 
 export function newBotMemo(): BotMemo {
@@ -19,20 +50,25 @@ export function newBotMemo(): BotMemo {
     idleTicks: 0,
     decisionCount: 0,
     recentlyRejected: new Set(),
+    belief: newBeliefState(),
+    mood: newMood(),
+    lastRankingSig: "",
   };
 }
 
-function desiredSlotFor(estimate: number, totalHands: number): number {
-  if (totalHands <= 1) return 0;
-  // 0 = best (top), totalHands-1 = worst (bottom)
-  const idx = Math.round((1 - estimate) * (totalHands - 1));
-  return Math.max(0, Math.min(totalHands - 1, idx));
-}
+type Candidate = {
+  msg: ClientMessage;
+  score: ActionScore;
+  utility: number;
+};
+
+function reqKey(a: string, b: string): string { return a + "|" + b; }
+function rankingSig(r: (string | null)[]): string { return r.map((x) => x ?? "_").join(","); }
 
 function getEstimate(
   memo: BotMemo,
   hand: Hand,
-  board: Card[],
+  board: GameState["communityCards"],
   fieldSize: number,
   nSims: number
 ): number {
@@ -43,20 +79,39 @@ function getEstimate(
   return est;
 }
 
-function reqKey(initiatorHandId: string, recipientHandId: string): string {
-  return initiatorHandId + "|" + recipientHandId;
+function softmaxPick<T>(items: T[], scores: number[], temperature: number): T {
+  const t = Math.max(0.05, temperature);
+  const maxS = Math.max(...scores);
+  const exps = scores.map((s) => Math.exp((s - maxS) / t));
+  const sum = exps.reduce((a, b) => a + b, 0);
+  let r = Math.random() * sum;
+  for (let i = 0; i < items.length; i++) {
+    r -= exps[i];
+    if (r <= 0) return items[i];
+  }
+  return items[items.length - 1];
+}
+
+function utilityFor(
+  score: ActionScore,
+  traits: Traits,
+  bonuses: { selfBenefit?: number; teamOnlyBenefit?: number } = {}
+): number {
+  const base = score.teamInversionDelta * (0.4 + 0.6 * score.confidence);
+  const helper = (bonuses.teamOnlyBenefit ?? 0) * traits.helpfulness * 0.3;
+  const self = (bonuses.selfBenefit ?? 0) * 0.1;
+  return base + helper + self;
 }
 
 export function decideAction(
   state: GameState,
   myPlayerId: string,
-  personality: Personality,
+  traits: Traits,
   memo: BotMemo,
   opts?: { nSims?: number }
 ): ClientMessage | null {
-  const nSims = opts?.nSims ?? 40;
+  const nSims = opts?.nSims ?? Math.round(20 + 60 * traits.skill);
 
-  // Phase change — invalidate memo
   if (memo.estimatesPhase !== state.phase) {
     memo.estimates.clear();
     memo.estimatesPhase = state.phase;
@@ -64,52 +119,34 @@ export function decideAction(
     memo.decisionCount = 0;
     memo.recentlyRejected.clear();
     memo.lastActionPhase = state.phase;
+    beliefOnPhaseBoundary(memo.belief, state.phase);
+    moodOnPhaseBoundary(memo.mood);
   }
 
-  const myHands = state.hands.filter((h) => h.playerId === myPlayerId);
-  if (myHands.length === 0) return null;
-
-  // Reveal — flip my hand (or help disconnected owners)
   if (state.phase === "reveal") {
     if (state.score !== null) return null;
     const totalHands = state.hands.length;
     if (state.revealIndex >= totalHands) return null;
-
     const currentRevealIdx = state.ranking.length - 1 - state.revealIndex;
     const handToFlipId = state.ranking[currentRevealIdx];
     if (!handToFlipId) return null;
-
     const owner = state.players.find((p) =>
       state.hands.find((h) => h.id === handToFlipId && h.playerId === p.id)
     );
     if (!owner) return null;
-
-    if (owner.id === myPlayerId) {
-      return { type: "flip", handId: handToFlipId };
-    }
+    if (owner.id === myPlayerId) return { type: "flip", handId: handToFlipId };
     if (!owner.connected) {
-      // Help out: lowest-id bot that is currently in players[] takes it.
-      // We don't know which players are bots from masked state, but this
-      // bot will simply compete — whoever fires first wins; server is
-      // idempotent on the revealIndex check.
-      const connectedIds = state.players
-        .filter((p) => p.connected)
-        .map((p) => p.id)
-        .sort();
-      if (connectedIds[0] === myPlayerId) {
-        return { type: "flip", handId: handToFlipId };
-      }
+      const connected = state.players.filter((p) => p.connected).map((p) => p.id).sort();
+      if (connected[0] === myPlayerId) return { type: "flip", handId: handToFlipId };
     }
     return null;
   }
 
   if (state.phase === "lobby") return null;
-
   const gamePhases = ["preflop", "flop", "turn", "river"];
   if (!gamePhases.includes(state.phase)) return null;
 
   if (memo.decisionCount > 40) {
-    // Hard stop — ready up if possible, otherwise do nothing.
     if (state.ranking.every((s) => s !== null)) {
       const me = state.players.find((p) => p.id === myPlayerId);
       if (me && !me.ready) return { type: "ready", ready: true };
@@ -117,247 +154,221 @@ export function decideAction(
     return null;
   }
 
+  const myHands = state.hands.filter((h) => h.playerId === myPlayerId);
+  if (myHands.length === 0) return null;
+
   const board = state.communityCards;
   const fieldSize = Math.max(1, state.hands.length - myHands.length);
-  const totalHands = state.hands.length;
 
-  // Prime estimates for my hands
-  for (const h of myHands) {
-    getEstimate(memo, h, board, fieldSize, nSims);
+  for (const h of myHands) getEstimate(memo, h, board, fieldSize, nSims);
+
+  // === 1. PERCEPTION ===
+  perceiveState(memo.belief, state, myPlayerId);
+
+  const sig = rankingSig(state.ranking);
+  if (memo.lastRankingSig && memo.lastRankingSig !== sig) {
+    onTeammateChurn(memo.mood, traits);
+  } else if (state.ranking.every((s) => s !== null)) {
+    onTeamConverged(memo.mood);
   }
+  memo.lastRankingSig = sig;
 
+  const signals = extractSignals(state, memo.belief, myPlayerId);
+  const traitsM = moodAdjustedTraits(traits, memo.mood);
   const me = state.players.find((p) => p.id === myPlayerId);
 
-  // === 1. Respond to pending proposals aimed at me ===
+  // === 2. EVALUATION ===
+  const candidates: Candidate[] = [];
+
   const proposalsToMe = state.acquireRequests.filter((r) => {
     const rh = state.hands.find((h) => h.id === r.recipientHandId);
     return rh && rh.playerId === myPlayerId;
   });
 
   for (const p of proposalsToMe) {
-    const recipientHand = state.hands.find((h) => h.id === p.recipientHandId)!;
-    const myEst = getEstimate(memo, recipientHand, board, fieldSize, nSims);
-    const myDesired = desiredSlotFor(myEst, totalHands);
-    const idxRecipient = state.ranking.indexOf(p.recipientHandId);
-    const idxInitiator = state.ranking.indexOf(p.initiatorHandId);
+    const after = rankingAfterChipMove(state.ranking, p.initiatorHandId, p.recipientHandId, p.kind);
+    const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+    const initDefer = deferralWeight(memo.belief, signals, p.initiatorHandId);
+    const acceptBoost = traitsM.agreeableness * 0.3 + initDefer * 0.2 * traitsM.trustInTeammates;
+    candidates.push({
+      msg: { type: "acceptChipMove", initiatorHandId: p.initiatorHandId, recipientHandId: p.recipientHandId },
+      score,
+      utility: utilityFor(score, traitsM) + acceptBoost,
+    });
 
-    let currentSlot: number | null = idxRecipient === -1 ? null : idxRecipient;
-    let afterSlot: number | null;
-
-    if (p.kind === "acquire") {
-      // initiator unranked, recipient ranked. After accept: recipient unranked.
-      afterSlot = null;
-    } else if (p.kind === "offer") {
-      // initiator ranked, recipient unranked. After accept: recipient takes initiator slot.
-      afterSlot = idxInitiator;
-    } else {
-      // swap
-      afterSlot = idxInitiator;
-    }
-
-    // Unranked = no chip, can't score → strictly worse than any ranked slot.
-    const unrankedPenalty = totalHands;
-    const currentError = currentSlot === null
-      ? unrankedPenalty
-      : Math.abs(currentSlot - myDesired);
-    const afterError = afterSlot === null
-      ? unrankedPenalty
-      : Math.abs(afterSlot - myDesired);
-
-    // Accept any strict improvement; stubbornness just adds occasional
-    // drama by rejecting even some good trades.
-    if (afterError < currentError) {
-      if (Math.random() > personality.stubbornness * 0.4) {
-        memo.decisionCount++;
-        memo.idleTicks = 0;
-        return {
-          type: "acceptChipMove",
-          initiatorHandId: p.initiatorHandId,
-          recipientHandId: p.recipientHandId,
-        };
-      }
-    }
-    // Reject once; remember so we don't spam
     const k = reqKey(p.initiatorHandId, p.recipientHandId);
     if (!memo.recentlyRejected.has(k)) {
-      memo.recentlyRejected.add(k);
-      memo.decisionCount++;
-      memo.idleTicks = 0;
-      return {
-        type: "rejectChipMove",
-        initiatorHandId: p.initiatorHandId,
-        recipientHandId: p.recipientHandId,
-      };
+      const rejectU = -score.teamInversionDelta * (0.4 + 0.6 * score.confidence)
+        + (1 - traitsM.agreeableness) * 0.25;
+      candidates.push({
+        msg: { type: "rejectChipMove", initiatorHandId: p.initiatorHandId, recipientHandId: p.recipientHandId },
+        score: { teamInversionDelta: -score.teamInversionDelta, confidence: score.confidence },
+        utility: rejectU,
+      });
     }
   }
 
-  // === 2. Cancel my own stale proposals ===
-  const myProposals = state.acquireRequests.filter((r) => r.initiatorId === myPlayerId);
-  for (const p of myProposals) {
-    const initiatorHand = state.hands.find((h) => h.id === p.initiatorHandId);
-    if (!initiatorHand || initiatorHand.playerId !== myPlayerId) continue;
-    const est = getEstimate(memo, initiatorHand, board, fieldSize, nSims);
-    const desired = desiredSlotFor(est, totalHands);
-    const idxInit = state.ranking.indexOf(p.initiatorHandId);
-    const idxRec = state.ranking.indexOf(p.recipientHandId);
-
-    // If the proposal no longer improves my placement, cancel.
-    const unrankedPenalty = totalHands;
-    let currentErr: number, afterErr: number;
-    if (p.kind === "acquire") {
-      currentErr = unrankedPenalty; // my hand currently unranked
-      afterErr = idxRec === -1 ? unrankedPenalty : Math.abs(idxRec - desired);
-    } else if (p.kind === "offer") {
-      currentErr = idxInit === -1 ? unrankedPenalty : Math.abs(idxInit - desired);
-      afterErr = unrankedPenalty;
-    } else {
-      currentErr = idxInit === -1 ? unrankedPenalty : Math.abs(idxInit - desired);
-      afterErr = idxRec === -1 ? unrankedPenalty : Math.abs(idxRec - desired);
-    }
-    if (afterErr >= currentErr) {
-      memo.decisionCount++;
-      memo.idleTicks = 0;
-      return {
-        type: "cancelChipMove",
-        initiatorHandId: p.initiatorHandId,
-        recipientHandId: p.recipientHandId,
-      };
+  for (const p of state.acquireRequests.filter((r) => r.initiatorId === myPlayerId)) {
+    const after = rankingAfterChipMove(state.ranking, p.initiatorHandId, p.recipientHandId, p.kind);
+    const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+    if (score.teamInversionDelta <= 0.05) {
+      candidates.push({
+        msg: { type: "cancelChipMove", initiatorHandId: p.initiatorHandId, recipientHandId: p.recipientHandId },
+        score: { teamInversionDelta: 0.1, confidence: score.confidence },
+        utility: 0.15,
+      });
     }
   }
 
-  // === 3. Place an unranked hand into the empty slot closest to its desired slot ===
-  const myUnranked = myHands.filter((h) => state.ranking.indexOf(h.id) === -1);
   const emptySlots: number[] = [];
-  for (let i = 0; i < state.ranking.length; i++) {
-    if (state.ranking[i] === null) emptySlots.push(i);
-  }
-
-  if (myUnranked.length > 0 && emptySlots.length > 0) {
-    // Sort my unranked hands by "how picky they are" — strongest/weakest first.
-    // Take the one with the most extreme estimate (clearer desired slot).
-    const sorted = [...myUnranked].sort((a, b) => {
-      const ea = memo.estimates.get(a.id) ?? 0.5;
-      const eb = memo.estimates.get(b.id) ?? 0.5;
-      return Math.abs(eb - 0.5) - Math.abs(ea - 0.5);
-    });
-    const h = sorted[0];
-    const est = memo.estimates.get(h.id) ?? 0.5;
-    const desired = desiredSlotFor(est, totalHands);
-    let best = emptySlots[0];
-    let bestDist = Math.abs(best - desired);
-    for (const s of emptySlots) {
-      const d = Math.abs(s - desired);
-      if (d < bestDist) {
-        best = s;
-        bestDist = d;
-      }
-    }
-    memo.decisionCount++;
-    memo.idleTicks = 0;
-    return { type: "move", handId: h.id, toIndex: best };
-  }
-
-  // === 4. Fix a misplaced pair of own ranked hands ===
-  const myRanked = myHands
-    .map((h) => ({ h, idx: state.ranking.indexOf(h.id) }))
-    .filter((x) => x.idx !== -1);
-
-  for (let i = 0; i < myRanked.length; i++) {
-    for (let j = i + 1; j < myRanked.length; j++) {
-      const a = myRanked[i], b = myRanked[j];
-      const ea = memo.estimates.get(a.h.id) ?? 0.5;
-      const eb = memo.estimates.get(b.h.id) ?? 0.5;
-      // Lower idx = better slot. If a is in lower idx but b is stronger, swap.
-      if ((a.idx < b.idx && eb > ea + 0.1) || (a.idx > b.idx && ea > eb + 0.1)) {
-        memo.decisionCount++;
-        memo.idleTicks = 0;
-        return { type: "swap", handIdA: a.h.id, handIdB: b.h.id };
-      }
+  for (let i = 0; i < state.ranking.length; i++) if (state.ranking[i] === null) emptySlots.push(i);
+  const myUnranked = myHands.filter((h) => state.ranking.indexOf(h.id) === -1);
+  for (const h of myUnranked) {
+    for (const slot of emptySlots) {
+      const after = rankingAfterMove(state.ranking, h.id, slot);
+      const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+      candidates.push({
+        msg: { type: "move", handId: h.id, toIndex: slot },
+        score,
+        utility: utilityFor(score, traitsM),
+      });
     }
   }
 
-  // === 5. Propose a chip move to a teammate's hand ===
-  // Only once per tick with aggression probability.
-  if (Math.random() < personality.aggression * 0.6) {
-    // For each of my ranked hands, see if there's another slot I'd rather be in.
-    const candidates: Array<{ mine: Hand; myIdx: number; targetIdx: number; targetHandId: string; gap: number }> = [];
+  if (emptySlots.length > 0) {
     for (const h of myHands) {
-      const est = memo.estimates.get(h.id) ?? 0.5;
-      const desired = desiredSlotFor(est, totalHands);
-      const myIdx = state.ranking.indexOf(h.id);
-      const currentErr = myIdx === -1 ? (totalHands - 1) : Math.abs(myIdx - desired);
-      // Look at all other-player ranked slots
-      for (let s = 0; s < state.ranking.length; s++) {
-        const otherHandId = state.ranking[s];
-        if (!otherHandId) continue;
-        const otherHand = state.hands.find((x) => x.id === otherHandId);
-        if (!otherHand || otherHand.playerId === myPlayerId) continue;
-        const targetErr = Math.abs(s - desired);
-        const gap = currentErr - targetErr;
-        if (gap > 0.6) {
-          // Skip if an active proposal already exists on this pair from me
-          const already = state.acquireRequests.some(
-            (r) =>
-              r.initiatorId === myPlayerId &&
-              r.initiatorHandId === h.id &&
-              r.recipientHandId === otherHandId
-          );
-          if (already) continue;
-          // Skip if the recipient slot already has a pending proposal from someone else
-          const taken = state.acquireRequests.some(
-            (r) => r.recipientHandId === otherHandId && r.initiatorId !== myPlayerId
-          );
-          if (taken) continue;
+      const from = state.ranking.indexOf(h.id);
+      if (from === -1) continue;
+      for (const slot of emptySlots) {
+        const after = rankingAfterMove(state.ranking, h.id, slot);
+        const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+        if (score.teamInversionDelta > 0.2) {
           candidates.push({
-            mine: h,
-            myIdx,
-            targetIdx: s,
-            targetHandId: otherHandId,
-            gap,
+            msg: { type: "move", handId: h.id, toIndex: slot },
+            score,
+            utility: utilityFor(score, traitsM),
           });
         }
       }
     }
-    if (candidates.length > 0) {
-      candidates.sort((a, b) => b.gap - a.gap);
-      const pick = candidates[0];
-      memo.decisionCount++;
-      memo.idleTicks = 0;
-      return {
-        type: "proposeChipMove",
-        initiatorHandId: pick.mine.id,
-        recipientHandId: pick.targetHandId,
-      };
+  }
+
+  const myRanked = myHands
+    .map((h) => ({ h, idx: state.ranking.indexOf(h.id) }))
+    .filter((x) => x.idx !== -1);
+  for (let i = 0; i < myRanked.length; i++) {
+    for (let j = i + 1; j < myRanked.length; j++) {
+      const a = myRanked[i], b = myRanked[j];
+      const after = rankingAfterSwap(state.ranking, a.h.id, b.h.id);
+      const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+      if (score.teamInversionDelta > 0.2) {
+        candidates.push({
+          msg: { type: "swap", handIdA: a.h.id, handIdB: b.h.id },
+          score,
+          utility: utilityFor(score, traitsM),
+        });
+      }
     }
   }
 
-  // === 6. Ready up ===
+  for (const h of myHands) {
+    const myIdx = state.ranking.indexOf(h.id);
+    for (let s = 0; s < state.ranking.length; s++) {
+      const otherId = state.ranking[s];
+      if (!otherId) continue;
+      const otherHand = state.hands.find((x) => x.id === otherId);
+      if (!otherHand || otherHand.playerId === myPlayerId) continue;
+
+      const kind: "acquire" | "offer" | "swap" = myIdx === -1 ? "acquire" : "swap";
+
+      const already = state.acquireRequests.some(
+        (r) => r.initiatorId === myPlayerId && r.initiatorHandId === h.id && r.recipientHandId === otherId
+      );
+      if (already) continue;
+      const taken = state.acquireRequests.some(
+        (r) => r.recipientHandId === otherId && r.initiatorId !== myPlayerId
+      );
+      if (taken) continue;
+
+      const after = rankingAfterChipMove(state.ranking, h.id, otherId, kind);
+      const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+
+      const defer = deferralWeight(memo.belief, signals, otherId);
+      const deferPenalty = defer * 0.5 * traitsM.trustInTeammates;
+      const extraversionBonus = (traitsM.extraversion - 0.5) * 0.2;
+
+      const util = utilityFor(score, traitsM, { teamOnlyBenefit: score.teamInversionDelta })
+        - deferPenalty + extraversionBonus;
+
+      if (score.teamInversionDelta > 0.3) {
+        candidates.push({
+          msg: { type: "proposeChipMove", initiatorHandId: h.id, recipientHandId: otherId },
+          score,
+          utility: util,
+        });
+      }
+    }
+  }
+
   const allRanked = state.ranking.every((s) => s !== null);
-  const noPendingForMe = proposalsToMe.length === 0;
   const alreadyReady = !!me?.ready;
-
-  if (allRanked && noPendingForMe && !alreadyReady) {
-    // If my estimates haven't shifted meaningfully (they were cached this phase), ready up.
-    if (memo.idleTicks >= 1) {
-      memo.decisionCount++;
-      memo.idleTicks = 0;
-      return { type: "ready", ready: true };
-    }
+  if (allRanked && proposalsToMe.length === 0 && !alreadyReady) {
+    const readyU = 0.2 + 0.4 * traitsM.decisiveness + 0.2 * memo.mood.focus
+      - 0.3 * memo.mood.concern;
+    candidates.push({
+      msg: { type: "ready", ready: true },
+      score: { teamInversionDelta: 0.05, confidence: 0.5 },
+      utility: readyU,
+    });
   }
 
-  // Force ready after ~6 idle ticks to prevent stalls.
   if (allRanked && !alreadyReady && memo.idleTicks >= 6) {
-    memo.decisionCount++;
-    memo.idleTicks = 0;
     return { type: "ready", ready: true };
   }
 
-  // === 7. Idle ding ===
-  if (Math.random() < personality.chaos * 0.05) {
+  // === 3. SELECTION ===
+  if (candidates.length === 0) {
+    if (Math.random() < (1 - traitsM.conscientiousness) * 0.04) {
+      memo.idleTicks++;
+      return { type: "ding" };
+    }
     memo.idleTicks++;
-    return { type: "ding" };
+    return null;
   }
 
-  memo.idleTicks++;
-  return null;
+  candidates.sort((a, b) => b.utility - a.utility);
+  const top = candidates.slice(0, 3);
+
+  if (top[0].utility <= 0 && top[0].msg.type !== "ready") {
+    memo.idleTicks++;
+    return null;
+  }
+
+  const difficulty = Math.min(
+    1,
+    (top[0].utility - (top[top.length - 1]?.utility ?? 0)) < 0.1 ? 1 : 0.4
+  );
+  const honestMisread = Math.random() < (1 - traitsM.skill) * 0.08;
+  if (honestMisread && top.length >= 2) {
+    memo.decisionCount++;
+    memo.idleTicks = 0;
+    return top[1].msg;
+  }
+
+  const temperature = (1 - traitsM.skill) * 0.5 + memo.mood.concern * 0.4 + difficulty * 0.1;
+  const scores = top.map((c) => c.utility);
+  const pick = softmaxPick(top, scores, temperature);
+
+  memo.decisionCount++;
+  memo.idleTicks = 0;
+
+  if (pick.msg.type === "rejectChipMove") {
+    memo.recentlyRejected.add(reqKey(pick.msg.initiatorHandId, pick.msg.recipientHandId));
+  }
+
+  // nSims is referenced above via getEstimate; silence unused-warning for cases
+  // where every estimate was already cached.
+  void nSims;
+
+  return pick.msg;
 }
