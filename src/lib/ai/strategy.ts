@@ -42,6 +42,7 @@ export type BotMemo = {
   lastRankingSig: string;
   // Expressive-behavior tracking
   prevMyProposals: Set<string>;    // reqKeys present last tick for proposals I initiated
+  myRejectedKeys: Set<string>;     // my own proposals that were rejected — don't re-propose this phase
   prevHandSlots: Map<string, number>; // handId -> slot from previous tick
   expressionCooldownUntil: number; // ms timestamp; ding/fuckoff gated by this
   stallTicks: number;              // consecutive ticks where everyone ranked but not all ready
@@ -59,6 +60,7 @@ export function newBotMemo(): BotMemo {
     mood: newMood(),
     lastRankingSig: "",
     prevMyProposals: new Set(),
+    myRejectedKeys: new Set(),
     prevHandSlots: new Map(),
     expressionCooldownUntil: 0,
     stallTicks: 0,
@@ -127,6 +129,7 @@ export function decideAction(
     memo.idleTicks = 0;
     memo.decisionCount = 0;
     memo.recentlyRejected.clear();
+    memo.myRejectedKeys.clear();
     memo.lastActionPhase = state.phase;
     beliefOnPhaseBoundary(memo.belief, state.phase);
     moodOnPhaseBoundary(memo.mood);
@@ -200,7 +203,9 @@ export function decideAction(
   for (const k of memo.prevMyProposals) {
     if (!currentMyProposalKeys.has(k)) {
       myProposalVanished = true;
-      break;
+      // Treat any vanished own proposal as rejected-or-cancelled; either way
+      // don't re-propose the same pairing this phase.
+      memo.myRejectedKeys.add(k);
     }
   }
   memo.prevMyProposals = currentMyProposalKeys;
@@ -379,6 +384,8 @@ export function decideAction(
         (r) => r.initiatorId === myPlayerId && r.initiatorHandId === h.id && r.recipientHandId === otherId
       );
       if (already) continue;
+      // Don't re-propose a pairing that was just rejected/cancelled this phase.
+      if (memo.myRejectedKeys.has(reqKey(h.id, otherId))) continue;
       const taken = state.acquireRequests.some(
         (r) => r.recipientHandId === otherId && r.initiatorId !== myPlayerId
       );
