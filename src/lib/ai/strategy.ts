@@ -46,6 +46,8 @@ export type BotMemo = {
   prevHandSlots: Map<string, number>; // handId -> slot from previous tick
   expressionCooldownUntil: number; // legacy — kept for compat; no longer gates expression
   stallTicks: number;              // consecutive ticks where everyone ranked but not all ready
+  ticksSinceProgress: number;      // ticks since last state-changing action (move/swap/accept/propose/ready)
+  myProposalsThisPhase: number;    // proposals I've initiated in the current phase
 };
 
 export function newBotMemo(): BotMemo {
@@ -64,7 +66,24 @@ export function newBotMemo(): BotMemo {
     prevHandSlots: new Map(),
     expressionCooldownUntil: 0,
     stallTicks: 0,
+    ticksSinceProgress: 0,
+    myProposalsThisPhase: 0,
   };
+}
+
+function commitAction(memo: BotMemo, msg: ClientMessage): void {
+  if (
+    msg.type === "move" ||
+    msg.type === "swap" ||
+    msg.type === "acceptChipMove" ||
+    msg.type === "proposeChipMove" ||
+    msg.type === "ready"
+  ) {
+    memo.ticksSinceProgress = 0;
+  }
+  if (msg.type === "proposeChipMove") {
+    memo.myProposalsThisPhase++;
+  }
 }
 
 type Candidate = {
@@ -130,6 +149,8 @@ export function decideAction(
     memo.decisionCount = 0;
     memo.recentlyRejected.clear();
     memo.myRejectedKeys.clear();
+    memo.ticksSinceProgress = 0;
+    memo.myProposalsThisPhase = 0;
     memo.lastActionPhase = state.phase;
     beliefOnPhaseBoundary(memo.belief, state.phase);
     moodOnPhaseBoundary(memo.mood);
@@ -158,10 +179,23 @@ export function decideAction(
   const gamePhases = ["preflop", "flop", "turn", "river"];
   if (!gamePhases.includes(state.phase)) return null;
 
+  memo.ticksSinceProgress++;
+
+  const unrankedHandsAll = state.hands.filter((h) => state.ranking.indexOf(h.id) === -1);
+  const onlyOfflineUnrankedAll = unrankedHandsAll.every((h) => {
+    const owner = state.players.find((p) => p.id === h.playerId);
+    return owner ? !owner.connected : true;
+  });
+  const effectiveAllRanked =
+    state.ranking.every((s) => s !== null) || onlyOfflineUnrankedAll;
+
   if (memo.decisionCount > 40) {
-    if (state.ranking.every((s) => s !== null)) {
+    if (effectiveAllRanked) {
       const me = state.players.find((p) => p.id === myPlayerId);
-      if (me && !me.ready) return { type: "ready", ready: true };
+      if (me && !me.ready) {
+        memo.ticksSinceProgress = 0;
+        return { type: "ready", ready: true };
+      }
     }
     return null;
   }
@@ -407,9 +441,14 @@ export function decideAction(
         - deferPenalty + extraversionBonus;
 
       // As resignation rises, require a steeper improvement before proposing
-      // — and eventually stop proposing at all.
+      // — and eventually stop proposing at all. Also cap total proposals per
+      // phase so bot pairs can't ping-pong trades forever and wipe ready state.
       const proposeBar = 0.3 + resignation * 2.0;
-      if (resignation < 0.7 && score.teamInversionDelta > proposeBar) {
+      if (
+        resignation < 0.7 &&
+        memo.myProposalsThisPhase < 4 &&
+        score.teamInversionDelta > proposeBar
+      ) {
         candidates.push({
           msg: { type: "proposeChipMove", initiatorHandId: h.id, recipientHandId: otherId },
           score,
@@ -419,16 +458,8 @@ export function decideAction(
     }
   }
 
-  // An unranked hand that belongs to a disconnected player can't be placed
-  // during non-reveal phases, so don't wait on it before readying up.
-  const unrankedHands = state.hands.filter((h) => state.ranking.indexOf(h.id) === -1);
-  const onlyOfflineUnranked = unrankedHands.every((h) => {
-    const owner = state.players.find((p) => p.id === h.playerId);
-    return owner ? !owner.connected : true;
-  });
-  const effectiveAllRanked = state.ranking.every((s) => s !== null) || onlyOfflineUnranked;
   const alreadyReady = !!me?.ready;
-  if (effectiveAllRanked && proposalsToMe.length === 0 && !alreadyReady) {
+  if (effectiveAllRanked && !alreadyReady) {
     const readyU = 0.2 + 0.4 * traitsM.decisiveness + 0.2 * memo.mood.focus
       - 0.3 * memo.mood.concern
       + resignation * 1.5; // give up → just lock in what we've got
@@ -440,7 +471,8 @@ export function decideAction(
   }
 
   // Hard stall breaker — always ready eventually so the game doesn't freeze.
-  if (effectiveAllRanked && !alreadyReady && (memo.idleTicks >= 6 || resignation >= 0.85)) {
+  if (effectiveAllRanked && !alreadyReady && (memo.ticksSinceProgress >= 6 || resignation >= 0.85)) {
+    memo.ticksSinceProgress = 0;
     return { type: "ready", ready: true };
   }
 
@@ -456,8 +488,9 @@ export function decideAction(
     myHandsPlaced &&
     othersAllReady &&
     effectiveAllRanked &&
-    memo.idleTicks >= 1
+    memo.ticksSinceProgress >= 1
   ) {
+    memo.ticksSinceProgress = 0;
     return { type: "ready", ready: true };
   }
 
@@ -506,6 +539,7 @@ export function decideAction(
   if (honestMisread && top.length >= 2) {
     memo.decisionCount++;
     memo.idleTicks = 0;
+    commitAction(memo, top[1].msg);
     return top[1].msg;
   }
 
@@ -515,6 +549,7 @@ export function decideAction(
 
   memo.decisionCount++;
   memo.idleTicks = 0;
+  commitAction(memo, pick.msg);
 
   if (pick.msg.type === "rejectChipMove") {
     memo.recentlyRejected.add(reqKey(pick.msg.initiatorHandId, pick.msg.recipientHandId));
