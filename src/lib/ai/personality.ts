@@ -4,6 +4,7 @@ export type Personality = {
   chaos: number;        // 0..1 — chance of an idle ding each tick
   greed: number;        // 0..1 — how often it proposes swaps when its estimate flips
   thinkMs: [number, number]; // min/max delay per tick — governs visible pacing
+  firstActionMs: [number, number]; // extra delay added on the first action of each game phase
 };
 
 function rand(min: number, max: number): number {
@@ -16,7 +17,8 @@ export function randomPersonality(): Personality {
     stubbornness: rand(0.0, 0.35),
     chaos: rand(0.0, 0.15),
     greed: rand(0.2, 0.8),
-    thinkMs: [200 + Math.floor(Math.random() * 200), 600 + Math.floor(Math.random() * 400)],
+    thinkMs: [5000 + Math.floor(Math.random() * 3000), 14000 + Math.floor(Math.random() * 6000)],
+    firstActionMs: [6000 + Math.floor(Math.random() * 3000), 12000 + Math.floor(Math.random() * 6000)],
   };
 }
 

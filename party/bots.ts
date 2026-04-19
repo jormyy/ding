@@ -8,6 +8,8 @@ type BotRecord = {
   memo: BotMemo;
   timer: ReturnType<typeof setTimeout> | null;
   pending: boolean; // a tick is currently scheduled
+  earliestNextActionAt: number; // ms timestamp — floor between actions
+  firstActionPhase: string; // phase for which firstAction delay is still owed
 };
 
 export type BotControllerOptions = {
@@ -52,6 +54,8 @@ export class BotController {
       memo: newBotMemo(),
       timer: null,
       pending: false,
+      earliestNextActionAt: 0,
+      firstActionPhase: "",
     });
     return player;
   }
@@ -72,16 +76,28 @@ export class BotController {
       if (!livePids.has(pid)) this.removeBot(pid);
     }
     // Schedule each bot to think
+    const gamePhases = ["preflop", "flop", "turn", "river"];
     for (const [pid, rec] of Array.from(this.bots.entries())) {
       if (rec.pending) continue;
       rec.pending = true;
       const [lo, hi] = rec.personality.thinkMs;
-      const delay = lo + Math.random() * (hi - lo);
+      let delay = lo + Math.random() * (hi - lo);
+      // First-action delay: once per game phase, add extra wait so bots
+      // don't instantly grab chips the moment a phase opens.
+      if (gamePhases.includes(state.phase) && rec.firstActionPhase !== state.phase) {
+        rec.firstActionPhase = state.phase;
+        const [flo, fhi] = rec.personality.firstActionMs;
+        delay += flo + Math.random() * (fhi - flo);
+      }
+      // Floor between actions — a flurry of state changes can't shorten the wait.
+      const now = Date.now();
+      const minAt = Math.max(now + delay, rec.earliestNextActionAt);
+      const wait = Math.max(0, minAt - now);
       rec.timer = setTimeout(() => {
         rec.pending = false;
         rec.timer = null;
         this.tick(pid);
-      }, delay);
+      }, wait);
     }
   }
 
@@ -94,6 +110,11 @@ export class BotController {
       nSims: this.opts.nSims,
     });
     if (msg) {
+      // Set floor so the next action is at least thinkMs away, even if a
+      // burst of state changes fires notifyStateChanged in the meantime.
+      const [lo, hi] = rec.personality.thinkMs;
+      const cooldown = lo + Math.random() * (hi - lo);
+      rec.earliestNextActionAt = Date.now() + cooldown;
       this.opts.dispatch(playerId, msg);
       // dispatch triggers notifyStateChanged → next tick scheduled there
     } else {
@@ -105,12 +126,14 @@ export class BotController {
       if (rec.pending) return;
       rec.pending = true;
       const [lo, hi] = rec.personality.thinkMs;
-      const delay = 2 * (lo + Math.random() * (hi - lo));
+      const delay = lo + Math.random() * (hi - lo);
+      const now = Date.now();
+      const wait = Math.max(delay, rec.earliestNextActionAt - now);
       rec.timer = setTimeout(() => {
         rec.pending = false;
         rec.timer = null;
         this.tick(playerId);
-      }, delay);
+      }, wait);
     }
   }
 
