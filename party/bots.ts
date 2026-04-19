@@ -127,11 +127,32 @@ export class BotController {
       if (hesitated) {
         const cooldown = Math.round(thinkDelayMs(rec.traits, 0.5) / 2);
         rec.earliestNextActionAt = Date.now() + cooldown;
+        // Reschedule self — don't rely on notifyStateChanged; if no other bot
+        // acts we'd freeze indefinitely.
+        if (!rec.pending) {
+          rec.pending = true;
+          rec.timer = setTimeout(() => {
+            rec.pending = false;
+            rec.timer = null;
+            this.tick(playerId);
+          }, cooldown);
+        }
       } else {
         let cooldown = thinkDelayMs(rec.traits, 0.3);
         if (botBotTrade) cooldown = Math.round(cooldown / 10);
         rec.earliestNextActionAt = Date.now() + cooldown;
         this.opts.dispatch(playerId, msg);
+        // Self-reschedule as backup: if dispatch didn't trigger notifyStateChanged
+        // (e.g. server rejected the move without broadcasting), the bot would
+        // otherwise freeze indefinitely waiting for an external state change.
+        if (!rec.pending) {
+          rec.pending = true;
+          rec.timer = setTimeout(() => {
+            rec.pending = false;
+            rec.timer = null;
+            this.tick(playerId);
+          }, cooldown);
+        }
       }
     } else {
       const state = this.opts.getState();
@@ -140,8 +161,9 @@ export class BotController {
       if (rec.pending) return;
       rec.pending = true;
       const delay = thinkDelayMs(rec.traits, 0.3);
-      const now = Date.now();
-      const wait = Math.max(delay, rec.earliestNextActionAt - now);
+      // Don't apply earliestNextActionAt here — no action was dispatched, so
+      // the cooldown shouldn't delay the next attempt to find something to do.
+      const wait = delay;
       rec.timer = setTimeout(() => {
         rec.pending = false;
         rec.timer = null;

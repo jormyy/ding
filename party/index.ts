@@ -723,7 +723,16 @@ export default class DingServer implements Party.Server {
         const gamePhases: Phase[] = ["preflop", "flop", "turn", "river"];
         if (!gamePhases.includes(this.state.phase)) return;
 
-        if (msg.ready && this.state.ranking.some((slot) => slot === null)) return;
+        if (msg.ready) {
+          const unrankedHands = this.state.hands.filter(
+            (h) => !this.state.ranking.includes(h.id)
+          );
+          const onlyOfflineUnranked = unrankedHands.every((h) => {
+            const owner = this.state.players.find((p) => p.id === h.playerId);
+            return owner ? !owner.connected : true;
+          });
+          if (!onlyOfflineUnranked) return;
+        }
 
         player.ready = msg.ready;
 

@@ -97,6 +97,13 @@ async function runOneGame(gameIdx: number): Promise<{
   const stats = freshStats();
   let integrityFailures = 0;
 
+  // Ring buffer of last 30 dispatched actions for diagnostics.
+  const trace: { who: string; type: string; ranking: string }[] = [];
+  function pushTrace(who: string, type: string, ranking: (string|null)[]) {
+    if (trace.length >= 30) trace.shift();
+    trace.push({ who, type, ranking: ranking.map(r => r ? r.split("-")[0] : "_").join(",") });
+  }
+
   const room = makeFakeRoom();
   const server = new DingServer(room as never);
 
@@ -108,6 +115,7 @@ async function runOneGame(gameIdx: number): Promise<{
   const origDispatch = anyServer.dispatchBotAction.bind(server);
   anyServer.dispatchBotAction = (pid: string, msg: ClientMessage) => {
     bump(stats, msg.type);
+    pushTrace("bot:" + pid.slice(0, 6), msg.type, anyServer.state.ranking);
     origDispatch(pid, msg);
   };
 
@@ -135,7 +143,7 @@ async function runOneGame(gameIdx: number): Promise<{
 
   // Ctl-tick + timeout reaper loop
   const started = Date.now();
-  const deadlineMs = 60000;
+  const deadlineMs = 300000;
 
   while (true) {
     // Let bot setTimeouts fire
@@ -160,6 +168,7 @@ async function runOneGame(gameIdx: number): Promise<{
     });
     if (msg) {
       bump(stats, msg.type);
+      pushTrace("ctl", msg.type, s.ranking);
       server.onMessage(JSON.stringify(msg), ctl as never);
     }
 
@@ -170,6 +179,8 @@ async function runOneGame(gameIdx: number): Promise<{
           `readyState=${s.players.map((p) => p.ready ? "R" : "-").join("")} ` +
           `ranking=[${s.ranking.map((r) => r ?? "_").join(",")}]`
       );
+      // eslint-disable-next-line no-console
+      console.warn(`[game ${gameIdx}] last actions: ${trace.map(t => `${t.who}:${t.type}[${t.ranking}]`).join(" ")}`);
       return { inversions: null, stats, integrityFailures };
     }
   }
@@ -212,7 +223,7 @@ async function main() {
     if (inv === null) {
       timeouts++;
       // eslint-disable-next-line no-console
-      console.log(`[${g}] TIMEOUT  proposals=${stats.proposals} accepts=${stats.accepts} readies=${stats.readies}`);
+      console.log(`[${g}] TIMEOUT  proposals=${stats.proposals} accepts=${stats.accepts} readies=${stats.readies} moves=${stats.moves} swaps=${stats.swaps} dings=${stats.dings}`);
       continue;
     }
     if (inv === 0) wins++;

@@ -76,7 +76,6 @@ function commitAction(memo: BotMemo, msg: ClientMessage): void {
     msg.type === "move" ||
     msg.type === "swap" ||
     msg.type === "acceptChipMove" ||
-    msg.type === "proposeChipMove" ||
     msg.type === "ready"
   ) {
     memo.ticksSinceProgress = 0;
@@ -233,6 +232,22 @@ export function decideAction(
   const resignation = Math.max(0, Math.min(1,
     resignationRaw * (1.2 - 0.4 * traitsM.conscientiousness - 0.3 * traitsM.neuroticism)
   ));
+
+  const alreadyReady = !!me?.ready;
+
+  // Hard stall breaker — before any expressive returns so ding loops can't block it.
+  if (effectiveAllRanked && !alreadyReady && (memo.ticksSinceProgress >= 3 || resignation >= 0.85)) {
+    memo.ticksSinceProgress = 0;
+    return { type: "ready", ready: true };
+  }
+  const myHandsPlaced = myHands.every((h) => state.ranking.indexOf(h.id) !== -1);
+  const othersAllReady = state.players
+    .filter((p) => p.id !== myPlayerId && p.connected)
+    .every((p) => p.ready);
+  if (!alreadyReady && myHandsPlaced && othersAllReady && effectiveAllRanked && memo.ticksSinceProgress >= 1) {
+    memo.ticksSinceProgress = 0;
+    return { type: "ready", ready: true };
+  }
 
   // === 1b. EXPRESSIVE EVENTS — ding / fuckoff before the normal pipeline ===
   // Detect rejected proposals: a key in prevMyProposals that is no longer
@@ -458,7 +473,41 @@ export function decideAction(
     }
   }
 
-  const alreadyReady = !!me?.ready;
+  // Offer proposals: I'm ranked, opponent is unranked — offer my slot to them.
+  const myRankedHands = myHands.filter((h) => state.ranking.indexOf(h.id) !== -1);
+  const unrankedOpponentHands = state.hands.filter((h) => {
+    if (h.playerId === myPlayerId) return false;
+    return state.ranking.indexOf(h.id) === -1;
+  });
+  for (const myH of myRankedHands) {
+    for (const theirH of unrankedOpponentHands) {
+      const already = state.acquireRequests.some(
+        (r) => r.initiatorId === myPlayerId && r.initiatorHandId === myH.id && r.recipientHandId === theirH.id
+      );
+      if (already) continue;
+      if (memo.myRejectedKeys.has(reqKey(myH.id, theirH.id))) continue;
+      const taken = state.acquireRequests.some(
+        (r) => r.recipientHandId === theirH.id && r.initiatorId !== myPlayerId
+      );
+      if (taken) continue;
+      const after = rankingAfterChipMove(state.ranking, myH.id, theirH.id, "offer");
+      const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+      const defer = deferralWeight(memo.belief, signals, theirH.id);
+      const deferPenalty = defer * 0.5 * traitsM.trustInTeammates;
+      const extraversionBonus = (traitsM.extraversion - 0.5) * 0.2;
+      const util = utilityFor(score, traitsM, { teamOnlyBenefit: score.teamInversionDelta })
+        - deferPenalty + extraversionBonus;
+      const proposeBar = 0.3 + resignation * 2.0;
+      if (resignation < 0.7 && memo.myProposalsThisPhase < 4 && score.teamInversionDelta > proposeBar) {
+        candidates.push({
+          msg: { type: "proposeChipMove", initiatorHandId: myH.id, recipientHandId: theirH.id },
+          score,
+          utility: util,
+        });
+      }
+    }
+  }
+
   if (effectiveAllRanked && !alreadyReady) {
     const readyU = 0.2 + 0.4 * traitsM.decisiveness + 0.2 * memo.mood.focus
       - 0.3 * memo.mood.concern
@@ -468,30 +517,6 @@ export function decideAction(
       score: { teamInversionDelta: 0.05, confidence: 0.5 },
       utility: readyU,
     });
-  }
-
-  // Hard stall breaker — always ready eventually so the game doesn't freeze.
-  if (effectiveAllRanked && !alreadyReady && (memo.ticksSinceProgress >= 6 || resignation >= 0.85)) {
-    memo.ticksSinceProgress = 0;
-    return { type: "ready", ready: true };
-  }
-
-  // "Everyone else is waiting on me" stall breaker. If every other connected
-  // player is ready and my own hands are placed, don't let a stray
-  // proposal/swap candidate keep me dithering — ready up after a tick or two.
-  const myHandsPlaced = myHands.every((h) => state.ranking.indexOf(h.id) !== -1);
-  const othersAllReady = state.players
-    .filter((p) => p.id !== myPlayerId && p.connected)
-    .every((p) => p.ready);
-  if (
-    !alreadyReady &&
-    myHandsPlaced &&
-    othersAllReady &&
-    effectiveAllRanked &&
-    memo.ticksSinceProgress >= 1
-  ) {
-    memo.ticksSinceProgress = 0;
-    return { type: "ready", ready: true };
   }
 
   // === 3. SELECTION ===
