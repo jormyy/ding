@@ -442,9 +442,24 @@ export function decideAction(
   }
 
   candidates.sort((a, b) => b.utility - a.utility);
-  const top = candidates.slice(0, 3);
 
-  if (top[0].utility <= 0 && top[0].msg.type !== "ready") {
+  // Mandatory placement: if I have unranked hands and empty slots, restrict
+  // to placement candidates and skip the utility-zero gate. An unranked hand
+  // at reveal is unscoreable — always worse than any placement.
+  const haveUnranked = myHands.some((h) => state.ranking.indexOf(h.id) === -1);
+  const haveEmpty = state.ranking.some((s) => s === null);
+  let pool = candidates;
+  if (haveUnranked && haveEmpty) {
+    const placeOnly = candidates.filter(
+      (c) => c.msg.type === "move" &&
+        myHands.some((h) => h.id === (c.msg as { handId: string }).handId &&
+          state.ranking.indexOf(h.id) === -1)
+    );
+    if (placeOnly.length > 0) pool = placeOnly;
+  }
+  const top = pool.slice(0, 3);
+
+  if (!(haveUnranked && haveEmpty) && top[0].utility <= 0 && top[0].msg.type !== "ready") {
     memo.idleTicks++;
     return null;
   }

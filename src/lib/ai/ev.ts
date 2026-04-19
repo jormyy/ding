@@ -23,9 +23,11 @@ export function expectedInversions(
       if (a.slot > b.slot && a.s > b.s) inv++;
     }
   }
-  // Penalty for unclaimed slots (null means no chip → unscorable at reveal).
+  // Penalty for unclaimed slots. A null slot = no chip placed → the hand
+  // can't be scored at reveal, which is strictly worse than any ordering
+  // mistake. Must dominate pairwise-inversion cost.
   const unclaimed = ranking.filter((x) => x === null).length;
-  return inv + unclaimed * 0.5;
+  return inv + unclaimed * (ranking.length + 1);
 }
 
 export type ActionScore = {
