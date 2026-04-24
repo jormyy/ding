@@ -8,6 +8,7 @@ A multiplayer collaborative poker game where players work together to rank all h
 
 - Create a room or join one with a 4-character room code
 - Enter a display name when you join
+- Supports up to 8 players (humans or bots)
 - The room creator configures hands per player (1–6, capped based on player count) and starts the game once at least 2 players are present
 
 ### Phases

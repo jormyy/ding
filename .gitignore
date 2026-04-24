@@ -7,3 +7,5 @@ node_modules
 .partykit/state/
 *.tex
 TEST_CASES.md
+.vscode
+.claude

@@ -357,6 +357,16 @@ export default class DingServer implements Party.Server {
       return;
     }
 
+    if (this.state.players.length >= 8) {
+      const errMsg: ServerMessage = {
+        type: "error",
+        message: "Room is full (max 8 players)",
+      };
+      sender.send(JSON.stringify(errMsg));
+      sender.close();
+      return;
+    }
+
     const isCreator = this.state.players.length === 0;
     const newPlayer: Player = {
       id: msg.pid,
