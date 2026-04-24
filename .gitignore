@@ -6,3 +6,4 @@ node_modules
 *.tsbuildinfo
 .partykit/state/
 *.tex
+TEST_CASES.md
