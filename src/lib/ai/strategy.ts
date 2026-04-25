@@ -44,7 +44,6 @@ export type BotMemo = {
   prevMyProposals: Set<string>;    // reqKeys present last tick for proposals I initiated
   myRejectedKeys: Set<string>;     // my own proposals that were rejected — don't re-propose this phase
   prevHandSlots: Map<string, number>; // handId -> slot from previous tick
-  expressionCooldownUntil: number; // legacy — kept for compat; no longer gates expression
   stallTicks: number;              // consecutive ticks where everyone ranked but not all ready
   ticksSinceProgress: number;      // ticks since last state-changing action (move/swap/accept/propose/ready)
   myProposalsThisPhase: number;    // proposals I've initiated in the current phase
@@ -64,7 +63,6 @@ export function newBotMemo(): BotMemo {
     prevMyProposals: new Set(),
     myRejectedKeys: new Set(),
     prevHandSlots: new Map(),
-    expressionCooldownUntil: 0,
     stallTicks: 0,
     ticksSinceProgress: 0,
     myProposalsThisPhase: 0,

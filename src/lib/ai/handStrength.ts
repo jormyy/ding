@@ -2,8 +2,7 @@ import type { Card, Rank } from "../types";
 import { cardToPokersolverStr } from "../utils";
 import { createDeck } from "../deckUtils";
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { Hand: PokerHand } = require("pokersolver");
+import { Hand as PokerHand } from "pokersolver";
 
 const RANK_VALUE: Record<Rank, number> = {
   "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9,

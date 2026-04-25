@@ -35,7 +35,7 @@ import {
   createPreflopState,
   createRevealState,
 } from './factories'
-import type { Phase } from '../../src/lib/types'
+import type { Phase, GameState } from '../../src/lib/types'
 
 describe('invariant', () => {
   it('should not throw when condition is true', () => {
@@ -90,11 +90,9 @@ describe('assertValidGameState', () => {
 
   it('should throw for invalid handsPerPlayer', () => {
     const state = createGameState()
-    // @ts-expect-error - testing invalid input
     state.handsPerPlayer = 0
     expect(() => assertValidGameState(state)).toThrow(InvariantError)
 
-    // @ts-expect-error - testing invalid input
     state.handsPerPlayer = 10
     expect(() => assertValidGameState(state)).toThrow(InvariantError)
   })
@@ -234,11 +232,17 @@ describe('assertGameStateInvariants', () => {
               break
             case 'turn':
               state.phase = 'turn'
-              state.communityCards.push(createCard('5', 'S'))
+              state.communityCards = [
+                createCard('2', 'H'), createCard('3', 'D'), createCard('4', 'C'),
+                createCard('5', 'S'),
+              ]
               break
             case 'river':
               state.phase = 'river'
-              state.communityCards.push(createCard('6', 'H'))
+              state.communityCards = [
+                createCard('2', 'H'), createCard('3', 'D'), createCard('4', 'C'),
+                createCard('5', 'S'), createCard('6', 'H'),
+              ]
               break
           }
           break

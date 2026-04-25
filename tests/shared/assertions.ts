@@ -5,11 +5,11 @@
 
 import type {
   GameState,
-  ServerGameState,
   Player,
   Hand,
   Phase,
 } from '../../src/lib/types'
+import type { ServerGameState } from '../../party/state'
 
 /**
  * Custom error class for invariant violations

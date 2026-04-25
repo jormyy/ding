@@ -16,27 +16,11 @@ import {
   asPartyConnection,
   simulateClientMessage,
 } from '../shared/mocks'
-import {
-  createPlayer,
-  createPlayers,
-  createHand,
-  createGameState,
-  setRanking,
-} from '../shared/factories'
+// Note: factories available if needed for future test expansion
 import {
   assertHandExists,
   assertPlayerExists,
-  assertRequestExists,
-  assertRequestNotExists,
-  assertNoRequests,
-  assertRequestCount,
-  assertHandAtRank,
-  assertHandNotRanked,
-  assertHandIsRanked,
-  assertPlayerReady,
-  assertPhase,
 } from '../shared/assertions'
-import type { GameState } from '../../src/lib/types'
 
 describe('Chip Trading Logic', () => {
   let server: DingServer

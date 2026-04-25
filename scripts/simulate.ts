@@ -7,10 +7,12 @@
 // the remaining bots. The creator ticks itself using the same decideAction
 // brain, so the whole table is AI.
 
-import DingServer, { buildClientState, type ServerGameState } from "../party/index";
+import DingServer, { buildClientState } from "../party/index";
+import type { ServerGameState } from "../party/state";
 import { decideAction, newBotMemo, type BotMemo } from "../src/lib/ai/strategy";
 import { randomTraits, type Traits } from "../src/lib/ai/personality";
-import type { ClientMessage, ServerMessage } from "../src/lib/types";
+import type { ClientMessage } from "../src/lib/types";
+import type * as Party from "partykit/server";
 
 // ---- arg parsing ----
 function argOr(name: string, fallback: number): number {
@@ -23,7 +25,6 @@ const NUM_GAMES = argOr("games", 10);
 const NUM_BOTS = argOr("bots", 4);        // bots added via addBot
 const HANDS = argOr("hands", 2);
 const NSIMS = argOr("nSims", 20);          // lower = faster sim
-const VERBOSE = process.argv.includes("--verbose");
 
 // ---- fake partykit stubs ----
 class FakeConn {
@@ -37,18 +38,26 @@ class FakeConn {
   }
 }
 
-function makeFakeRoom(): {
-  id: string;
-  broadcast: (msg: string) => void;
-  broadcastCount: () => number;
-} {
+function asPartyConnection(conn: FakeConn): Party.Connection {
+  return conn as unknown as Party.Connection;
+}
+
+function makeFakeRoom(): Party.Room {
   let count = 0;
   return {
     id: "sim-room",
-    broadcast: (_msg: string) => {
+    internalID: "sim-room",
+    env: {} as Record<string, unknown>,
+    context: {} as Party.ExecutionContext,
+    broadcast: (_msg: string | ArrayBuffer | ArrayBufferView, _without?: string[]) => {
       count++;
     },
-    broadcastCount: () => count,
+    getConnections: () => ({ next: () => ({ done: true, value: undefined }) }) as unknown as Iterable<Party.Connection<unknown>>,
+    getConnection: () => undefined,
+    getMyAlarm: () => Promise.resolve(null),
+    setAlarm: () => Promise.resolve(),
+    deleteAlarm: () => Promise.resolve(),
+    storage: {} as unknown as Party.Storage,
   };
 }
 
@@ -105,38 +114,38 @@ async function runOneGame(gameIdx: number): Promise<{
   }
 
   const room = makeFakeRoom();
-  const server = new DingServer(room as never);
+  const server = new DingServer(room);
 
   // Wrap the bot dispatch to count actions
-  const anyServer = server as unknown as {
+  const typedServer = server as unknown as {
     dispatchBotAction: (pid: string, msg: ClientMessage) => void;
     state: ServerGameState;
   };
-  const origDispatch = anyServer.dispatchBotAction.bind(server);
-  anyServer.dispatchBotAction = (pid: string, msg: ClientMessage) => {
+  const origDispatch = typedServer.dispatchBotAction.bind(server);
+  typedServer.dispatchBotAction = (pid: string, msg: ClientMessage) => {
     bump(stats, msg.type);
-    pushTrace("bot:" + pid.slice(0, 6), msg.type, anyServer.state.ranking);
+    pushTrace("bot:" + pid.slice(0, 6), msg.type, typedServer.state.ranking);
     origDispatch(pid, msg);
   };
 
   // Control "human" — creator, auto-plays like a bot.
   const ctl = new FakeConn("ctl-" + gameIdx);
-  server.onConnect(ctl as never);
+  server.onConnect(asPartyConnection(ctl));
   server.onMessage(
-    JSON.stringify({ type: "join", name: "Ctl", pid: "ctl-pid-" + gameIdx } as ClientMessage),
-    ctl as never
+    JSON.stringify({ type: "join", name: "Ctl", pid: "ctl-pid-" + gameIdx }),
+    asPartyConnection(ctl)
   );
 
   for (let i = 0; i < NUM_BOTS; i++) {
-    server.onMessage(JSON.stringify({ type: "addBot" } as ClientMessage), ctl as never);
+    server.onMessage(JSON.stringify({ type: "addBot" }), asPartyConnection(ctl));
   }
 
   server.onMessage(
-    JSON.stringify({ type: "configure", handsPerPlayer: HANDS } as ClientMessage),
-    ctl as never
+    JSON.stringify({ type: "configure", handsPerPlayer: HANDS }),
+    asPartyConnection(ctl)
   );
 
-  server.onMessage(JSON.stringify({ type: "start" } as ClientMessage), ctl as never);
+  server.onMessage(JSON.stringify({ type: "start" }), asPartyConnection(ctl));
 
   const ctlTraits: Traits = randomTraits().traits;
   const ctlMemo: BotMemo = newBotMemo();
@@ -150,7 +159,7 @@ async function runOneGame(gameIdx: number): Promise<{
     await new Promise((r) => setTimeout(r, 50));
 
     // Integrity check
-    const s = anyServer.state;
+    const s = typedServer.state;
     const claimed = s.ranking.filter((x: string | null): x is string => x !== null);
     const unique = new Set(claimed);
     if (unique.size !== claimed.length) integrityFailures++;
@@ -169,7 +178,7 @@ async function runOneGame(gameIdx: number): Promise<{
     if (msg) {
       bump(stats, msg.type);
       pushTrace("ctl", msg.type, s.ranking);
-      server.onMessage(JSON.stringify(msg), ctl as never);
+      server.onMessage(JSON.stringify(msg), asPartyConnection(ctl));
     }
 
     if (Date.now() - started > deadlineMs) {
@@ -185,7 +194,7 @@ async function runOneGame(gameIdx: number): Promise<{
     }
   }
 
-  const finalState = anyServer.state;
+  const finalState = typedServer.state;
   return {
     inversions: finalState.score,
     stats,

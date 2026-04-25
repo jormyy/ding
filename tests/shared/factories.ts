@@ -8,13 +8,13 @@ import type {
   Hand,
   Player,
   GameState,
-  ServerGameState,
   AcquireRequest,
   ChatMessage,
   Rank,
   Suit,
   Phase,
 } from '../../src/lib/types'
+import type { ServerGameState } from '../../party/state'
 
 /**
  * Create a card with the given rank and suit
@@ -153,12 +153,12 @@ export function createLobbyState(
   const players = createPlayers(playerCount)
   const totalHands = playerCount * handsPerPlayer
   const ranking: (string | null)[] = Array(totalHands).fill(null)
-  const rankHistory: Record<string, null> = {}
+  const rankHistory: Record<string, (number | null)[]> = {}
   // Add empty rank history entries for lobby phase
   for (let p = 0; p < playerCount; p++) {
     for (let h = 0; h < handsPerPlayer; h++) {
       const handId = `${players[p].id}-${h}`
-      rankHistory[handId] = null
+      rankHistory[handId] = [null, null, null, null]
     }
   }
   return createGameState({
@@ -252,7 +252,7 @@ export function createRevealState(
   state.trueRanking = state.hands.map((h) => h.id)
   state.trueRanks = Object.fromEntries(state.hands.map((h, i) => [h.id, i + 1]))
   state.rankHistory = Object.fromEntries(
-    state.hands.map((h) => [h.id, null]) // Placeholder history - null means no ranks yet
+    state.hands.map((h) => [h.id, [null, null, null, null]]) // 4 phases: preflop, flop, turn, river
   )
   return state
 }

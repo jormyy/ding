@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { FakeConn, FakeRoom, makeFakeConn, makeFakeRoom } from './mocks'
+import { FakeConn, FakeRoom, makeFakeConn, makeFakeRoom, asPartyConnection, asPartyRoom } from './mocks'
 import type { ClientMessage, ServerMessage } from '../../src/lib/types'
 import type * as Party from 'partykit/server'
 
@@ -47,7 +47,7 @@ describe('FakeConn', () => {
     conn.send(JSON.stringify(errorMsg))
 
     const stateMessages = conn.getMessagesByType('state')
-    expect(stateMessages).toHaveLength(2)
+    expect(stateMessages).toHaveLength(1)
     expect(conn.findMessageByType('error')).toEqual(errorMsg)
   })
 
@@ -117,16 +117,16 @@ describe('FakeRoom', () => {
     room.addConnection(conn1)
     room.addConnection(conn2)
 
-    expect(room.getConnection('conn-1')).toBeUndefined()
-    expect(room.getConnection('conn2')).toBeUndefined()
+    expect(room.getConnection('conn-1')).toBe(conn1)
+    expect(room.getConnection('conn-2')).toBe(conn2)
 
     expect(room.getConnections()).toHaveLength(2)
 
     room.removeConnection('conn-1')
-    expect(room.getConnection('conn1')).toBeUndefined()
+    expect(room.getConnection('conn-1')).toBeUndefined()
     expect(room.getConnections()).toHaveLength(1)
 
-    expect(room.getConnection('conn2')).toBe(conn1)
+    expect(room.getConnection('conn-2')).toBe(conn2)
     expect(room.getConnections()).toHaveLength(1)
   })
 

@@ -37,6 +37,13 @@ const config: Config = {
           back: "#1e293b",
           face: "#fafafa",
         },
+        danger: {
+          DEFAULT: "#c06060",
+          light: "#ffb0b4",
+        },
+        sub: "#9fc5a8",
+        muted: "#6a8a72",
+        accent: "#2fb873",
       },
       keyframes: {
         flip: {

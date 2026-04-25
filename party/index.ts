@@ -1,11 +1,9 @@
 import type * as Party from "partykit/server";
 import type {
-  AcquireRequest,
   AcquireRequestKind,
   Card,
   ChatMessage,
   ClientMessage,
-  GameState,
   Hand,
   Phase,
   Player,
@@ -13,204 +11,34 @@ import type {
 } from "../src/lib/types";
 import { cardToPokersolverStr } from "../src/lib/utils";
 import { createDeck, dealCards, shuffleDeck } from "../src/lib/deckUtils";
+import {
+  MAX_PLAYERS,
+  MAX_TOTAL_HANDS,
+  MAX_CHAT_MESSAGES,
+  MAX_CHAT_LENGTH,
+  CHAT_THROTTLE_MS,
+  PHASE_ORDER,
+  GAME_PHASES,
+} from "../src/lib/constants";
 import { BotController } from "./bots";
+import {
+  ServerGameState,
+  createInitialState,
+  buildClientState,
+  broadcastStateTo,
+  assertRankingInvariant,
+} from "./state";
+import {
+  computeTrueRanking,
+  computeTrueRanks,
+  countInversions,
+} from "./scoring";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Hand: PokerHand } = require("pokersolver");
 
-// Full server-side state (cards are never masked here)
-export interface ServerGameState extends GameState {
-  // hands here contain ALL cards (unmasked)
-  allCommunityCards: Card[]; // all 5, we slice for broadcast
-  acquireRequests: AcquireRequest[];
-}
-
-function createInitialState(): ServerGameState {
-  return {
-    phase: "lobby",
-    players: [],
-    handsPerPlayer: 1,
-    communityCards: [],
-    ranking: [],
-    hands: [],
-    revealIndex: 0,
-    trueRanking: null,
-    trueRanks: null,
-    score: null,
-    rankHistory: {},
-    allCommunityCards: [],
-    acquireRequests: [],
-    chatMessages: [],
-  };
-}
-
-function computeTrueRanking(
-  hands: Hand[],
-  communityCards: Card[]
-): string[] {
-  const solvedHands: Array<{ id: string; solved: ReturnType<typeof PokerHand.solve> }> = hands.map((h) => {
-    const cardStrs = [
-      ...h.cards.map(cardToPokersolverStr),
-      ...communityCards.map(cardToPokersolverStr),
-    ];
-    return { id: h.id, solved: PokerHand.solve(cardStrs) };
-  });
-
-  solvedHands.sort((a, b) => {
-    const winners = PokerHand.winners([a.solved, b.solved]);
-    if (winners.length === 2) return 0;
-    if (winners[0] === a.solved) return -1;
-    return 1;
-  });
-
-  return solvedHands.map((h) => h.id);
-}
-
-function computeTrueRanks(
-  trueRanking: string[],
-  hands: Hand[],
-  communityCards: Card[]
-): Record<string, number> {
-  const solvedMap = new Map<string, ReturnType<typeof PokerHand.solve>>();
-  for (const hand of hands) {
-    const cardStrs = [
-      ...hand.cards.map(cardToPokersolverStr),
-      ...communityCards.map(cardToPokersolverStr),
-    ];
-    solvedMap.set(hand.id, PokerHand.solve(cardStrs));
-  }
-
-  const ranks: Record<string, number> = {};
-  let rank = 1;
-  for (let i = 0; i < trueRanking.length; i++) {
-    if (i === 0) {
-      ranks[trueRanking[i]] = rank;
-    } else {
-      const prev = solvedMap.get(trueRanking[i - 1])!;
-      const curr = solvedMap.get(trueRanking[i])!;
-      const winners = PokerHand.winners([prev, curr]);
-      if (winners.length !== 2) rank++;
-      ranks[trueRanking[i]] = rank;
-    }
-  }
-  return ranks;
-}
-
-function countInversions(
-  playerRanking: (string | null)[],
-  trueRanking: string[],
-  hands: Hand[],
-  communityCards: Card[]
-): number {
-  const claimedRanking = playerRanking.filter((id): id is string => id !== null);
-  const solvedMap = new Map<string, ReturnType<typeof PokerHand.solve>>();
-  for (const hand of hands) {
-    const cardStrs = [
-      ...hand.cards.map(cardToPokersolverStr),
-      ...communityCards.map(cardToPokersolverStr),
-    ];
-    solvedMap.set(hand.id, PokerHand.solve(cardStrs));
-  }
-
-  const truePosMap = new Map<string, number>();
-  let pos = 0;
-  for (let i = 0; i < trueRanking.length; i++) {
-    if (i === 0) {
-      truePosMap.set(trueRanking[i], pos);
-    } else {
-      const prev = solvedMap.get(trueRanking[i - 1])!;
-      const curr = solvedMap.get(trueRanking[i])!;
-      const winners = PokerHand.winners([prev, curr]);
-      if (winners.length === 2) {
-        truePosMap.set(trueRanking[i], pos);
-      } else {
-        pos++;
-        truePosMap.set(trueRanking[i], pos);
-      }
-    }
-  }
-
-  let inversions = 0;
-  for (let i = 0; i < claimedRanking.length; i++) {
-    for (let j = i + 1; j < claimedRanking.length; j++) {
-      const posI = truePosMap.get(claimedRanking[i])!;
-      const posJ = truePosMap.get(claimedRanking[j])!;
-      if (posI > posJ) inversions++;
-    }
-  }
-  return inversions;
-}
-
-function maskHandsForPlayer(
-  hands: Hand[],
-  playerId: string,
-  phase: Phase
-): Hand[] {
-  return hands.map((hand) => {
-    if (hand.playerId === playerId) return hand;
-    if (hand.flipped && phase === "reveal") return hand;
-    return { ...hand, cards: [] };
-  });
-}
-
-export function buildClientState(state: ServerGameState, playerId: string): GameState {
-  const communityCardsToShow =
-    state.phase === "preflop"
-      ? []
-      : state.phase === "flop"
-      ? state.allCommunityCards.slice(0, 3)
-      : state.phase === "turn"
-      ? state.allCommunityCards.slice(0, 4)
-      : state.phase === "river" || state.phase === "reveal"
-      ? state.allCommunityCards.slice(0, 5)
-      : [];
-
-  return {
-    phase: state.phase,
-    players: state.players,
-    handsPerPlayer: state.handsPerPlayer,
-    communityCards: communityCardsToShow,
-    ranking: state.ranking,
-    hands: maskHandsForPlayer(state.hands, playerId, state.phase),
-    revealIndex: state.revealIndex,
-    trueRanking: state.trueRanking,
-    trueRanks: state.trueRanks,
-    score: state.score,
-    rankHistory: state.rankHistory,
-    acquireRequests: state.acquireRequests,
-    chatMessages: state.chatMessages,
-  };
-}
-
-function broadcastStateTo(
-  room: Party.Room,
-  state: ServerGameState,
-  connections: Map<string, Party.Connection>
-) {
-  for (const [connId, conn] of Array.from(connections.entries())) {
-    const player = state.players.find((p) => p.connId === connId);
-    const clientState = buildClientState(state, player?.id ?? "");
-    const msg: ServerMessage = { type: "state", state: clientState };
-    conn.send(JSON.stringify(msg));
-  }
-}
-
-function assertRankingInvariant(state: ServerGameState) {
-  const claimed = state.ranking.filter((r): r is string => r !== null);
-  const unique = new Set(claimed);
-  if (unique.size !== claimed.length) {
-    // eslint-disable-next-line no-console
-    console.error("[ding] ranking has duplicate hand ids", claimed);
-  }
-  if (state.hands.length > 0 && state.ranking.length !== state.hands.length) {
-    // eslint-disable-next-line no-console
-    console.error(
-      "[ding] ranking length mismatch",
-      state.ranking.length,
-      state.hands.length
-    );
-  }
-}
+export { buildClientState } from "./state";
+export type { ServerGameState } from "./state";
 
 export default class DingServer implements Party.Server {
   private state: ServerGameState;
@@ -238,7 +66,6 @@ export default class DingServer implements Party.Server {
     if (idx === -1) return;
     const [removed] = this.state.players.splice(idx, 1);
     if (removed.isCreator && this.state.players.length > 0) {
-      // Promote the first connected human if possible; otherwise just the first.
       const nextHuman = this.state.players.find((p) => p.connected && !p.isBot);
       const next = nextHuman ?? this.state.players[0];
       next.isCreator = true;
@@ -288,12 +115,8 @@ export default class DingServer implements Party.Server {
       this.broadcast();
     }
 
-    // If nobody is watching, stop the bot timers. State persists; if a human
-    // reconnects we'll rebuild the bots' controller records lazily via addBot
-    // calls or accept that bots sit idle until the next game is configured.
     if (this.connections.size === 0) {
       this.botController.dispose();
-      // Fresh controller ready for any future activity.
       this.botController = new BotController({
         getState: () => this.state,
         dispatch: (playerId, msg) => this.dispatchBotAction(playerId, msg),
@@ -357,10 +180,10 @@ export default class DingServer implements Party.Server {
       return;
     }
 
-    if (this.state.players.length >= 8) {
+    if (this.state.players.length >= MAX_PLAYERS) {
       const errMsg: ServerMessage = {
         type: "error",
-        message: "Room is full (max 8 players)",
+        message: `Room is full (max ${MAX_PLAYERS} players)`,
       };
       sender.send(JSON.stringify(errMsg));
       sender.close();
@@ -388,14 +211,13 @@ export default class DingServer implements Party.Server {
   ): void {
     switch (msg.type) {
       case "join": {
-        // handled in handleJoin
         return;
       }
 
       case "configure": {
         if (!player.isCreator || this.state.phase !== "lobby") return;
         const playerCount = this.state.players.length;
-        const maxHands = Math.floor(22 / playerCount);
+        const maxHands = Math.floor(MAX_TOTAL_HANDS / playerCount);
         const n = Math.max(1, Math.min(maxHands, msg.handsPerPlayer));
         this.state.handsPerPlayer = n;
         this.broadcast();
@@ -404,9 +226,9 @@ export default class DingServer implements Party.Server {
 
       case "addBot": {
         if (!player.isCreator || this.state.phase !== "lobby") return;
-        if (this.state.players.length >= 8) return;
+        if (this.state.players.length >= MAX_PLAYERS) return;
         const newCount = this.state.players.length + 1;
-        if (Math.floor(22 / newCount) < this.state.handsPerPlayer) return;
+        if (Math.floor(MAX_TOTAL_HANDS / newCount) < this.state.handsPerPlayer) return;
         const botPlayer = this.botController.addBot();
         botPlayer.isBot = true;
         this.state.players.push(botPlayer);
@@ -463,8 +285,7 @@ export default class DingServer implements Party.Server {
       }
 
       case "swap": {
-        const swapPhases: Phase[] = ["preflop", "flop", "turn", "river"];
-        if (!swapPhases.includes(this.state.phase)) return;
+        if (!GAME_PHASES.includes(this.state.phase)) return;
 
         const handA = this.state.hands.find((h) => h.id === msg.handIdA);
         const handB = this.state.hands.find((h) => h.id === msg.handIdB);
@@ -484,8 +305,7 @@ export default class DingServer implements Party.Server {
       }
 
       case "proposeChipMove": {
-        const gamePhases: Phase[] = ["preflop", "flop", "turn", "river"];
-        if (!gamePhases.includes(this.state.phase)) return;
+        if (!GAME_PHASES.includes(this.state.phase)) return;
 
         const initiatorHand = this.state.hands.find((h) => h.id === msg.initiatorHandId);
         const recipientHand = this.state.hands.find((h) => h.id === msg.recipientHandId);
@@ -536,8 +356,7 @@ export default class DingServer implements Party.Server {
       }
 
       case "acceptChipMove": {
-        const gamePhases: Phase[] = ["preflop", "flop", "turn", "river"];
-        if (!gamePhases.includes(this.state.phase)) return;
+        if (!GAME_PHASES.includes(this.state.phase)) return;
 
         const recipientHand = this.state.hands.find((h) => h.id === msg.recipientHandId);
         const initiatorHand = this.state.hands.find((h) => h.id === msg.initiatorHandId);
@@ -634,8 +453,7 @@ export default class DingServer implements Party.Server {
       }
 
       case "transferOwnChip": {
-        const gamePhases: Phase[] = ["preflop", "flop", "turn", "river"];
-        if (!gamePhases.includes(this.state.phase)) return;
+        if (!GAME_PHASES.includes(this.state.phase)) return;
 
         const fromHand = this.state.hands.find((h) => h.id === msg.fromHandId);
         const toHand = this.state.hands.find((h) => h.id === msg.toHandId);
@@ -663,8 +481,7 @@ export default class DingServer implements Party.Server {
       }
 
       case "unclaim": {
-        const unclaimPhases: Phase[] = ["preflop", "flop", "turn", "river"];
-        if (!unclaimPhases.includes(this.state.phase)) return;
+        if (!GAME_PHASES.includes(this.state.phase)) return;
 
         const hand = this.state.hands.find((h) => h.id === msg.handId);
         if (!hand || hand.playerId !== player.id) return;
@@ -683,8 +500,7 @@ export default class DingServer implements Party.Server {
       }
 
       case "move": {
-        const gamePhasess: Phase[] = ["preflop", "flop", "turn", "river"];
-        if (!gamePhasess.includes(this.state.phase)) return;
+        if (!GAME_PHASES.includes(this.state.phase)) return;
 
         const hand = this.state.hands.find((h) => h.id === msg.handId);
         if (!hand || hand.playerId !== player.id) return;
@@ -730,8 +546,7 @@ export default class DingServer implements Party.Server {
       }
 
       case "ready": {
-        const gamePhases: Phase[] = ["preflop", "flop", "turn", "river"];
-        if (!gamePhases.includes(this.state.phase)) return;
+        if (!GAME_PHASES.includes(this.state.phase)) return;
 
         if (msg.ready) {
           const unrankedHands = this.state.hands.filter(
@@ -756,15 +571,8 @@ export default class DingServer implements Party.Server {
             this.state.rankHistory[hand.id].push(idx === -1 ? null : idx + 1);
           }
 
-          const phaseOrder: Phase[] = [
-            "preflop",
-            "flop",
-            "turn",
-            "river",
-            "reveal",
-          ];
-          const currentIndex = phaseOrder.indexOf(this.state.phase as Phase);
-          const nextPhase = phaseOrder[currentIndex + 1];
+          const currentIndex = PHASE_ORDER.indexOf(this.state.phase as Phase);
+          const nextPhase = PHASE_ORDER[currentIndex + 1];
 
           this.state.acquireRequests = [];
 
@@ -843,12 +651,12 @@ export default class DingServer implements Party.Server {
       }
 
       case "chat": {
-        const text = (msg.text ?? "").trim().slice(0, 200);
+        const text = (msg.text ?? "").trim().slice(0, MAX_CHAT_LENGTH);
         if (!text) return;
 
         const now = Date.now();
         const last = this.lastChatAt.get(player.id) ?? 0;
-        if (now - last < 1000) return;
+        if (now - last < CHAT_THROTTLE_MS) return;
         this.lastChatAt.set(player.id, now);
 
         const chatMsg: ChatMessage = {
@@ -859,8 +667,8 @@ export default class DingServer implements Party.Server {
           ts: now,
         };
         this.state.chatMessages.push(chatMsg);
-        if (this.state.chatMessages.length > 100) {
-          this.state.chatMessages = this.state.chatMessages.slice(-100);
+        if (this.state.chatMessages.length > MAX_CHAT_MESSAGES) {
+          this.state.chatMessages = this.state.chatMessages.slice(-MAX_CHAT_MESSAGES);
         }
 
         this.broadcast();
