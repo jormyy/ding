@@ -1,5 +1,7 @@
 "use client";
 
+import { chipClassNames } from "@/lib/chipColors";
+
 interface RankChipProps {
   rank: number; // 1-indexed, 1 = best
   total: number;
@@ -25,13 +27,7 @@ export default function RankChip({
 }: RankChipProps) {
   const isClickable = isOwn || hasSelection;
 
-  // Color based on rank position
-  const isFirst = rank === 1;
-  const isLast = rank === total;
-
-  let chipBg = "bg-gray-700 border-gray-500 text-white";
-  if (isFirst) chipBg = "bg-amber-500 border-amber-300 text-amber-950";
-  else if (isLast) chipBg = "bg-red-950 border-red-800 text-red-300";
+  const chipBg = chipClassNames(rank, total);
 
   const sizeClass = tiny
     ? "w-4 h-4 text-[8px]"

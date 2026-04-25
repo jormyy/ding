@@ -578,9 +578,5 @@ export function decideAction(
     memo.recentlyRejected.add(reqKey(pick.msg.initiatorHandId, pick.msg.recipientHandId));
   }
 
-  // nSims is referenced above via getEstimate; silence unused-warning for cases
-  // where every estimate was already cached.
-  void nSims;
-
   return pick.msg;
 }

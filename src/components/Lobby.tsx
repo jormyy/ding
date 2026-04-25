@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import type { ClientMessage, GameState } from "@/lib/types";
+import { MAX_PLAYERS, MAX_TOTAL_HANDS } from "@/lib/constants";
+import { D } from "@/lib/theme";
 
 interface LobbyProps {
   gameState: GameState;
@@ -10,19 +12,6 @@ interface LobbyProps {
   onSend: (msg: ClientMessage) => void;
   onLeave: () => void;
 }
-
-const D = {
-  panel: "linear-gradient(180deg, rgba(20,60,36,0.92) 0%, rgba(10,40,22,0.96) 100%)",
-  panelBorder: "rgba(201,165,74,0.28)",
-  gold: "#c9a54a",
-  goldBright: "#f5e6b8",
-  goldTop: "#f0d278",
-  ink: "#2a1a08",
-  rail: "#78350f",
-  sub: "#9fc5a8",
-  muted: "#6a8a72",
-  accent: "#2fb873",
-};
 
 export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyProps) {
   const [copied, setCopied] = useState(false);
@@ -52,11 +41,11 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
   }
 
   const playerCount = gameState.players.length;
-  const maxHands = Math.floor(22 / playerCount);
+  const maxHands = Math.floor(MAX_TOTAL_HANDS / playerCount);
   const canAddBot =
     isCreator &&
-    playerCount < 8 &&
-    Math.floor(22 / (playerCount + 1)) >= gameState.handsPerPlayer;
+    playerCount < MAX_PLAYERS &&
+    Math.floor(MAX_TOTAL_HANDS / (playerCount + 1)) >= gameState.handsPerPlayer;
 
   return (
     <div
@@ -177,7 +166,7 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
             </div>
           ))}
           {/* Empty seats */}
-          {Array.from({ length: Math.max(0, 8 - gameState.players.length) }).map((_, i) => (
+          {Array.from({ length: Math.max(0, MAX_PLAYERS - gameState.players.length) }).map((_, i) => (
             <div
               key={`empty-${i}`}
               className="flex items-center gap-3 rounded-xl px-3 py-2.5"

@@ -1,5 +1,7 @@
 "use client";
 
+import { chipColors } from "@/lib/chipColors";
+
 interface DisplayChipProps {
   rank: number;
   total: number;
@@ -13,14 +15,8 @@ export default function DisplayChip({
   mine,
   size = 28,
 }: DisplayChipProps) {
-  const isFirst = rank === 1;
-  const isLast = rank === total;
-  let bg = "#4a5568";
-  let border = "#8a9ab0";
-  let color = "#fff";
-  if (isFirst) { bg = "#c9a54a"; border = "#f0d278"; color = "#2a1a08"; }
-  else if (isLast) { bg = "#4a1014"; border = "#a84040"; color = "#ffb0b4"; }
-  else if (mine) { bg = "#2fb873"; border = "#6ae09a"; color = "#04221a"; }
+  let { bg, border, color } = chipColors(rank, total);
+  if (mine && rank !== 1 && rank !== total) { bg = "#2fb873"; border = "#6ae09a"; color = "#04221a"; }
   return (
     <div
       style={{

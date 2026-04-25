@@ -21,6 +21,7 @@ export type Hand = {
   playerId: string;
   cards: Card[]; // [] when sent to non-owners
   flipped: boolean; // revealed during reveal phase
+  madeHandName?: string; // populated server-side when transitioning to reveal
 };
 
 export type Player = {

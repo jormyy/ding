@@ -1,5 +1,6 @@
-import type { ClientMessage, GameState, Hand } from "../types";
+import type { GameState } from "../types";
 import type { BeliefState } from "./belief";
+import { applyChipMoveToRanking } from "../chipMove";
 
 // Cheap inversion surrogate: given a proposed ranking (array of handIds),
 // plus our best guess at each hand's strength, count pairwise misorderings.
@@ -130,46 +131,6 @@ export function rankingAfterChipMove(
   recipientHandId: string,
   kind: "acquire" | "offer" | "swap"
 ): (string | null)[] {
-  const next = ranking.slice();
-  const ii = next.indexOf(initiatorHandId);
-  const ir = next.indexOf(recipientHandId);
-  if (kind === "acquire") {
-    // initiator takes recipient's slot; recipient becomes unranked.
-    if (ir === -1) return next;
-    next[ir] = initiatorHandId;
-    if (ii !== -1) next[ii] = null;
-  } else if (kind === "offer") {
-    // recipient takes initiator's slot; initiator becomes unranked.
-    if (ii === -1) return next;
-    next[ii] = recipientHandId;
-    if (ir !== -1) next[ir] = null;
-  } else {
-    // swap
-    if (ii === -1 || ir === -1) return next;
-    next[ii] = recipientHandId;
-    next[ir] = initiatorHandId;
-  }
-  return next;
+  return applyChipMoveToRanking(ranking, kind, initiatorHandId, recipientHandId);
 }
 
-export function ownsHand(state: GameState, handId: string, pid: string): boolean {
-  const h = state.hands.find((x) => x.id === handId);
-  return !!h && h.playerId === pid;
-}
-
-export function myHands(state: GameState, pid: string): Hand[] {
-  return state.hands.filter((h) => h.playerId === pid);
-}
-
-// Used by the "is this action still worth emitting" guard.
-export function messageAffectsRanking(msg: ClientMessage): boolean {
-  switch (msg.type) {
-    case "move":
-    case "swap":
-    case "proposeChipMove":
-    case "acceptChipMove":
-      return true;
-    default:
-      return false;
-  }
-}

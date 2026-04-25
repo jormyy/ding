@@ -53,6 +53,7 @@ export class BotController {
       isCreator: false,
       ready: false,
       connected: true,
+      isBot: true,
     };
     const { traits, archetype } = randomTraits();
     this.bots.set(pid, {

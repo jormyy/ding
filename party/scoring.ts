@@ -1,19 +1,13 @@
 import type { Card, Hand } from "../src/lib/types";
-import { cardToPokersolverStr } from "../src/lib/utils";
-
 import { Hand as PokerHand } from "pokersolver";
+import { solveHands } from "./solver";
 
 export function computeTrueRanking(
   hands: Hand[],
   communityCards: Card[]
 ): string[] {
-  const solvedHands: Array<{ id: string; solved: ReturnType<typeof PokerHand.solve> }> = hands.map((h) => {
-    const cardStrs = [
-      ...h.cards.map(cardToPokersolverStr),
-      ...communityCards.map(cardToPokersolverStr),
-    ];
-    return { id: h.id, solved: PokerHand.solve(cardStrs) };
-  });
+  const solvedMap = solveHands(hands, communityCards);
+  const solvedHands = hands.map((h) => ({ id: h.id, solved: solvedMap.get(h.id)! }));
 
   solvedHands.sort((a, b) => {
     const winners = PokerHand.winners([a.solved, b.solved]);
@@ -30,14 +24,7 @@ export function computeTrueRanks(
   hands: Hand[],
   communityCards: Card[]
 ): Record<string, number> {
-  const solvedMap = new Map<string, ReturnType<typeof PokerHand.solve>>();
-  for (const hand of hands) {
-    const cardStrs = [
-      ...hand.cards.map(cardToPokersolverStr),
-      ...communityCards.map(cardToPokersolverStr),
-    ];
-    solvedMap.set(hand.id, PokerHand.solve(cardStrs));
-  }
+  const solvedMap = solveHands(hands, communityCards);
 
   const ranks: Record<string, number> = {};
   let rank = 1;
@@ -62,14 +49,7 @@ export function countInversions(
   communityCards: Card[]
 ): number {
   const claimedRanking = playerRanking.filter((id): id is string => id !== null);
-  const solvedMap = new Map<string, ReturnType<typeof PokerHand.solve>>();
-  for (const hand of hands) {
-    const cardStrs = [
-      ...hand.cards.map(cardToPokersolverStr),
-      ...communityCards.map(cardToPokersolverStr),
-    ];
-    solvedMap.set(hand.id, PokerHand.solve(cardStrs));
-  }
+  const solvedMap = solveHands(hands, communityCards);
 
   const truePosMap = new Map<string, number>();
   let pos = 0;

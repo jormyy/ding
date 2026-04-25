@@ -1,0 +1,16 @@
+export const D = {
+  gold: "#c9a54a",
+  goldBright: "#f5e6b8",
+  goldTop: "#f0d278",
+  ink: "#2a1a08",
+  rail: "#78350f",
+  text: "#f5e6b8",
+  sub: "#9fc5a8",
+  muted: "#6a8a72",
+  accent: "#2fb873",
+  danger: "#c06060",
+  panel: "linear-gradient(180deg, rgba(20,60,36,0.92) 0%, rgba(10,40,22,0.96) 100%)",
+  panelBorder: "rgba(201,165,74,0.28)",
+  cardBg: "#0a1813",
+  serif: 'var(--font-playfair), Georgia, serif',
+} as const;

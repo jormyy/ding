@@ -1,9 +1,10 @@
 import type { Card, Rank, Suit } from "./types";
+import { ROOM_CODE_LENGTH } from "./constants";
 
 export function generateRoomCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < ROOM_CODE_LENGTH; i++) {
     code += chars[Math.floor(Math.random() * chars.length)];
   }
   return code;

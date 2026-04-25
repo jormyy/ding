@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { generateRoomCode } from "@/lib/utils";
+import { ROOM_CODE_LENGTH } from "@/lib/constants";
 
 export default function HomePage() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function HomePage() {
 
   function handleJoinGame() {
     const code = joinCode.join("").trim().toUpperCase();
-    if (code.length !== 4) {
+    if (code.length !== ROOM_CODE_LENGTH) {
       setJoinError("Enter all 4 characters");
       return;
     }

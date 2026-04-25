@@ -15,27 +15,14 @@ import type {
   Phase,
 } from '../../src/lib/types'
 import type { ServerGameState } from '../../party/state'
+import { createDeck } from '../../src/lib/deckUtils'
+export { createDeck }
 
 /**
  * Create a card with the given rank and suit
  */
 export function createCard(rank: Rank, suit: Suit): Card {
   return { rank, suit }
-}
-
-/**
- * Create a standard deck of 52 cards
- */
-export function createDeck(): Card[] {
-  const ranks: Rank[] = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
-  const suits: Suit[] = ['H', 'D', 'C', 'S']
-  const deck: Card[] = []
-  for (const suit of suits) {
-    for (const rank of ranks) {
-      deck.push({ rank, suit })
-    }
-  }
-  return deck
 }
 
 /**

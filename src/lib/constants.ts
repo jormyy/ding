@@ -5,17 +5,6 @@ export const MAX_PLAYERS = 8;
 export const MAX_TOTAL_HANDS = 22;
 export const ROOM_CODE_LENGTH = 4;
 
-// Hands per player caps by player count
-export const MAX_HANDS_PER_PLAYER: Record<number, number> = {
-  2: 6,
-  3: 6,
-  4: 5,
-  5: 4,
-  6: 3,
-  7: 2,
-  8: 2,
-};
-
 // Chat limits
 export const MAX_CHAT_MESSAGES = 100;
 export const MAX_CHAT_LENGTH = 200;
@@ -45,6 +34,7 @@ export const COMMUNITY_CARDS_FOR_PHASE: Record<Phase, number> = {
 export const PHASE_LABELS = ["preflop", "flop", "turn", "river"] as const;
 export const PHASE_STEP_LABELS = ["Pre-flop", "Flop", "Turn", "River", "Reveal"] as const;
 export const PHASE_SHORT_LABELS = ["P", "F", "T", "R"] as const;
+export const PHASE_HISTORY_LABELS = ["Pre", "Flop", "Turn", "River"] as const;
 
 // Game phases where chip moves are allowed
 export const GAME_PHASES: Phase[] = ["preflop", "flop", "turn", "river"];
@@ -58,9 +48,3 @@ export const END_GAME_CONFIRM_MS = 4000;
 // Notification fade duration
 export const NOTIFICATION_FADE_MS = 2500;
 
-// Card sizes in pixels
-export const CARD_SIZES = {
-  tiny: { width: 26, height: 38 },
-  small: { width: 36, height: 52 },
-  medium: { width: 48, height: 68 },
-} as const;

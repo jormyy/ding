@@ -5,15 +5,7 @@ import type { ClientMessage, GameState } from "@/lib/types";
 import PokerTable from "./PokerTable";
 import ChatPanel from "./ChatPanel";
 import RevealResults from "./game/RevealResults";
-
-const D = {
-  panel: "linear-gradient(180deg, rgba(20,60,36,0.92) 0%, rgba(10,40,22,0.96) 100%)",
-  panelBorder: "rgba(201,165,74,0.28)",
-  gold: "#c9a54a",
-  goldBright: "#f5e6b8",
-  cardBg: "#0a1813",
-  serif: 'var(--font-playfair), Georgia, serif',
-};
+import { D } from "@/lib/theme";
 
 interface RevealProps {
   gameState: GameState;
@@ -113,13 +105,13 @@ export default function Reveal({
           {mobileChatOpen && (
             <div className="sm:hidden absolute inset-x-2 bottom-2 top-14 z-40 bg-gray-950 border border-gray-700 rounded-xl shadow-2xl flex flex-col overflow-hidden">
               <button onClick={() => setMobileChatOpen(false)} className="absolute top-1.5 right-2 z-10 text-gray-500 hover:text-white text-xs font-bold w-5 h-5 flex items-center justify-center">✕</button>
-              <ChatPanel messages={gameState.chatMessages ?? []} myId={myId} onSend={handleSendChat} />
+              <ChatPanel messages={gameState.chatMessages} myId={myId} onSend={handleSendChat} />
             </div>
           )}
         </div>
 
         <div className="hidden sm:flex flex-none w-64 flex-col overflow-hidden" style={{ borderLeft: `1px solid ${D.panelBorder}`, background: D.cardBg }}>
-          <ChatPanel messages={gameState.chatMessages ?? []} myId={myId} onSend={handleSendChat} />
+          <ChatPanel messages={gameState.chatMessages} myId={myId} onSend={handleSendChat} />
         </div>
       </div>
     </div>

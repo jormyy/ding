@@ -35,6 +35,7 @@ export function useRankingActions(
     setLocalRanking(gameState.ranking);
   }, [gameState.ranking]);
 
+  // Clear a pending slot selection when a teammate's accepted chip-move fills it from the server.
   useEffect(() => {
     if (selectedSlot !== null && localRanking[selectedSlot] !== null) {
       setSelectedSlot(null);
@@ -83,7 +84,7 @@ export function useRankingActions(
           setLocalRanking(newRanking);
           onSend({ type: "move", handId: selectedHandId, toIndex: slotIndex });
         } else if (occupantHand) {
-          const alreadyRequested = (gameState.acquireRequests ?? []).some(
+          const alreadyRequested = (gameState.acquireRequests).some(
             (r) => r.recipientHandId === occupantHand.id && r.initiatorId !== myId
           );
           if (alreadyRequested) {
@@ -152,7 +153,7 @@ export function useRankingActions(
         setSelectedHandId(null);
         return;
       }
-      const alreadyRequested = (gameState.acquireRequests ?? []).some(
+      const alreadyRequested = (gameState.acquireRequests).some(
         (r) => r.recipientHandId === handId && r.initiatorId !== myId
       );
       if (alreadyRequested) {

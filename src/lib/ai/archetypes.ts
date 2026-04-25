@@ -73,6 +73,3 @@ export function archetypePatch(a: Archetype): TraitPatch {
   return PRESETS[a];
 }
 
-export function listArchetypes(): Archetype[] {
-  return [...ALL];
-}

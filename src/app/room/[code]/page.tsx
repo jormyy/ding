@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import PartySocket from "partysocket";
 import type { ClientMessage, GameState, ServerMessage } from "@/lib/types";
+import { NOTIFICATION_FADE_MS } from "@/lib/constants";
 import NameModal from "@/components/NameModal";
 import Lobby from "@/components/Lobby";
 import GameBoard from "@/components/GameBoard";
@@ -95,7 +96,6 @@ export default function RoomPage() {
 
     socket.addEventListener("open", () => {
       const pid = getOrCreatePid();
-      setMyId(socket.id); // optimistic — "welcome" overrides this with the real player ID
       const joinMsg: ClientMessage = { type: "join", name: playerName, pid };
       socket.send(JSON.stringify(joinMsg));
     });
@@ -113,14 +113,14 @@ export default function RoomPage() {
           setDingNotifications((prev) => [...prev, { id, playerName: msg.playerName }]);
           setTimeout(() => {
             setDingNotifications((prev) => prev.filter((n) => n.id !== id));
-          }, 2500);
+          }, NOTIFICATION_FADE_MS);
         } else if (msg.type === "fuckoff") {
           playFuckoffSound();
           const id = crypto.randomUUID();
           setFuckoffNotifications((prev) => [...prev, { id, playerName: msg.playerName }]);
           setTimeout(() => {
             setFuckoffNotifications((prev) => prev.filter((n) => n.id !== id));
-          }, 2500);
+          }, NOTIFICATION_FADE_MS);
         } else if (msg.type === "error") {
           if (msg.message === "Removed by host") {
             socketRef.current?.close();
