@@ -14,6 +14,7 @@ export type Traits = {
   decisiveness: number;
   trustInTeammates: number;
   helpfulness: number;
+  stubbornness: number;        // tighter reject margins, slower resignation, re-propose across phases
 
   // Pacing
   baseThinkMs: number;
@@ -41,6 +42,7 @@ function defaultTraits(): Traits {
     decisiveness: 0.5,
     trustInTeammates: 0.5,
     helpfulness: 0.5,
+    stubbornness: 0.55,         // baseline "a bit more stubborn"
 
     baseThinkMs: 6000,
     thinkPerDifficultyMs: 6000,
@@ -62,6 +64,7 @@ export function randomTraits(archetype?: Archetype): { traits: Traits; archetype
     decisiveness: jitter(merged.decisiveness),
     trustInTeammates: jitter(merged.trustInTeammates),
     helpfulness: jitter(merged.helpfulness),
+    stubbornness: jitter(merged.stubbornness ?? 0.55),
     hesitationProb: jitter(merged.hesitationProb, 0.04),
     baseThinkMs: Math.round(merged.baseThinkMs * rand(0.85, 1.15)),
     thinkPerDifficultyMs: Math.round(merged.thinkPerDifficultyMs * rand(0.85, 1.15)),

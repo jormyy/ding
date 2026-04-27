@@ -27,13 +27,16 @@ export function onPhaseBoundary(m: Mood): void {
 }
 
 // Mood modulates traits for the next decision. Worried bots become slower +
-// more conscientious; confident bots become more decisive.
+// more conscientious; confident bots become more decisive. Confidence also
+// raises stubbornness (you defend a slot you trust) while concern lowers it
+// (under stress you cave faster) — both bounded.
 export function moodAdjustedTraits(t: Traits, m: Mood): Traits {
   return {
     ...t,
     conscientiousness: Math.min(1, t.conscientiousness + 0.2 * m.concern),
     decisiveness: Math.max(0, Math.min(1, t.decisiveness + 0.15 * m.confidence - 0.15 * m.concern)),
     hesitationProb: Math.min(0.5, t.hesitationProb + 0.1 * m.concern),
+    stubbornness: Math.max(0, Math.min(1, (t.stubbornness ?? 0.55) + 0.1 * m.confidence - 0.15 * m.concern)),
     baseThinkMs: Math.round(t.baseThinkMs * (1 + 0.2 * m.concern - 0.1 * m.focus)),
     thinkPerDifficultyMs: Math.round(t.thinkPerDifficultyMs * (1 + 0.25 * m.concern)),
   };

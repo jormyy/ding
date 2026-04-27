@@ -6,6 +6,7 @@
 
 import type { AcquireRequest, ClientMessage, GameState, Hand } from "../types";
 import { estimateStrength } from "./handStrength";
+import { classifyHand, type ClassifiedHand } from "./handClassifier";
 import type { Traits } from "./personality";
 import {
   newBeliefState,
@@ -14,6 +15,7 @@ import {
   updateSkillFromReveal,
   onPhaseBoundary as beliefOnPhaseBoundary,
   type BeliefState,
+  type TeammateHabits,
 } from "./belief";
 import {
   scoreAction,
@@ -50,6 +52,10 @@ export type BotMemo = {
   myProposalsThisPhase: number;    // proposals I've initiated in the current phase
   prevAcquireRequests: AcquireRequest[]; // last tick's pending requests — used to classify accept/reject
   proposalAges: Map<string, number>;     // ticks since each of my proposals was first seen
+  phaseDeferTicks: number;               // ticks I've voluntarily waited at phase start for higher-skill teammates
+  // Hand classification — refreshed each tick with fresh board.
+  classifiedHands: Map<string, ClassifiedHand>;
+  handClassifiedPhase: string;
 };
 
 export function newBotMemo(): BotMemo {
@@ -70,6 +76,9 @@ export function newBotMemo(): BotMemo {
     myProposalsThisPhase: 0,
     prevAcquireRequests: [],
     proposalAges: new Map(),
+    phaseDeferTicks: 0,
+    classifiedHands: new Map(),
+    handClassifiedPhase: "",
   };
 }
 
@@ -99,25 +108,30 @@ type Candidate = {
   utility: number;
 };
 
+
 function reqKey(a: string, b: string): string { return a + "|" + b; }
 function rankingSig(r: (string | null)[]): string { return r.map((x) => x ?? "_").join(","); }
 
 // Single source of truth for "should I propose this trade?" — used by both
 // acquire/swap and offer paths. Resignation raises the bar; the per-phase cap
 // stops bot pairs from ping-pong trading; the decision-cap kills voluntary
-// churn after we've already deliberated a lot.
+// churn after we've already deliberated a lot. Stubbornness raises the bar
+// further — a stubborn bot trusts its current slot and won't propose churn.
 function canPropose(
   memo: BotMemo,
   resignation: number,
   overDecisionCap: boolean,
   teamInversionDelta: number,
-  tableSize: number
+  tableSize: number,
+  stubbornness: number
 ): boolean {
   if (overDecisionCap) return false;
   if (resignation >= 0.7) return false;
   const cap = Math.max(4, Math.ceil(tableSize * 0.8));
   if (memo.myProposalsThisPhase >= cap) return false;
-  const proposeBar = 0.2 + resignation * 2.0;
+  // Stubborn: needs larger expected improvement to bother proposing.
+  // At stubbornness=1.0, bar is ~0.65; at 0.0, bar is ~0.3.
+  const proposeBar = 0.3 + resignation * 2.0 + stubbornness * 0.35;
   return teamInversionDelta > proposeBar;
 }
 
@@ -131,8 +145,36 @@ function getEstimate(
   const cached = memo.estimates.get(hand.id);
   if (cached !== undefined) return cached;
   const est = estimateStrength(hand.cards, board, fieldSize, nSims);
-  memo.estimates.set(hand.id, est);
-  return est;
+  const adjusted = adjustEstimateWithClassifier(hand.id, est, memo);
+  memo.estimates.set(hand.id, adjusted);
+  return adjusted;
+}
+
+// Hand-texture adjustment: a bot who KNOWS it has a made hand should trust
+// that signal. A bot with a speculative draw should be less confident.
+function adjustEstimateWithClassifier(
+  handId: string,
+  rawEst: number,
+  memo: BotMemo
+): number {
+  const cls = memo.classifiedHands.get(handId);
+  if (!cls) return rawEst;
+  // Made hands (two-pair+) → more confident in estimate direction
+  if (cls.madeHandType && !["high-card", "pair"].includes(cls.madeHandType)) {
+    // Pull estimate toward extremes: strong hands > 0.5 get boosted, weak < 0.5 reduced
+    if (rawEst > 0.5) return Math.min(1, rawEst + 0.08 * (rawEst - 0.5) * 2);
+    if (rawEst < 0.5) return Math.max(0, rawEst - 0.08 * (0.5 - rawEst) * 2);
+  }
+  // Speculative draws → compress toward 0.5 (less confident)
+  if (cls.isSpeculative) {
+    const pull = (rawEst - 0.5) * 0.25;
+    return rawEst - pull;
+  }
+  // Overcards → slight boost (potential to improve)
+  if (cls.draws.includes("overcards")) {
+    return Math.min(1, rawEst + 0.05);
+  }
+  return rawEst;
 }
 
 function softmaxPick<T>(items: T[], scores: number[], temperature: number): T {
@@ -184,6 +226,9 @@ export function decideAction(
     memo.ticksSinceProgress = 0;
     memo.myProposalsThisPhase = 0;
     memo.proposalAges.clear();
+    memo.phaseDeferTicks = 0;
+    memo.classifiedHands.clear();
+    memo.handClassifiedPhase = "";
     beliefOnPhaseBoundary(memo.belief);
     moodOnPhaseBoundary(memo.mood);
   }
@@ -210,6 +255,27 @@ export function decideAction(
   if (state.phase === "lobby") return null;
   const gamePhases = ["preflop", "flop", "turn", "river"];
   if (!gamePhases.includes(state.phase)) return null;
+
+  // Skill-weighted deferral: at phase start, lower-skill bots wait briefly
+  // so higher-skill teammates place first. Their placements give the rest
+  // of the table a stronger anchor than racing to fill blindly. Cap at 3
+  // ticks so we never deadlock if a high-skill bot is offline.
+  const myHandsForDefer = state.hands.filter((h) => h.playerId === myPlayerId);
+  const haveAnyPlaced = state.ranking.some((s) => s !== null);
+  const myAnyPlaced = myHandsForDefer.some((h) => state.ranking.indexOf(h.id) !== -1);
+  if (!myAnyPlaced && !haveAnyPlaced && memo.phaseDeferTicks < 3) {
+    let highestTeammateSkill = 0;
+    for (const p of state.players) {
+      if (p.id === myPlayerId || !p.connected) continue;
+      const tb = memo.belief.perTeammate.get(p.id);
+      const sp = tb?.skillPrior ?? 0.5;
+      if (sp > highestTeammateSkill) highestTeammateSkill = sp;
+    }
+    if (highestTeammateSkill > traits.skill + 0.1) {
+      memo.phaseDeferTicks++;
+      return null;
+    }
+  }
 
   memo.ticksSinceProgress++;
 
@@ -245,6 +311,18 @@ export function decideAction(
 
   for (const h of myHands) getEstimate(memo, h, board, fieldSize, nSims);
 
+  // Classify my own hands — understanding texture (draws, made hands, speculative)
+  // improves trade evaluation, readiness timing, and slot defense.
+  if (memo.handClassifiedPhase !== state.phase || memo.classifiedHands.size === 0) {
+    memo.classifiedHands.clear();
+    memo.handClassifiedPhase = state.phase;
+    for (const h of myHands) {
+      if (h.cards.length >= 2) {
+        memo.classifiedHands.set(h.id, classifyHand(h.cards, board));
+      }
+    }
+  }
+
   // === 1. PERCEPTION ===
   // First: reconcile last tick's pending trades against now. A vanished
   // request was accepted (slot pattern matches) or rejected — both update
@@ -269,14 +347,30 @@ export function decideAction(
 
   // Resignation: rises with rejected/vanished proposals and idle ticks.
   // Low-conscientiousness / low-neuroticism bots give up faster; Worriers
-  // hold out longer. In [0, 1].
+  // hold out longer. Stubbornness directly slows the curve. In [0, 1].
   const resignationRaw =
     memo.myRejectedKeys.size * 0.54 +
     Math.min(8, memo.idleTicks) * 0.18 +
     Math.min(10, memo.decisionCount) * 0.075;
+  const stubbornness = traitsM.stubbornness ?? 0.55;
   const resignation = Math.max(0, Math.min(1,
-    resignationRaw * (1.2 - 0.4 * traitsM.conscientiousness - 0.3 * traitsM.neuroticism)
+    resignationRaw * (1.2 - 0.4 * traitsM.conscientiousness - 0.3 * traitsM.neuroticism - 0.2 * stubbornness)
   ));
+
+  // Effective stubbornness modulated by my own hand types. A made hand
+  // (e.g. set, flush) → defend the slot more. A speculative hand (draw) →
+  // be more flexible, cede more easily if the team wants to rearrange.
+  let effectiveStubbornness = stubbornness;
+  let speculativeAdjustment = 0;
+  for (const [hid, cls] of memo.classifiedHands) {
+    if (cls.madeHandType && cls.madeHandType !== "high-card" && cls.madeHandType !== "pair") {
+      effectiveStubbornness = Math.min(1, effectiveStubbornness + 0.1);
+    }
+    if (cls.isSpeculative) {
+      effectiveStubbornness = Math.max(0, effectiveStubbornness - 0.12);
+      speculativeAdjustment += 0.1;
+    }
+  }
 
   const alreadyReady = !!me?.ready;
 
@@ -409,32 +503,88 @@ export function decideAction(
     // Final accept score = blend (with trust as weight) so high-trust bots
     // weight the proposer's claim more heavily, low-trust bots stay skeptical.
     const blendedDelta = (1 - trust) * myScore.teamInversionDelta + trust * trustedScore.teamInversionDelta;
+
+    // Counterfactual reasoning: the proposer is claiming their hand belongs at
+    // the post-move slot. Does that claim match what we've inferred about their
+    // hand from their own placement history? If they consistently placed it at
+    // a very different slot, this proposal is suspicious — don't trust it.
+    let cfPenalty = 0;
+    const proposerHand = state.hands.find((x) => x.id === p.initiatorHandId);
+    if (proposerHand && totalHands > 1 && initIdxAfter !== -1) {
+      const proposerBelief = memo.belief.perTeammate.get(proposerHand.playerId);
+      const proposerSelfBelief = proposerBelief?.hands.get(p.initiatorHandId);
+      if (proposerSelfBelief) {
+        const impliedSlot = initIdxAfter / (totalHands - 1);
+        const theirOwnView = proposerSelfBelief.mean;
+        // gap = how far their proposed slot is from what their own placements
+        // would imply about their hand. Positive = proposing hand is stronger
+        // than placement history suggests → suspicious.
+        const gap = theirOwnView - (1 - impliedSlot);
+        if (gap < -0.15) {
+          // They're proposing a weaker-than-expected hand to a strong slot.
+          // This could be correct (they recognize their hand is weak) but
+          // trust the proposer less if their skill is low.
+          const proposerSkill = proposerBelief?.skillPrior ?? 0.5;
+          cfPenalty = Math.min(0.3, Math.abs(gap) * (1.5 - proposerSkill));
+        }
+      }
+    }
+
     const acceptScore: typeof myScore = {
       teamInversionDelta: blendedDelta,
-      confidence: myScore.confidence,
+      confidence: Math.max(0, myScore.confidence - cfPenalty * 0.5),
     };
     const initDefer = deferralWeight(memo.belief, signals, p.initiatorHandId);
+    // Stubbornness shrinks the auto-accept floor: a stubborn bot with a sharp
+    // posterior on its own slot doesn't cave just because someone asked.
     const acceptBoost = traitsM.agreeableness * 0.3
       + initDefer * 0.2 * traitsM.trustInTeammates
       + resignation * 0.4
-      + traitsM.trustInTeammates * 0.5; // baseline trust-the-proposer bonus
-    candidates.push({
-      msg: { type: "acceptChipMove", initiatorHandId: p.initiatorHandId, recipientHandId: p.recipientHandId },
-      score: acceptScore,
-      utility: utilityFor(acceptScore, traitsM) + acceptBoost,
-    });
+      + traitsM.trustInTeammates * 0.5 * (1 - 0.25 * effectiveStubbornness);
+
+    // Opponent habit modulation — proposers with a track record of good
+    // trades earn more trust; habitual rejectors / overvaluers get less.
+    let habitBonus = 0;
+    if (proposerHand) {
+      const proposerHabits = memo.belief.perTeammate.get(proposerHand.playerId)?.habits;
+      if (proposerHabits) {
+        const total = proposerHabits.proposalsAccepted + proposerHabits.proposalsRejected;
+        if (total > 2) {
+          const acceptanceRate = proposerHabits.proposalsAccepted / total;
+          habitBonus = (acceptanceRate - 0.5) * 0.2;
+        }
+        // Overvaluation bias: if they consistently overvalue hands (positive bias),
+        // their claim that their hand belongs at a high slot is less credible.
+        if (proposerHabits.phasesObserved >= 2) {
+          habitBonus -= Math.abs(proposerHabits.overvaluationBias) * 0.25;
+        }
+      }
+    }
+    // Hard gate: don't even consider accepting if the trade clearly hurts the
+    // team ranking (-0.1 means it creates ~1 inversion). Below this, the
+    // acceptBoost should never overcome the negative delta.
+    if (blendedDelta > -0.1) {
+      candidates.push({
+        msg: { type: "acceptChipMove", initiatorHandId: p.initiatorHandId, recipientHandId: p.recipientHandId },
+        score: acceptScore,
+        utility: utilityFor(acceptScore, traitsM) + acceptBoost + habitBonus,
+      });
+    }
 
     const k = reqKey(p.initiatorHandId, p.recipientHandId);
     if (!memo.recentlyRejected.has(k)) {
-      // Reject only when the swap looks meaningfully bad even after trusting
-      // the proposer. A 0.5 margin keeps marginal trades from being rejected.
-      const rejectMargin = 0.5;
-      const rejectU = (-blendedDelta - rejectMargin) * (0.4 + 0.6 * acceptScore.confidence)
+      // Confidence-aware reject margin: when my posterior is sharp, reject on
+      // smaller deltas (defend the slot); when fuzzy, demand larger evidence
+      // before saying no. Stubbornness pulls the margin further down.
+      const conf = acceptScore.confidence;
+      const rejectMargin = (0.7 - 0.3 * conf) * (1.15 - 0.3 * effectiveStubbornness);
+      const rejectU = (-blendedDelta - rejectMargin) * (0.4 + 0.6 * conf)
         + (1 - traitsM.agreeableness) * 0.25
-        - traitsM.trustInTeammates * 0.3;
+        - traitsM.trustInTeammates * 0.3
+        + effectiveStubbornness * 0.12;
       candidates.push({
         msg: { type: "rejectChipMove", initiatorHandId: p.initiatorHandId, recipientHandId: p.recipientHandId },
-        score: { teamInversionDelta: -blendedDelta, confidence: acceptScore.confidence },
+        score: { teamInversionDelta: -blendedDelta, confidence: conf },
         utility: rejectU,
       });
     }
@@ -475,10 +625,16 @@ export function decideAction(
       const after = rankingAfterMove(state.ranking, h.id, slot);
       if (after === null) continue;
       const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+      // Position match: a hand with strength est should land near slot
+      // (1 - est) * (N - 1). Bonus rewards choosing the right neighbourhood.
+      const est = memo.estimates.get(h.id) ?? 0.5;
+      const idealSlot = (1 - est) * (state.ranking.length - 1);
+      const slotAlign = 1 - Math.abs(slot - idealSlot) / Math.max(1, state.ranking.length - 1);
+      const posBonus = slotAlign * 0.3 * traitsM.skill;
       candidates.push({
         msg: { type: "move", handId: h.id, toIndex: slot },
         score,
-        utility: utilityFor(score, traitsM),
+        utility: utilityFor(score, traitsM) + posBonus,
       });
     }
   }
@@ -492,11 +648,15 @@ export function decideAction(
           const after = rankingAfterMove(state.ranking, h.id, slot);
           if (after === null) continue;
           const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
-          if (score.teamInversionDelta > 0.2) {
+          if (score.teamInversionDelta > 0.08) {
+            const est = memo.estimates.get(h.id) ?? 0.5;
+            const idealSlot = (1 - est) * (state.ranking.length - 1);
+            const slotAlign = 1 - Math.abs(slot - idealSlot) / Math.max(1, state.ranking.length - 1);
+            const posBonus = slotAlign * 0.15 * traitsM.skill;
             candidates.push({
               msg: { type: "move", handId: h.id, toIndex: slot },
               score,
-              utility: utilityFor(score, traitsM),
+              utility: utilityFor(score, traitsM) + posBonus,
             });
           }
         }
@@ -513,7 +673,7 @@ export function decideAction(
         const a = myRanked[i], b = myRanked[j];
         const after = rankingAfterSwap(state.ranking, a.h.id, b.h.id);
         const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
-        if (score.teamInversionDelta > 0.2) {
+        if (score.teamInversionDelta > 0.08) {
           candidates.push({
             msg: { type: "swap", handIdA: a.h.id, handIdB: b.h.id },
             score,
@@ -555,7 +715,7 @@ export function decideAction(
       const util = utilityFor(score, traitsM, { teamOnlyBenefit: score.teamInversionDelta })
         - deferPenalty + extraversionBonus;
 
-      if (canPropose(memo, resignation, overDecisionCap, score.teamInversionDelta, state.hands.length)) {
+      if (canPropose(memo, resignation, overDecisionCap, score.teamInversionDelta, state.hands.length, effectiveStubbornness)) {
         candidates.push({
           msg: { type: "proposeChipMove", initiatorHandId: h.id, recipientHandId: otherId },
           score,
@@ -589,7 +749,7 @@ export function decideAction(
       const extraversionBonus = (traitsM.extraversion - 0.5) * 0.2;
       const util = utilityFor(score, traitsM, { teamOnlyBenefit: score.teamInversionDelta })
         - deferPenalty + extraversionBonus;
-      if (canPropose(memo, resignation, overDecisionCap, score.teamInversionDelta, state.hands.length)) {
+      if (canPropose(memo, resignation, overDecisionCap, score.teamInversionDelta, state.hands.length, effectiveStubbornness)) {
         candidates.push({
           msg: { type: "proposeChipMove", initiatorHandId: myH.id, recipientHandId: theirH.id },
           score,
@@ -600,9 +760,13 @@ export function decideAction(
   }
 
   if (effectiveAllRanked && !alreadyReady) {
+    // Speculative hands (flush/straight draws) — don't commit yet. The hand's
+    // true rank will change with the river card, so readying too early locks
+    // us into a slot we might regret.
     const readyU = 0.2 + 0.4 * traitsM.decisiveness + 0.2 * memo.mood.focus
       - 0.3 * memo.mood.concern
-      + resignation * 1.5; // give up → just lock in what we've got
+      + resignation * 1.5 // give up → just lock in what we've got
+      - speculativeAdjustment * 0.6; // drawing hands should wait
     candidates.push({
       msg: { type: "ready", ready: true },
       score: { teamInversionDelta: 0.05, confidence: 0.5 },

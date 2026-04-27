@@ -109,6 +109,37 @@ export class BotController {
     }
   }
 
+  // Fast simulation mode: directly tick every bot without timers.
+  // Returns the number of bots that produced an action this round.
+  fastTickAll(): number {
+    if (this.disposed) return 0;
+    const state = this.opts.getState();
+    const gamePhases = ["preflop", "flop", "turn", "river"];
+    let acted = 0;
+    for (const [pid, rec] of Array.from(this.bots.entries())) {
+      if (rec.pending) {
+        // In timer-based mode, pending means the bot is waiting. In fast mode,
+        // we reset it so the bot can act this round. After dispatching, the
+        // notifyStateChanged call may set it to true again — we reset below.
+        rec.pending = false;
+      }
+      if (gamePhases.includes(state.phase) && rec.firstActionPhase !== state.phase) {
+        rec.firstActionPhase = state.phase;
+      }
+      rec.pending = true;
+      const masked = this.opts.mask(pid);
+      const msg = decideAction(masked, pid, rec.traits, rec.memo);
+      if (msg) {
+        acted++;
+        this.opts.dispatch(pid, msg);
+      }
+      // Reset pending: notifyStateChanged may have set it to true again via
+      // the dispatch path, but we want the bot to tick again next round.
+      rec.pending = false;
+    }
+    return acted;
+  }
+
   // Emit a previously-decided message after hesitation, but re-decide if the
   // state has changed enough to invalidate it. We treat "still legal" as a
   // simple proxy: the action's referenced hands/proposals still exist.

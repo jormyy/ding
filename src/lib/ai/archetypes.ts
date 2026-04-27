@@ -20,45 +20,55 @@ const PRESETS: Record<Archetype, TraitPatch> = {
     decisiveness: 0.85, skill: 0.87, conscientiousness: 0.6,
     neuroticism: 0.2, extraversion: 0.45, helpfulness: 0.55,
     hesitationProb: 0.03, baseThinkMs: 5000, thinkPerDifficultyMs: 3500,
+    stubbornness: 0.75,
   },
   deliberator: {
     conscientiousness: 0.85, openness: 0.7, decisiveness: 0.35,
     skill: 0.85, hesitationProb: 0.18, baseThinkMs: 8000, thinkPerDifficultyMs: 8000,
+    stubbornness: 0.65,
   },
   helper: {
     helpfulness: 0.9, extraversion: 0.8, agreeableness: 0.7,
     skill: 0.81, baseThinkMs: 5500, thinkPerDifficultyMs: 5000,
+    stubbornness: 0.45,
   },
   quiet: {
     extraversion: 0.15, helpfulness: 0.3, agreeableness: 0.6,
     skill: 0.79, trustInTeammates: 0.65, baseThinkMs: 7000, thinkPerDifficultyMs: 6000,
+    stubbornness: 0.6,
   },
   professor: {
     skill: 0.92, conscientiousness: 0.75, decisiveness: 0.7,
     neuroticism: 0.15, hesitationProb: 0.02, helpfulness: 0.55,
     baseThinkMs: 9000, thinkPerDifficultyMs: 10000,
+    stubbornness: 0.8,
   },
   gut: {
     skill: 0.72, decisiveness: 0.85, conscientiousness: 0.25,
     openness: 0.6, hesitationProb: 0.04, baseThinkMs: 3000, thinkPerDifficultyMs: 2000,
+    stubbornness: 0.5,
   },
   newbie: {
     skill: 0.70, trustInTeammates: 0.85, conscientiousness: 0.5,
     decisiveness: 0.3, hesitationProb: 0.25, baseThinkMs: 7000, thinkPerDifficultyMs: 9000,
+    stubbornness: 0.35,
   },
   worrier: {
     neuroticism: 0.85, conscientiousness: 0.7, decisiveness: 0.3,
     skill: 0.77, hesitationProb: 0.28, baseThinkMs: 7000, thinkPerDifficultyMs: 10000,
+    stubbornness: 0.7,
   },
   optimist: {
     agreeableness: 0.9, extraversion: 0.65, neuroticism: 0.2,
     trustInTeammates: 0.8, skill: 0.75, hesitationProb: 0.05,
     baseThinkMs: 4500, thinkPerDifficultyMs: 4000,
+    stubbornness: 0.4,
   },
   skeptic: {
     agreeableness: 0.2, helpfulness: 0.75, conscientiousness: 0.65,
     skill: 0.81, decisiveness: 0.55, trustInTeammates: 0.3,
     baseThinkMs: 6500, thinkPerDifficultyMs: 6500,
+    stubbornness: 0.85,
   },
 };
 
