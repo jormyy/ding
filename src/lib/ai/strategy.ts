@@ -1,8 +1,13 @@
-// Cooperative-bot pipeline.
-//
-//   1. Perception → update BeliefState from public placements.
-//   2. Evaluation → score candidate actions by team-EV (inversion reduction).
-//   3. Selection  → softmax over top actions, modulated by Traits + Mood.
+/**
+ * Cooperative-bot decision pipeline.
+ *
+ *   1. Perception → update BeliefState from public placements + trades.
+ *   2. Evaluation → score candidate actions by team-EV (inversion reduction).
+ *   3. Selection  → softmax over top actions, modulated by Traits + Mood.
+ *
+ * This is the main entry point for bot decision-making. Called once per bot
+ * tick (either timer-driven in production, or synchronously in fast-sim mode).
+ */
 
 import type { AcquireRequest, ClientMessage, GameState, Hand } from "../types";
 import { estimateStrength } from "./handStrength";
@@ -34,30 +39,55 @@ import {
   type Mood,
 } from "./mood";
 
+/**
+ * Per-bot persistent memory across ticks.
+ *
+ * Each bot has its own memo that survives across ticks within a phase.
+ * It caches estimates, belief state, mood, and various bookkeeping counters
+ * used by the decision pipeline.
+ */
 export type BotMemo = {
+  /** Cached hand strength estimates for this phase. */
   estimates: Map<string, number>;
+  /** Phase string for which estimates are valid. */
   estimatesPhase: string;
+  /** Consecutive ticks with no action taken. */
   idleTicks: number;
+  /** Total voluntary decisions this phase (capped at 60 to prevent churn). */
   decisionCount: number;
+  /** Proposal keys we've recently rejected (cooldown to avoid ping-pong). */
   recentlyRejected: Set<string>;
+  /** Belief state tracking teammate hand strengths. */
   belief: BeliefState;
+  /** Current emotional state (focus, confidence, concern). */
   mood: Mood;
+  /** Signature of ranking at last tick, used to detect teammate churn. */
   lastRankingSig: string;
-  // Expressive-behavior tracking
-  prevMyProposals: Set<string>;    // reqKeys present last tick for proposals I initiated
-  myRejectedKeys: Set<string>;     // my own proposals that were rejected — don't re-propose this phase
-  prevHandSlots: Map<string, number>; // handId -> slot from previous tick
-  stallTicks: number;              // consecutive ticks where everyone ranked but not all ready
-  ticksSinceProgress: number;      // ticks since last state-changing action (move/swap/accept/propose/ready)
-  myProposalsThisPhase: number;    // proposals I've initiated in the current phase
-  prevAcquireRequests: AcquireRequest[]; // last tick's pending requests — used to classify accept/reject
-  proposalAges: Map<string, number>;     // ticks since each of my proposals was first seen
-  phaseDeferTicks: number;               // ticks I've voluntarily waited at phase start for higher-skill teammates
-  // Hand classification — refreshed each tick with fresh board.
+  /** Proposal keys we had pending last tick (used to detect rejections). */
+  prevMyProposals: Set<string>;
+  /** Our own proposals that were rejected this phase (don't re-propose). */
+  myRejectedKeys: Set<string>;
+  /** handId → slot index from the previous tick. */
+  prevHandSlots: Map<string, number>;
+  /** Ticks where board is full but someone isn't ready. */
+  stallTicks: number;
+  /** Ticks since last state-changing action. */
+  ticksSinceProgress: number;
+  /** Count of proposals initiated in current phase. */
+  myProposalsThisPhase: number;
+  /** Snapshot of pending requests from last tick. */
+  prevAcquireRequests: AcquireRequest[];
+  /** How many ticks each of our proposals has been pending. */
+  proposalAges: Map<string, number>;
+  /** Ticks we've deferred at phase start to let higher-skill bots place first. */
+  phaseDeferTicks: number;
+  /** Cached hand classification (draws, made hands, etc.). */
   classifiedHands: Map<string, ClassifiedHand>;
+  /** Phase string for which classifications are valid. */
   handClassifiedPhase: string;
 };
 
+/** Create a fresh bot memo with empty caches and counters. */
 export function newBotMemo(): BotMemo {
   return {
     estimates: new Map(),
@@ -112,11 +142,17 @@ type Candidate = {
 function reqKey(a: string, b: string): string { return a + "|" + b; }
 function rankingSig(r: (string | null)[]): string { return r.map((x) => x ?? "_").join(","); }
 
-// Single source of truth for "should I propose this trade?" — used by both
-// acquire/swap and offer paths. Resignation raises the bar; the per-phase cap
-// stops bot pairs from ping-pong trading; the decision-cap kills voluntary
-// churn after we've already deliberated a lot. Stubbornness raises the bar
-// further — a stubborn bot trusts its current slot and won't propose churn.
+/**
+ * Should this bot propose a trade?
+ *
+ * Gates voluntary trade proposals. Returns false if:
+ * - We've hit the per-phase decision cap (prevents churn).
+ * - Resignation is too high (bot has given up on trading).
+ * - We've already proposed too many times this phase.
+ * - The expected improvement doesn't clear the personality-adjusted bar.
+ *
+ * Stubbornness and resignation both raise the threshold.
+ */
 function canPropose(
   memo: BotMemo,
   resignation: number,
@@ -135,6 +171,10 @@ function canPropose(
   return teamInversionDelta > proposeBar;
 }
 
+/**
+ * Get a cached strength estimate for a hand, computing if necessary.
+ * Estimates are memoized per phase in `memo.estimates`.
+ */
 function getEstimate(
   memo: BotMemo,
   hand: Hand,
@@ -150,8 +190,15 @@ function getEstimate(
   return adjusted;
 }
 
-// Hand-texture adjustment: a bot who KNOWS it has a made hand should trust
-// that signal. A bot with a speculative draw should be less confident.
+/**
+ * Adjust a raw Monte Carlo estimate based on hand texture classification.
+ *
+ * - Made hands (two-pair+): pull estimate toward extremes (boost strong,
+ *   reduce weak) — the bot should trust its own made hand.
+ * - Speculative draws (flush/straight draws): compress toward 0.5 — the hand
+ *   could improve dramatically, so be less confident.
+ * - Overcards: slight boost — potential to improve on future streets.
+ */
 function adjustEstimateWithClassifier(
   handId: string,
   rawEst: number,
@@ -177,6 +224,11 @@ function adjustEstimateWithClassifier(
   return rawEst;
 }
 
+/**
+ * Softmax selection over scored items.
+ * Higher temperature → more randomness. Lower temperature → more deterministic.
+ * Temperature is clamped to a minimum of 0.05 to avoid division by zero.
+ */
 function softmaxPick<T>(items: T[], scores: number[], temperature: number): T {
   const t = Math.max(0.05, temperature);
   const maxS = Math.max(...scores);
@@ -190,6 +242,12 @@ function softmaxPick<T>(items: T[], scores: number[], temperature: number): T {
   return items[items.length - 1];
 }
 
+/**
+ * Convert an action score into a scalar utility for selection.
+ *
+ * Weighs team inversion reduction by confidence, plus small bonuses for
+ * cooperative behavior (helpfulness) and self-benefit.
+ */
 function utilityFor(
   score: ActionScore,
   traits: Traits,
@@ -201,6 +259,24 @@ function utilityFor(
   return base + helper + self;
 }
 
+/**
+ * Main bot decision entry point.
+ *
+ * Runs the full perception → evaluation → selection pipeline and returns
+ * a `ClientMessage` to dispatch, or `null` if the bot chooses to do nothing
+ * this tick.
+ *
+ * Special cases:
+ * - **Lobby**: always returns null (bots don't act in lobby).
+ * - **Reveal**: returns `flip` when it's this bot's turn to flip.
+ * - **Game phases**: evaluates placements, swaps, trades, and ready.
+ *
+ * @param state       Current masked game state (same view a human sees).
+ * @param myPlayerId  This bot's player ID.
+ * @param traits      Personality traits (skill, stubbornness, etc.).
+ * @param memo        Persistent bot memory (estimates, belief, mood, counters).
+ * @param opts        Optional overrides (e.g. `nSims` for testing).
+ */
 export function decideAction(
   state: GameState,
   myPlayerId: string,

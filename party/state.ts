@@ -8,12 +8,19 @@ import type {
 } from "../src/lib/types";
 import { COMMUNITY_CARDS_FOR_PHASE } from "../src/lib/constants";
 
-// Full server-side state (cards are never masked here)
+/**
+ * Server-side game state. Extends the client-visible `GameState` with
+ * unmasked card data that must never be sent to clients.
+ *
+ * `allCommunityCards` holds all 5 community cards; `communityCards` on the
+ * base type is sliced per-phase for broadcast.
+ */
 export interface ServerGameState extends GameState {
-  // hands here contain ALL cards (unmasked)
-  allCommunityCards: Card[]; // all 5, we slice for broadcast
+  /** All 5 community cards (unmasked). Sliced for broadcast via `buildClientState`. */
+  allCommunityCards: Card[];
 }
 
+/** Create a fresh empty server state for a new room. */
 export function createInitialState(): ServerGameState {
   return {
     phase: "lobby",
@@ -45,6 +52,13 @@ function maskHandsForPlayer(
   });
 }
 
+/**
+ * Build a masked client-side view of the game state for a specific player.
+ *
+ * - Slices community cards to the correct count for the current phase.
+ * - Strips opponent hole cards from all `Hand` objects except the viewer's own.
+ * - In reveal phase, shows cards for hands that have already been flipped.
+ */
 export function buildClientState(state: ServerGameState, playerId: string): GameState {
   const count = COMMUNITY_CARDS_FOR_PHASE[state.phase];
   const communityCardsToShow = state.allCommunityCards.slice(0, count);
@@ -66,6 +80,10 @@ export function buildClientState(state: ServerGameState, playerId: string): Game
   };
 }
 
+/**
+ * Broadcast the current (masked) game state to every connected client.
+ * Each connection receives a personalized view with opponent cards hidden.
+ */
 export function broadcastStateTo(
   room: Party.Room,
   state: ServerGameState,
@@ -79,6 +97,10 @@ export function broadcastStateTo(
   }
 }
 
+/**
+ * Debug assertion: verify the ranking array has no duplicates and matches
+ * the total hand count. Logs errors to the console if invariants are violated.
+ */
 export function assertRankingInvariant(state: ServerGameState) {
   const claimed = state.ranking.filter((r): r is string => r !== null);
   const unique = new Set(claimed);

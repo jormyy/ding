@@ -15,6 +15,18 @@ import type { HandlerCtx } from "./handlers/types";
 export { buildClientState } from "./state";
 export type { ServerGameState } from "./state";
 
+/**
+ * Main PartyKit server for Ding.
+ *
+ * Responsibilities:
+ * - Manage WebSocket connections and player identity (join/reconnect/disconnect)
+ * - Maintain the authoritative `ServerGameState` (unmasked cards)
+ * - Validate and dispatch all player actions through `handlerMap`
+ * - Broadcast masked game state to each connected client
+ * - Manage the `BotController` for AI players
+ *
+ * Bots bypass WebSockets entirely; they call `dispatchBotAction()` directly.
+ */
 export default class DingServer implements Party.Server {
   private state: ServerGameState;
   private connections: Map<string, Party.Connection> = new Map();
@@ -61,10 +73,20 @@ export default class DingServer implements Party.Server {
     this.handlePlayerAction(player, msg);
   }
 
+  /** Track a new WebSocket connection. */
   onConnect(conn: Party.Connection) {
     this.connections.set(conn.id, conn);
   }
 
+  /**
+   * Handle WebSocket disconnect.
+   *
+   * In lobby: marks player disconnected; may transfer creator role.
+   * In-game: marks disconnected and un-readies them.
+   *
+   * If all humans disconnect, the bot controller is reset so it will be
+   * recreated fresh on the next human reconnect.
+   */
   onClose(conn: Party.Connection) {
     this.connections.delete(conn.id);
     const player = this.getPlayerByConn(conn.id);
@@ -94,6 +116,7 @@ export default class DingServer implements Party.Server {
     }
   }
 
+  /** Route incoming WebSocket messages to the appropriate handler. */
   onMessage(message: string, sender: Party.Connection) {
     let msg: ClientMessage;
     try {
@@ -110,6 +133,14 @@ export default class DingServer implements Party.Server {
     this.handlePlayerAction(player, msg, sender);
   }
 
+/**
+   * Handle a player joining the room.
+   *
+   * Supports three paths:
+   * 1. **Reconnect**: matching `pid` exists → update connId, mark connected.
+   * 2. **New join in lobby**: fresh player, room not full.
+   * 3. **Rejected**: game in progress, room full, or player was kicked.
+   */
   private handleJoin(
     msg: Extract<ClientMessage, { type: "join" }>,
     sender: Party.Connection
@@ -153,6 +184,13 @@ export default class DingServer implements Party.Server {
     this.broadcast();
   }
 
+  /**
+   * Validate and dispatch a player action through the handler map.
+   *
+   * Constructs a `HandlerCtx` with server-level resources (connections, kicked
+   * set, bot controller, room) so handlers can perform side effects like
+   * closing connections or resetting state.
+   */
   private handlePlayerAction(
     player: Player,
     msg: ClientMessage,

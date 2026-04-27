@@ -10,6 +10,7 @@ import {
 import { moodAdjustedTraits } from "../src/lib/ai/mood";
 import type { Archetype } from "../src/lib/ai/archetypes";
 
+/** Internal state for a single bot player. */
 type BotRecord = {
   player: Player;
   traits: Traits;
@@ -21,12 +22,29 @@ type BotRecord = {
   firstActionPhase: string;
 };
 
+/** Configuration passed to the BotController constructor. */
 export type BotControllerOptions = {
+  /** Get the current authoritative server state. */
   getState: () => GameState;
+  /** Dispatch a bot action through the same handler path as human actions. */
   dispatch: (playerId: string, msg: ClientMessage) => void;
+  /** Build a masked client state for a specific bot (same view humans see). */
   mask: (playerId: string) => GameState;
 };
 
+/**
+ * Manages the lifecycle and scheduling of AI bot players.
+ *
+ * Two modes:
+ * 1. **Timer mode** (`notifyStateChanged`): schedules per-bot think ticks with
+ *    personality-scaled delays. Supports hesitation, bot-to-bot trade acceleration,
+ *    and action re-validation after delays.
+ * 2. **Fast mode** (`fastTickAll`): direct synchronous ticks for simulation
+ *    scripts — no timers, no delays.
+ *
+ * Bots receive the same masked `GameState` as humans and dispatch the same
+ * `ClientMessage` types through the same handlers.
+ */
 export class BotController {
   private bots: Map<string, BotRecord> = new Map();
   private disposed = false;
@@ -41,6 +59,11 @@ export class BotController {
     return this.bots.has(playerId);
   }
 
+  /**
+   * Create and register a new bot player.
+   * @param idFactory  Optional function to generate a deterministic bot ID.
+   * @returns The newly created Player record (already pushed to server state).
+   */
   addBot(idFactory?: () => string): Player {
     const takenNames = new Set(this.opts.getState().players.map((p) => p.name));
     const name = pickBotName(takenNames);
@@ -69,6 +92,7 @@ export class BotController {
     return player;
   }
 
+  /** Remove a bot and clear its pending timer. */
   removeBot(playerId: string): void {
     const rec = this.bots.get(playerId);
     if (!rec) return;
@@ -76,6 +100,15 @@ export class BotController {
     this.bots.delete(playerId);
   }
 
+  /**
+   * Notify all bots that the game state has changed.
+   *
+   * Schedules each bot's next think tick with a delay based on its personality.
+   * Bots that have pending timers are skipped. Delays are scaled by:
+   * - Personality traits (baseThinkMs, thinkPerDifficultyMs)
+   * - First-action delay at phase start (gives humans time to orient)
+   * - Bot-to-bot trade acceleration (10× faster for bot-only negotiations)
+   */
   notifyStateChanged(): void {
     if (this.disposed) return;
     const state = this.opts.getState();
@@ -109,8 +142,12 @@ export class BotController {
     }
   }
 
-  // Fast simulation mode: directly tick every bot without timers.
-  // Returns the number of bots that produced an action this round.
+  /**
+   * Fast simulation mode: synchronously tick every bot without timers.
+   *
+   * Used by simulation scripts to run game batches quickly. Returns the
+   * number of bots that produced an action this round.
+   */
   fastTickAll(): number {
     if (this.disposed) return 0;
     const state = this.opts.getState();
@@ -306,6 +343,7 @@ export class BotController {
     return init.playerId === pid || rec.playerId === pid;
   }
 
+  /** Shut down the controller and clear all bot timers. */
   dispose(): void {
     this.disposed = true;
     for (const rec of Array.from(this.bots.values())) {

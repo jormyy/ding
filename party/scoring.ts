@@ -2,6 +2,13 @@ import type { Card, Hand } from "../src/lib/types";
 import { Hand as PokerHand } from "pokersolver";
 import { solveHands } from "./solver";
 
+/**
+ * Compute the true poker ranking from strongest to weakest.
+ *
+ * Uses pokersolver to evaluate each hand's best 5-card combination against
+ * the full community cards. Tied hands remain in arbitrary but stable order
+ * next to each other.
+ */
 export function computeTrueRanking(
   hands: Hand[],
   communityCards: Card[]
@@ -19,6 +26,12 @@ export function computeTrueRanking(
   return solvedHands.map((h) => h.id);
 }
 
+/**
+ * Assign numeric ranks to hands, with ties sharing the same rank number.
+ *
+ * E.g., if the top two hands are tied, both get rank 1, and the next hand
+ * gets rank 2.
+ */
 export function computeTrueRanks(
   trueRanking: string[],
   hands: Hand[],
@@ -42,6 +55,15 @@ export function computeTrueRanks(
   return ranks;
 }
 
+/**
+ * Count pairwise ranking mistakes (inversions) in the team's claimed ranking.
+ *
+ * An inversion occurs when a stronger hand is ranked worse than a weaker hand.
+ * Null slots are ignored. Tied hands in the true ranking do not count as
+ * inversions if they appear in either order.
+ *
+ * @returns Number of inverted pairs. 0 = perfect board.
+ */
 export function countInversions(
   playerRanking: (string | null)[],
   trueRanking: string[],

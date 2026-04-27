@@ -2,14 +2,14 @@ import type { GameState } from "../types";
 import type { BeliefState } from "./belief";
 import { applyChipMoveToRanking } from "../chipMove";
 
-// Cheap inversion surrogate: given a proposed ranking (array of handIds),
-// plus our best guess at each hand's strength, count pairwise misorderings.
-//
-// We also add a small "absolute position misalignment" term so that the
-// metric isn't degenerate when few hands are placed: with only one placed
-// hand there are no pairs, but we still want to reward putting strong hands
-// in low-index slots. Without this term, the FIRST placement of a phase is
-// essentially random — every empty slot has identical pairwise score.
+/**
+ * Compute a cheap surrogate for "how wrong is this ranking?"
+ *
+ * Counts pairwise inversions (stronger hands ranked worse than weaker ones).
+ * Also adds a small positional alignment term so that with few placed hands
+ * (where no pairs exist yet), we still prefer strong hands in low-index slots.
+ * Unclaimed slots receive a heavy penalty that dominates pairwise costs.
+ */
 export function expectedInversions(
   ranking: (string | null)[],
   strengthOf: (handId: string) => number
@@ -53,11 +53,21 @@ export function expectedInversions(
   return inv + positional + unclaimed * (N + 1);
 }
 
+/**
+ * Score for a candidate action.
+ * `teamInversionDelta > 0` means the action improves the team ranking.
+ */
 export type ActionScore = {
-  teamInversionDelta: number; // positive = improvement (current − after)
-  confidence: number;         // 0..1 — how sure we are about this score
+  /** Expected inversion reduction (current − after). Positive = improvement. */
+  teamInversionDelta: number;
+  /** Confidence in this score, in [0, 1]. */
+  confidence: number;
 };
 
+/**
+ * Build a strength lookup function that resolves handId → estimated strength.
+ * Priority: own Monte Carlo estimate > belief posterior > default 0.5.
+ */
 function buildStrengthFn(
   state: GameState,
   myPlayerId: string,
@@ -76,15 +86,15 @@ function buildStrengthFn(
   };
 }
 
-// Score the outcome of applying a hypothetical ranking change. Returns
-// team-EV in units of (expected) inversion reduction.
-//
-// `trustOverrides` lets callers (typically: evaluating an INCOMING proposal)
-// blend the proposer's implied view with their own belief — a teammate
-// proposing a chip move is asserting "my hand belongs at the new slot",
-// which is evidence we should weight by trust. Without this, bots routinely
-// reject good cross-player swaps because the proposer's hand sits in a
-// "wrong" slot from the recipient's perspective.
+/**
+ * Score a hypothetical ranking change by expected inversion reduction.
+ *
+ * @param trustOverrides  Optional per-hand strength overrides. Used when
+ *   evaluating incoming proposals — the proposer is asserting their hand
+ *   belongs at a new slot, which is evidence weighted by trust.
+ *   Without this, bots reject good swaps because the proposer's hand looks
+ *   weak from the recipient's current belief.
+ */
 export function scoreAction(
   state: GameState,
   after: (string | null)[],
@@ -123,11 +133,13 @@ export function scoreAction(
   };
 }
 
-// Helpers that produce the `after` ranking for common actions.
+// ── Helpers that produce the `after` ranking for common actions ──
 
-// Returns the ranking after moving `handId` to `toIndex`, or null if the move
-// is illegal (target slot occupied by a different hand). Callers must filter
-// out null candidates so we don't score ghost moves as no-ops.
+/**
+ * Preview the ranking after moving a hand to a slot.
+ * @returns The new ranking, or null if the move is illegal (target occupied by
+ *   a different hand, or out of bounds).
+ */
 export function rankingAfterMove(
   ranking: (string | null)[],
   handId: string,
@@ -143,6 +155,7 @@ export function rankingAfterMove(
   return next;
 }
 
+/** Preview the ranking after swapping two placed hands. */
 export function rankingAfterSwap(
   ranking: (string | null)[],
   a: string,
@@ -157,6 +170,7 @@ export function rankingAfterSwap(
   return next;
 }
 
+/** Preview the ranking after applying a chip move (acquire/offer/swap). */
 export function rankingAfterChipMove(
   ranking: (string | null)[],
   initiatorHandId: string,

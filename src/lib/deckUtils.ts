@@ -17,6 +17,7 @@ const RANKS: Rank[] = [
 ];
 const SUITS: Suit[] = ["H", "D", "C", "S"];
 
+/** Create a standard 52-card deck. */
 export function createDeck(): Card[] {
   const deck: Card[] = [];
   for (const suit of SUITS) {
@@ -27,6 +28,7 @@ export function createDeck(): Card[] {
   return deck;
 }
 
+/** Fisher-Yates shuffle — returns a new shuffled copy, does not mutate input. */
 export function shuffleDeck(deck: Card[]): Card[] {
   const shuffled = [...deck];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -36,6 +38,13 @@ export function shuffleDeck(deck: Card[]): Card[] {
   return shuffled;
 }
 
+/**
+ * Deal cards for a new game.
+ *
+ * - Deals 2 hole cards per hand, round-robin across players.
+ * - Burns 1 card, deals flop (3), burns 1, deals turn (1), burns 1, deals river (1).
+ * - Returns remaining deck for potential future use.
+ */
 export function dealCards(
   deck: Card[],
   playerIds: string[],

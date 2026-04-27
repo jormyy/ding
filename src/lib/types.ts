@@ -1,4 +1,7 @@
+/** Playing card suit. */
 export type Suit = "H" | "D" | "C" | "S";
+
+/** Playing card rank. T = Ten. */
 export type Rank =
   | "2"
   | "3"
@@ -14,26 +17,45 @@ export type Rank =
   | "K"
   | "A";
 
+/** A single playing card. */
 export type Card = { rank: Rank; suit: Suit };
 
+/**
+ * A single hand belonging to a player.
+ * During the game, cards is [] for hands the viewer does not own (masked by the server).
+ */
 export type Hand = {
-  id: string; // e.g. "playerId-0", "playerId-1"
+  /** Stable ID format: `${playerId}-${handIndex}` (e.g. "abc-0", "abc-1"). */
+  id: string;
+  /** ID of the player this hand belongs to. */
   playerId: string;
-  cards: Card[]; // [] when sent to non-owners
-  flipped: boolean; // revealed during reveal phase
-  madeHandName?: string; // populated server-side when transitioning to reveal
+  /** Hole cards. Empty array when sent to non-owners (server masking). */
+  cards: Card[];
+  /** Whether this hand has been revealed during the reveal phase. */
+  flipped: boolean;
+  /** Human-readable made hand name, populated by the server when entering reveal. */
+  madeHandName?: string;
 };
 
+/** A player (human or bot) in the room. */
 export type Player = {
-  id: string;      // persistent player ID (stable across reconnects)
-  connId: string;  // current WebSocket connection ID (changes on reconnect)
+  /** Persistent player ID — stable across reconnects, stored in sessionStorage. */
+  id: string;
+  /** Current WebSocket connection ID — changes on every reconnect. */
+  connId: string;
+  /** Display name shown in the UI. */
   name: string;
-  isCreator: boolean; // first to join — has start/configure controls
+  /** Whether this player created the room (has start/configure/kick powers). */
+  isCreator: boolean;
+  /** Whether the player has readied up in the current phase. */
   ready: boolean;
+  /** Whether the player currently has an active WebSocket connection. */
   connected: boolean;
+  /** True for AI bots (server-side only, no real WebSocket). */
   isBot?: boolean;
 };
 
+/** Game phase. */
 export type Phase =
   | "lobby"
   | "preflop"
@@ -42,62 +64,105 @@ export type Phase =
   | "river"
   | "reveal";
 
+/**
+ * The full game state broadcast by the server.
+ * The server sends a masked version per-player (opponent hole cards hidden).
+ */
 export type GameState = {
   phase: Phase;
   players: Player[];
-  handsPerPlayer: number; // 1–6 (max 2 for 8p, max 3 for 6–7p, max 4 for 5p, max 5 for 4p, max 6 for 2–3p)
-  communityCards: Card[]; // grows each phase
-  ranking: (string | null)[]; // array of handIds, index 0 = best; null = unclaimed slot on board
-  hands: Hand[]; // cards stripped for non-owners (except in reveal after flipped)
-  revealIndex: number; // during reveal: index in TRUE ranking (worst→best) currently being flipped
-  trueRanking: string[] | null; // null until reveal phase
-  trueRanks: Record<string, number> | null; // handId -> true rank (ties share same number), null until reveal
-  score: number | null; // inversion count, null until all flipped
-  rankHistory: Record<string, (number | null)[]>; // handId -> [rank at end of preflop, flop, turn, river]
-  acquireRequests: AcquireRequest[]; // pending chip move proposals (acquire/offer/swap)
-  chatMessages: ChatMessage[]; // persistent room chat history
+  /** Configured at lobby. Capped by total hand limits based on player count. */
+  handsPerPlayer: number;
+  /** Community cards revealed so far for this phase. */
+  communityCards: Card[];
+  /**
+   * Board slots, index 0 = rank 1 (best), index N-1 = rank N (worst).
+   * `null` = unclaimed slot.
+   */
+  ranking: (string | null)[];
+  /** All hands in the game. Cards are masked for non-owners. */
+  hands: Hand[];
+  /**
+   * During reveal: how many hands have been flipped so far.
+   * Flipping proceeds worst-ranked → best-ranked.
+   */
+  revealIndex: number;
+  /** Computed true ranking (best→worst) when entering reveal phase. Null until then. */
+  trueRanking: string[] | null;
+  /** Map of handId → true rank number (ties share the same number). Null until reveal. */
+  trueRanks: Record<string, number> | null;
+  /** Inversion count. Null until all hands are flipped in reveal. */
+  score: number | null;
+  /**
+   * Historical rank data per hand.
+   * Array index corresponds to phase order: [preflop, flop, turn, river].
+   * Null means the hand was unranked at that phase boundary.
+   */
+  rankHistory: Record<string, (number | null)[]>;
+  /** Pending chip-move proposals between players. Cleared at phase boundaries. */
+  acquireRequests: AcquireRequest[];
+  /** Room chat history, capped at 100 messages server-side. */
+  chatMessages: ChatMessage[];
 };
 
+/** The three kinds of chip moves between players. */
 export type AcquireRequestKind = "acquire" | "offer" | "swap";
 
+/**
+ * A pending chip-move proposal from one player to another.
+ * The server auto-classifies the `kind` based on current rankings when proposed.
+ */
 export type AcquireRequest = {
   kind: AcquireRequestKind;
-  initiatorId: string;       // player who started the proposal
-  initiatorHandId: string;   // the initiator's hand involved
-  recipientHandId: string;   // the other player's hand involved (recipient accepts/rejects)
+  /** Player who initiated the proposal. */
+  initiatorId: string;
+  /** The initiator's hand involved in the move. */
+  initiatorHandId: string;
+  /** The recipient's hand involved (recipient can accept or reject). */
+  recipientHandId: string;
 };
 
+/** A single chat message in the room. */
 export type ChatMessage = {
   id: string;
   playerId: string;
   playerName: string;
   text: string;
+  /** Unix timestamp in milliseconds. */
   ts: number;
 };
 
+/**
+ * All messages sent from the client to the PartyKit server.
+ * Each variant corresponds to a handler in `party/handlers/`.
+ */
 export type ClientMessage =
   | { type: "join"; name: string; pid: string }
-  | { type: "configure"; handsPerPlayer: number } // lobby only, creator only
-  | { type: "start" } // lobby only, creator only
-  | { type: "move"; handId: string; toIndex: number } // preflop→river, own hands only
-  | { type: "swap"; handIdA: string; handIdB: string } // swap own hands' positions (handsPerPlayer > 1)
-  | { type: "transferOwnChip"; fromHandId: string; toHandId: string } // atomic chip transfer between two of your own hands
-  | { type: "proposeChipMove"; initiatorHandId: string; recipientHandId: string } // server decides kind (acquire/offer/swap)
+  | { type: "configure"; handsPerPlayer: number }
+  | { type: "start" }
+  | { type: "move"; handId: string; toIndex: number }
+  | { type: "swap"; handIdA: string; handIdB: string }
+  | { type: "transferOwnChip"; fromHandId: string; toHandId: string }
+  | { type: "proposeChipMove"; initiatorHandId: string; recipientHandId: string }
   | { type: "acceptChipMove"; initiatorHandId: string; recipientHandId: string }
   | { type: "rejectChipMove"; initiatorHandId: string; recipientHandId: string }
-  | { type: "cancelChipMove"; initiatorHandId: string; recipientHandId: string } // initiator withdraws their own proposal
-  | { type: "ready"; ready: boolean } // preflop→river
-  | { type: "flip"; handId: string } // reveal phase, own hand only
-  | { type: "unclaim"; handId: string } // return own chip back to the board
-  | { type: "playAgain" } // reveal phase, creator only
-  | { type: "endGame" } // any game phase, creator only — returns to lobby
-  | { type: "ding" } // ring the bell
-  | { type: "fuckoff" } // broadcast fuck-off reaction
-  | { type: "chat"; text: string } // room chat message
-  | { type: "kick"; playerId: string } // lobby only, creator only
-  | { type: "leave" } // lobby only
-  | { type: "addBot" }; // lobby only, creator only — server picks a name
+  | { type: "cancelChipMove"; initiatorHandId: string; recipientHandId: string }
+  | { type: "ready"; ready: boolean }
+  | { type: "flip"; handId: string }
+  | { type: "unclaim"; handId: string }
+  | { type: "playAgain" }
+  | { type: "endGame" }
+  | { type: "ding" }
+  | { type: "fuckoff" }
+  | { type: "chat"; text: string }
+  | { type: "kick"; playerId: string }
+  | { type: "leave" }
+  | { type: "addBot" };
 
+/**
+ * All messages sent from the PartyKit server to connected clients.
+ * `state` is the primary message type — it carries the full masked game state.
+ */
 export type ServerMessage =
   | { type: "state"; state: GameState }
   | { type: "welcome"; playerId: string }

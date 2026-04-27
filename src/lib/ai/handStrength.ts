@@ -4,15 +4,22 @@ import { createDeck } from "../deckUtils";
 
 import { Hand as PokerHand } from "pokersolver";
 
+/** Numeric value for each rank, used by preflop heuristics. */
 const RANK_VALUE: Record<Rank, number> = {
   "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9,
   T: 10, J: 11, Q: 12, K: 13, A: 14,
 };
 
+/** Unique string key for a card, used for Set deduplication. */
 function cardKey(c: Card): string {
   return c.rank + c.suit;
 }
 
+/**
+ * Chen-style preflop heuristic returning a strength score in [0, 1].
+ * Premium hands (AA) → ~1.0, weak hands (72o) → ~0.2.
+ * Used as a fast path when no community cards are visible.
+ */
 function preflopStrength(hole: Card[]): number {
   // Returns a [0, 1] score derived from Chen-style preflop heuristics.
   if (hole.length !== 2) return 0.5;
@@ -40,6 +47,7 @@ function preflopStrength(hole: Card[]): number {
   return Math.max(0, Math.min(1, score));
 }
 
+/** Fisher-Yates shuffle, mutates the array in place. */
 function shuffleInPlace<T>(arr: T[]): void {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -47,6 +55,19 @@ function shuffleInPlace<T>(arr: T[]): void {
   }
 }
 
+/**
+ * Estimate how strong a hole-card hand is against random opponents.
+ *
+ * - Preflop (board.length === 0): uses fast Chen-style heuristic.
+ * - Postflop: runs Monte Carlo rollouts. For each simulation, completes the board
+ *   and deals random opponent hands, then compares via pokersolver.
+ *
+ * @param hole       The player's hole cards (usually 2).
+ * @param board      Visible community cards.
+ * @param fieldSize  Number of opponents to simulate against.
+ * @param nSims      Number of Monte Carlo simulations (default 40).
+ * @returns          Win rate in [0, 1], or 0.5 for unknown/invalid inputs.
+ */
 export function estimateStrength(
   hole: Card[],
   board: Card[],

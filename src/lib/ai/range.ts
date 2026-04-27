@@ -1,29 +1,34 @@
-// Range estimation — for each teammate hand, maintain a weighted distribution
-// over plausible 2-card hole combos consistent with current public info.
-//
-// The bot can't see teammate hole cards, but it can update beliefs from
-// placements, swaps, accepts, and rejects. A teammate placing hand H at
-// slot K of N is evidence that, in their view, H's strength is in the
-// (1 - K/(N-1)) percentile. We re-weight combos by how compatible they are
-// with that placement, given the current board.
-//
-// Structure: per teammate hand, a Map<comboKey, weight>. Per phase, a cached
-// percentile lookup keyed by the combo — the "absolute strength" of a combo
-// on the current board, expressed as a percentile in [0, 1] across all
-// non-excluded combos.
+/**
+ * Range estimation — weighted distributions over plausible hole-card combos.
+ *
+ * For each teammate hand we can't see, we maintain a Map<comboKey, weight>
+ * representing which 2-card holdings are consistent with public info and
+ * observed placements. A teammate placing hand H at slot K of N is evidence
+ * that H's strength is near the (1 - K/(N-1)) percentile. We re-weight combos
+ * by Gaussian likelihood of that implied percentile, given the current board.
+ *
+ * Also maintains a cached `PercentileMap`: for each combo, its absolute
+ * strength on the current board (computed via pokersolver postflop, or a
+ * Chen heuristic preflop).
+ */
 
 import type { Card } from "../types";
 import { Hand as PokerHand } from "pokersolver";
 import { cardToPokersolverStr } from "../utils";
 import { createDeck } from "../deckUtils";
 
-export type ComboKey = string; // e.g. "AS-KH" with deterministic order
+/** String key for a 2-card combo, e.g. "AS-KH". Deterministic order. */
+export type ComboKey = string;
 
+/** Weighted distribution over plausible hole-card combos for a single hand. */
 export type RangeBelief = {
-  weights: Map<ComboKey, number>; // sum can be anything; consumers normalize
-  observations: number;           // number of placements folded in
+  /** Unnormalized weights; consumers normalize on read. */
+  weights: Map<ComboKey, number>;
+  /** Number of placement observations that have been folded in. */
+  observations: number;
 };
 
+/** Create an empty range belief with no weights. */
 export function newRangeBelief(): RangeBelief {
   return { weights: new Map(), observations: 0 };
 }
@@ -32,16 +37,20 @@ function cardKey(c: Card): string {
   return c.rank + c.suit;
 }
 
-// Deterministic combo key — sorted by cardKey so {AS, KH} and {KH, AS}
-// collapse to the same identity.
+/**
+ * Deterministic combo key for two cards.
+ * Sorts by cardKey so {AS, KH} and {KH, AS} collapse to the same identity.
+ */
 export function makeComboKey(a: Card, b: Card): ComboKey {
   const ka = cardKey(a);
   const kb = cardKey(b);
   return ka < kb ? `${ka}-${kb}` : `${kb}-${ka}`;
 }
 
-// Initialize a teammate-hand range over all combos consistent with current
-// exclusions. Each combo starts with uniform weight 1.
+/**
+ * Initialize a range belief over all combos consistent with known exclusions.
+ * Each valid combo starts with uniform weight 1.
+ */
 export function initRange(
   excluded: Set<string>,
   deck: Card[]
@@ -56,11 +65,12 @@ export function initRange(
   return out;
 }
 
-// Per-board percentile lookup. For each candidate combo, compute its
-// pokersolver score against current board (or use a cheap preflop heuristic
-// for empty boards). Sort to derive a percentile in [0, 1].
-//
-// Preflop: Chen-style heuristic (same scale used in handStrength.ts).
+/**
+ * Map from combo key to its percentile strength on the current board.
+ *
+ * For postflop boards, percentiles are derived from pokersolver ranks.
+ * For empty boards (preflop), a Chen-style heuristic provides the score.
+ */
 export type PercentileMap = Map<ComboKey, number>;
 
 const RANK_VALUE: Record<string, number> = {
@@ -88,6 +98,13 @@ function preflopScalar(a: Card, b: Card): number {
   return Math.max(0, Math.min(1, score));
 }
 
+/**
+ * Build a percentile map for all possible 2-card combos on the given board.
+ *
+ * Excludes cards known to be unavailable (board cards, own hole cards, flipped
+ * hands). Each remaining combo is scored and sorted; the percentile is its
+ * position in the sorted list (0 = weakest, 1 = strongest).
+ */
 export function buildPercentileMap(
   excluded: Set<string>,
   board: Card[]
@@ -125,12 +142,15 @@ export function buildPercentileMap(
   return out;
 }
 
-// Bayesian update: a teammate placed hand H at slot K of totalHands. The
-// implied strength is impliedQ = 1 - K/(N-1). For each combo, multiply weight
-// by Gaussian likelihood of (impliedQ - percentile).
-//
-// sigma controls how informative the observation is. Preflop placements are
-// noisy (low information), river placements are sharp.
+/**
+ * Bayesian update of a range belief from a single placement observation.
+ *
+ * A teammate placing hand H at slot K of N implies strength ≈ 1 - K/(N-1).
+ * For each combo, we multiply its weight by the Gaussian likelihood of
+ * (impliedStrength - comboPercentile), with standard deviation `sigma`.
+ * Smaller sigma = sharper update (used on later phases where placements are
+ * more reliable).
+ */
 export function applyPlacement(
   range: RangeBelief,
   percentiles: PercentileMap,
@@ -157,8 +177,10 @@ export function applyPlacement(
   }
 }
 
-// Strip combos that are no longer consistent (e.g., because we just learned
-// a card is on the board or in another revealed hand).
+/**
+ * Remove combos from a range that are inconsistent with newly known cards.
+ * Called when the board changes or a hand is flipped, revealing new cards.
+ */
 export function pruneByExclusions(range: RangeBelief, excluded: Set<string>): void {
   for (const key of Array.from(range.weights.keys())) {
     const [a, b] = key.split("-");
@@ -166,8 +188,11 @@ export function pruneByExclusions(range: RangeBelief, excluded: Set<string>): vo
   }
 }
 
-// Weighted-mean percentile across the range — what we plug into the team-EV
-// scorer in place of a scalar belief mean.
+/**
+ * Weighted-mean percentile across a range belief.
+ * This is the value plugged into the team-EV scorer in place of a scalar
+ * belief mean when range-derived strength is active.
+ */
 export function rangeMeanStrength(
   range: RangeBelief,
   percentiles: PercentileMap
@@ -184,9 +209,11 @@ export function rangeMeanStrength(
   return acc / totalW;
 }
 
-// Effective sample size = (Σw)² / Σw² ; high ESS means the range is still
-// diffuse, low ESS means it's collapsed onto a few combos. Useful as a
-// confidence proxy for downstream consumers.
+/**
+ * Effective sample size of a range belief: (Σw)² / Σw².
+ * High ESS → the range is still diffuse (many combos have similar weight).
+ * Low ESS → the range has collapsed onto a few combos.
+ */
 export function effectiveSampleSize(range: RangeBelief): number {
   let sum = 0, sumSq = 0;
   for (const w of range.weights.values()) {
@@ -197,8 +224,10 @@ export function effectiveSampleSize(range: RangeBelief): number {
   return (sum * sum) / sumSq;
 }
 
-// Confidence in [0, 1] derived from how much the range has narrowed.
-// Empty/uniform → 0.3; very tight → 0.95.
+/**
+ * Confidence in [0, 1] derived from how much the range has narrowed.
+ * Empty or uniform → ~0.3; collapsed onto few combos → ~0.95.
+ */
 export function rangeConfidence(range: RangeBelief): number {
   if (range.weights.size === 0) return 0.3;
   const ess = effectiveSampleSize(range);
@@ -209,8 +238,12 @@ export function rangeConfidence(range: RangeBelief): number {
   return Math.min(0.95, 0.3 + 0.65 * narrowness);
 }
 
-// Decay observations toward uniform — used at phase boundary because the
-// previous phase's placements were made on a different board.
+/**
+ * Decay a range belief toward uniform weights.
+ * Called at phase boundaries because the previous phase's placements were
+ * made on a different board and are now stale signal.
+ * @param alpha  Blend factor toward uniform (0 = no change, 1 = fully uniform).
+ */
 export function decayRange(range: RangeBelief, alpha: number): void {
   if (range.weights.size === 0) return;
   const uniform = 1 / range.weights.size;

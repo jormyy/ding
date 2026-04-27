@@ -1,5 +1,21 @@
+/**
+ * Chip move utilities: classify and apply inter-player chip transfers.
+ *
+ * The server auto-determines the "kind" of a chip move from the current
+ * ranking state. This ensures players only need to pick two hands; the
+ * system figures out whether it's an acquire, offer, or swap.
+ */
+
 import type { AcquireRequest, AcquireRequestKind } from "./types";
 
+/**
+ * Classify a chip move between two hands based on their current ranking.
+ *
+ * - **Acquire**: initiator is unranked, recipient is ranked.
+ * - **Offer**: initiator is ranked, recipient is unranked.
+ * - **Swap**: both are ranked.
+ * - **null**: both are unranked (invalid — nothing to move).
+ */
 export function classifyChipMoveKind(
   ranking: (string | null)[],
   initiatorHandId: string,
@@ -13,8 +29,12 @@ export function classifyChipMoveKind(
   return null;
 }
 
-// Returns a new ranking with the chip move applied.
-// Returns a copy of the original if indices are invalid for the given kind.
+/**
+ * Apply a chip move to a ranking array, returning a new array.
+ *
+ * Does not mutate the input. Returns a copy if indices are invalid for the
+ * given kind (e.g., trying to acquire when the recipient is already unranked).
+ */
 export function applyChipMoveToRanking(
   ranking: (string | null)[],
   kind: AcquireRequestKind,
@@ -39,6 +59,10 @@ export function applyChipMoveToRanking(
   return next;
 }
 
+/**
+ * Remove any pending requests that involve the given hand IDs.
+ * Called after a move/swap/unclaim to clear stale proposals.
+ */
 export function clearRequestsForHands(
   requests: AcquireRequest[],
   handIds: string[]

@@ -12,48 +12,84 @@ import {
 } from "./range";
 import { createDeck } from "../deckUtils";
 
-// Belief: for each teammate hand we don't own, a posterior over its strength
-// in [0,1]. Stored as (mean, concentration) — a lightweight Beta proxy.
+/**
+ * Belief system: probabilistic inference over teammate hand strengths.
+ *
+ * For each teammate hand we can't see, we maintain:
+ * 1. A scalar belief (mean + concentration) updated from observed slot placements.
+ * 2. A range belief (weighted distribution over plausible 2-card combos).
+ *
+ * Both are updated every tick via `perceiveState()`, which detects churn,
+ * folds new placements, and blends range-derived strength with scalar belief.
+ */
+
+/**
+ * Scalar belief for a single teammate hand.
+ * Modeled as (mean, concentration) — a lightweight Beta proxy.
+ */
 export type HandBelief = {
-  mean: number;          // posterior mean strength
-  concentration: number; // pseudo-observations; higher = tighter
+  /** Posterior mean strength in [0, 1]. */
+  mean: number;
+  /** Pseudo-observations; higher = tighter distribution. */
+  concentration: number;
+  /** Last observed slot index, or null if never placed. */
   lastSlot: number | null;
-  slotStableFor: number; // ticks the hand has sat at the same slot (within a phase)
-  // Closing slot at each prior phase boundary, in order — used to recognize
-  // stable cross-phase placements as stronger evidence than any single read.
+  /** Consecutive ticks this hand has sat at the same slot (within a phase). */
+  slotStableFor: number;
+  /**
+   * Closing slot at each prior phase boundary, most recent last.
+   * Used to reward cross-phase consistency as stronger evidence.
+   */
   phaseSlots: number[];
 };
 
+/** Belief state for a single teammate player. */
 export type TeammateBelief = {
-  hands: Map<string, HandBelief>; // handId -> belief
-  churnRate: number;              // 0..1 — recent reorder frequency
-  skillPrior: number;             // 0..1 — how "good" we think they are (updated at reveal)
-  // Opponent habit tracking — behavioral patterns learned across rounds.
+  /** Per-hand scalar beliefs for this teammate. */
+  hands: Map<string, HandBelief>;
+  /** 0..1 — how often this teammate reorders hands recently. */
+  churnRate: number;
+  /** 0..1 — estimated skill of this teammate (updated at reveal from placement accuracy). */
+  skillPrior: number;
+  /** Behavioral patterns learned across rounds. */
   habits: TeammateHabits;
 };
 
+/** Learned behavioral patterns for a teammate, updated at each reveal. */
 export type TeammateHabits = {
-  proposalsInitiated: number;   // total proposals they've started
-  proposalsAccepted: number;    // total they've accepted
-  proposalsRejected: number;    // total they've rejected
-  placementLatency: number;     // EMA of ticks before first placement per phase (0 = fast)
-  slotAdjustments: number;      // how often they reposition within a phase
-  overvaluationBias: number;    // EMA of (impliedSlot - trueSlot) — positive = overvalues
-  phasesObserved: number;       // denominator for EMA updates
+  /** Total proposals they've initiated. */
+  proposalsInitiated: number;
+  /** Total proposals they've accepted. */
+  proposalsAccepted: number;
+  /** Total proposals they've rejected. */
+  proposalsRejected: number;
+  /** EMA of ticks before first placement per phase (0 = very fast). */
+  placementLatency: number;
+  /** How often they reposition within a phase. */
+  slotAdjustments: number;
+  /** EMA of (impliedSlot - trueSlot); positive means they systematically overvalue hands. */
+  overvaluationBias: number;
+  /** Number of phases observed (denominator for EMAs). */
+  phasesObserved: number;
 };
 
+/** Full belief state for a bot — per-teammate data plus cached lookups. */
 export type BeliefState = {
-  perTeammate: Map<string, TeammateBelief>; // playerId -> belief
-  // Cached per-hand posterior strength (handId -> mean). Flattened view.
+  /** playerId → per-teammate belief bucket. */
+  perTeammate: Map<string, TeammateBelief>;
+  /** Cached flattened view: handId → posterior mean strength. */
   handStrength: Map<string, number>;
-  handConfidence: Map<string, number>; // handId -> 0..1
-  // Per-teammate-hand range over plausible hole-card combos.
-  ranges: Map<string, RangeBelief>; // handId -> RangeBelief
-  // Cached per-board percentile lookup; rebuilt at phase boundary.
+  /** Cached flattened view: handId → confidence in [0, 1]. */
+  handConfidence: Map<string, number>;
+  /** handId → weighted distribution over plausible 2-card combos. */
+  ranges: Map<string, RangeBelief>;
+  /** Cached percentile map for the current board; rebuilt when board changes. */
   percentiles: PercentileMap | null;
+  /** Phase + board signature used to invalidate stale percentile caches. */
   percentilesPhaseSig: string;
 };
 
+/** Create a fresh empty belief state. */
 export function newBeliefState(): BeliefState {
   return {
     perTeammate: new Map(),
@@ -86,10 +122,13 @@ function getOrInitTeammate(b: BeliefState, pid: string, skillPrior = 0.5): Teamm
   return t;
 }
 
-// How much we trust slot-implied strength as a postflop signal at each phase.
-// Hole-card-only "rankings" (preflop) correlate weakly with final hand
-// strength, so preflop placements should barely move the posterior. By the
-// river the teammate has full board information; that placement is gospel.
+/**
+ * How much we trust a slot placement as evidence of true hand strength.
+ *
+ * Preflop placements are noisy (players only see their own 2 cards), so they
+ * get low weight. By the river, teammates have full board info — their
+ * placement is high-signal evidence.
+ */
 export function phaseTrust(phase: string): number {
   switch (phase) {
     case "preflop": return 0.25;
@@ -101,10 +140,16 @@ export function phaseTrust(phase: string): number {
   }
 }
 
-// Likelihood-weighted update: a teammate placing hand H at slot K/N is evidence
-// that (in their estimation) H is the K-th strongest. We fold that into a
-// posterior mean, weighted by teammate skill, slot stability, and the
-// reliability of slot-as-strength-signal at this phase.
+/**
+ * Fold a single observed slot placement into the scalar belief for a hand.
+ *
+ * A teammate placing hand H at slot K of N total implies they believe H has
+ * strength ≈ 1 - K/(N-1). This observation is weighted by:
+ * - Teammate skillPrior (high-skill teammates are more credible)
+ * - Slot stability (hands that sit still are stronger signal)
+ * - Cross-phase consistency (same slot in prior phases = stronger evidence)
+ * - phaseTrustWeight (how informative this phase's placements are)
+ */
 export function updateFromPlacement(
   b: BeliefState,
   teammateId: string,
@@ -178,8 +223,10 @@ function findHandBelief(b: BeliefState, handId: string): HandBelief | null {
   return null;
 }
 
-// Decay confidence when a teammate churns (moves a hand they had previously
-// placed). Called once per observed relocation.
+/**
+ * Decay confidence in a hand when its owner moves it to a different slot.
+ * Called once per observed relocation during `perceiveState()`.
+ */
 export function decayOnChurn(b: BeliefState, teammateId: string, handId: string): void {
   const t = b.perTeammate.get(teammateId);
   if (!t) return;
@@ -191,16 +238,15 @@ export function decayOnChurn(b: BeliefState, teammateId: string, handId: string)
   b.handConfidence.set(handId, Math.min(1, hb.concentration / 10));
 }
 
-// Called once per round when phase transitions to "reveal" — by then we know
-// the true ranking. Score each teammate's placement accuracy and update their
-// skillPrior with EMA. A teammate who consistently places hands at their
-// truth-implied slots earns higher trust; one who's off gets less weight on
-// their placements next round.
-//
-// We use a faster EMA (0.6/0.4) than the original 0.7/0.3 so a single
-// disastrous round actually shifts trust — the old setting was too sticky.
-// We also weight by how many hands the teammate had: 4 placed hands is
-// stronger evidence than 1.
+/**
+ * Calibrate teammate skill estimates at reveal using ground truth.
+ *
+ * Compares each teammate's final placements to the true ranking and updates
+ * their `skillPrior` via EMA. Accurate teammates earn higher trust (their
+ * future placements get more weight); inaccurate ones lose trust.
+ *
+ * Also updates `overvaluationBias` habit tracking from signed placement errors.
+ */
 export function updateSkillFromReveal(
   b: BeliefState,
   state: GameState,
@@ -251,14 +297,14 @@ export function updateSkillFromReveal(
   }
 }
 
+/**
+ * Reset transient per-phase belief state at phase boundaries.
+ *
+ * New community cards make previous slot-implied strengths stale, so we
+ * decay concentrations and reset slot trackers. Before resetting, we snapshot
+ * the closing slot into `phaseSlots` so cross-phase consistency bonuses work.
+ */
 export function onPhaseBoundary(b: BeliefState): void {
-  // Phase change = new community cards = previous slot-implied strengths are
-  // stale signal. Decay both confidence in past observations and the per-hand
-  // posterior weight so fresh placements at the new phase dominate.
-  //
-  // Before resetting lastSlot, snapshot the closing slot into phaseSlots so
-  // future improvements can read trajectory; today the field is observed
-  // but not yet consumed by the posterior update.
   for (const t of b.perTeammate.values()) {
     t.churnRate *= 0.7;
     for (const hb of t.hands.values()) {
@@ -312,12 +358,17 @@ function rangeSigmaForPhase(phase: string): number {
 }
 
 
-// Walk the current ranking and fold all placements from teammates into belief.
-// Cheap and idempotent — safe to call on every tick.
-//
-// Detects "churn": a teammate hand whose slot has changed since we last saw
-// it placed. We decay confidence in that hand before re-folding the new
-// placement, so flaky teammates lose authority instead of accumulating it.
+/**
+ * Main perception loop — call once per bot tick.
+ *
+ * 1. Build a map of current slot placements for all teammate hands.
+ * 2. Detect churn (slot changes since last tick) and decay confidence.
+ * 3. Fold current placements into scalar beliefs via `updateFromPlacement()`.
+ * 4. Refresh range percentiles for the current board.
+ * 5. Update range beliefs with new observations and blend with scalar beliefs.
+ *
+ * Safe to call repeatedly — it is idempotent for unchanged state.
+ */
 export function perceiveState(
   b: BeliefState,
   state: GameState,
@@ -438,18 +489,17 @@ function refreshRangePercentiles(
   b.percentilesPhaseSig = sig;
 }
 
-// Reconcile pending trades against last tick's snapshot. A request that has
-// vanished was either accepted (the ranking now reflects the swap) or
-// rejected/cancelled. Each gives us a different signal:
-//
-//   accepted: TWO bots agree on the relative strength of these hands. Boost
-//             concentration on both at their post-swap slots — we have
-//             multi-observer evidence.
-//
-//   rejected: the recipient affirmed their hand belongs where it sits. Boost
-//             concentration on the recipient's hand at its current slot.
-//             (Don't update our self-estimate of own hands — those come from
-//             Monte Carlo math, not social signal.)
+/**
+ * Reconcile pending trades from the previous tick against current state.
+ *
+ * A request that disappeared was either:
+ * - **Accepted**: the ranking now reflects the move. We boost concentration on
+ *   both hands (multi-observer evidence is stronger than single placement).
+ * - **Rejected/Cancelled**: the recipient affirmed their current placement.
+ *   We boost concentration on the recipient hand at its current slot.
+ *
+ * Also updates habit counters (proposalsAccepted / proposalsRejected) on the initiator.
+ */
 export function reconcileTrades(
   b: BeliefState,
   state: GameState,
