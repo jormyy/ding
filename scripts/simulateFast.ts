@@ -15,6 +15,7 @@ import { randomTraits, type Traits } from "../src/lib/ai/personality";
 import type { Archetype } from "../src/lib/ai/archetypes";
 import type { ClientMessage } from "../src/lib/types";
 import type * as Party from "partykit/server";
+import { computeTrueRanks } from "../party/scoring";
 
 function argOr(name: string, fallback: number): number {
   const i = process.argv.indexOf("--" + name);
@@ -188,18 +189,19 @@ async function runOneGame(gameIdx: number): Promise<SimResult> {
           // weight ~ infinity).
           let tb = rec.memo.belief.perTeammate.get(h.playerId);
           if (!tb) {
-            tb = { hands: new Map(), churnRate: 0, skillPrior: 1.0 };
+            tb = { hands: new Map(), churnRate: 0, skillPrior: 1.0, habits: { proposalsInitiated: 0, proposalsAccepted: 0, proposalsRejected: 0, placementLatency: 0.5, slotAdjustments: 0, overvaluationBias: 0, phasesObserved: 0 } };
             rec.memo.belief.perTeammate.set(h.playerId, tb);
           }
           tb.skillPrior = 1.0;
           let hb = tb.hands.get(h.id);
           if (!hb) {
-            hb = { mean: ts, concentration: 999, lastSlot: null, slotStableFor: 999 };
+            hb = { mean: ts, concentration: 999, lastSlot: null, slotStableFor: 999, phaseSlots: [] };
             tb.hands.set(h.id, hb);
           } else {
             hb.mean = ts;
             hb.concentration = 999;
             hb.slotStableFor = 999;
+            if (!hb.phaseSlots) hb.phaseSlots = [];
           }
           rec.memo.belief.handStrength.set(h.id, ts);
           rec.memo.belief.handConfidence.set(h.id, 1.0);
@@ -213,11 +215,13 @@ async function runOneGame(gameIdx: number): Promise<SimResult> {
     if (s.phase === "reveal" && s.score !== null) break;
     setOracleBeliefs();
 
-    // Integrity: per-tick pulse of the ranking-duplicate check (only count
-    // each unique violation, not per-tick).
-    const claimed = s.ranking.filter((x): x is string => x !== null);
-    if (new Set(claimed).size !== claimed.length) integrityFailures++;
-    if (s.hands.length > 0 && s.ranking.length !== s.hands.length) integrityFailures++;
+    // Integrity: count at most one violation per game.
+    if (integrityFailures === 0) {
+      const claimed = s.ranking.filter((x): x is string => x !== null);
+      if (new Set(claimed).size !== claimed.length || (s.hands.length > 0 && s.ranking.length !== s.hands.length)) {
+        integrityFailures++;
+      }
+    }
 
     // Iterate all current players (creator first, then bots, in stable order).
     let actedThisWave = false;
@@ -291,8 +295,11 @@ async function runOneGame(gameIdx: number): Promise<SimResult> {
   // Diagnostic: split inversions into "controllable" (own pairs) vs cross-player.
   let ownInv = 0, crossInv = 0;
   if (finalState.trueRanking) {
+    const trueRanks = computeTrueRanks(finalState.trueRanking, finalState.hands, finalState.allCommunityCards);
     const truePos = new Map<string, number>();
-    finalState.trueRanking.forEach((id, i) => truePos.set(id, i));
+    for (const [hid, rank] of Object.entries(trueRanks)) {
+      truePos.set(hid, rank - 1); // convert 1-based rank to 0-based position
+    }
     const claimed = finalState.ranking.filter((x): x is string => x !== null);
     const handOwner = new Map<string, string>();
     for (const h of finalState.hands) handOwner.set(h.id, h.playerId);

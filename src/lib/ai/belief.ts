@@ -148,7 +148,7 @@ export function updateFromPlacement(
   // Base weight: 0.2–0.5 depending on skill; doubled for very high-skill
   // teammates so the professor/anchors lead the table effectively.
   const skillWeight = skillPrior < 0.65 ? 0.2 : skillPrior;
-  const w = (0.3 + 0.5 * skillWeight + 0.2 * Math.min(3, hb.slotStableFor) + crossPhaseBonus) * phaseTrustWeight;
+  const w = (0.3 + 0.5 * skillWeight + 0.3 * Math.min(5, hb.slotStableFor) + crossPhaseBonus) * phaseTrustWeight;
   const total = hb.concentration + w;
   hb.mean = (hb.mean * hb.concentration + impliedStrength * w) / total;
   hb.concentration = Math.min(20, total);

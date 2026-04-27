@@ -68,7 +68,20 @@ export const flip: Handler = (state, player, msg) => {
 
   const currentRevealIdx = state.ranking.length - 1 - state.revealIndex;
   const handToFlipId = state.ranking[currentRevealIdx];
-  if (!handToFlipId) return { kind: "ignore" };
+
+  // Skip unranked (null) slots — e.g. offline players who never placed.
+  if (!handToFlipId) {
+    state.revealIndex++;
+    if (state.revealIndex >= totalHands) {
+      state.score = countInversions(
+        state.ranking,
+        state.trueRanking!,
+        state.hands,
+        state.allCommunityCards
+      );
+    }
+    return { kind: "broadcast" };
+  }
 
   const handToFlip = state.hands.find((h) => h.id === handToFlipId);
   if (!handToFlip) return { kind: "ignore" };
