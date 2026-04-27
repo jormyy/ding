@@ -2,6 +2,7 @@
 
 import type { GameState } from "@/lib/types";
 import { CardFace } from "../../CardFace";
+import VolumeControl from "../../VolumeControl";
 import { D } from "@/lib/theme";
 
 interface RevealHeaderProps {
@@ -89,6 +90,7 @@ export default function RevealHeader({
       <div className="flex gap-2">
         <button onClick={onDing} className="w-8 h-8 flex items-center justify-center rounded-full text-lg select-none transition-all active:scale-90" style={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.1)" }}>🔔</button>
         <button onClick={onFuckoff} className="w-8 h-8 flex items-center justify-center rounded-full text-lg select-none transition-all active:scale-90" style={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.1)" }}>🖕</button>
+        <VolumeControl size="sm" buttonStyle={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.1)" }} />
         <button onClick={onToggleMobileChat} className="sm:hidden w-8 h-8 flex items-center justify-center rounded-full text-lg select-none" style={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.1)" }}>💬</button>
       </div>
 

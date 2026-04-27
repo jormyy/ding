@@ -5,6 +5,7 @@ import type { ClientMessage, GameState } from "@/lib/types";
 import PokerTable from "./PokerTable";
 import ChatPanel from "./ChatPanel";
 import RevealResults from "./game/RevealResults";
+import VolumeControl from "./VolumeControl";
 import { D } from "@/lib/theme";
 
 interface RevealProps {
@@ -86,6 +87,7 @@ export default function Reveal({
             <div className="absolute top-3 right-3 z-40 flex flex-col items-end gap-1.5">
               <button onClick={onDing} className="w-9 h-9 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 transition-all text-xl select-none">🔔</button>
               <button onClick={onFuckoff} className="w-9 h-9 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 transition-all text-xl select-none">🖕</button>
+              <VolumeControl size="md" />
               <button onClick={() => setMobileChatOpen((v) => !v)} className="sm:hidden w-9 h-9 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 transition-all text-xl select-none">💬</button>
               <div className="flex flex-col items-end gap-1 pointer-events-none">
                 {dingNotifications.map((n) => (

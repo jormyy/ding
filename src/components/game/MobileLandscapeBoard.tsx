@@ -8,6 +8,7 @@ import ChatPanel from "../ChatPanel";
 import ReadyButton from "../ReadyButton";
 import { CardFace } from "../CardFace";
 import RankChip from "../RankChip";
+import VolumeControl from "../VolumeControl";
 import RequestItem from "./RequestItem";
 
 interface MobileLandscapeBoardProps {
@@ -75,6 +76,7 @@ export default function MobileLandscapeBoard({
         <div className="absolute top-2 right-2 z-20 flex gap-1">
           <button onClick={onDing} className="w-8 h-8 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 text-lg" aria-label="Ding">🔔</button>
           <button onClick={onFuckoff} className="w-8 h-8 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 text-lg" aria-label="Fuck off">🖕</button>
+          <VolumeControl size="sm" />
           <button onClick={() => setMobileChatOpen((v) => !v)} className="w-8 h-8 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 text-lg" aria-label="Chat">💬</button>
         </div>
         {mobileChatOpen && (

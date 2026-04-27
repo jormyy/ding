@@ -5,45 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import PartySocket from "partysocket";
 import type { ClientMessage, GameState, ServerMessage } from "@/lib/types";
 import { NOTIFICATION_FADE_MS } from "@/lib/constants";
+import { playDingSound, playFuckoffSound } from "@/lib/sound";
 import NameModal from "@/components/NameModal";
 import Lobby from "@/components/Lobby";
 import GameBoard from "@/components/GameBoard";
 import Reveal from "@/components/Reveal";
-
-function playDingSound() {
-  try {
-    const ctx = new AudioContext();
-    const freqs = [1318.5, 1760, 2637]; // E6, A6, E7
-    freqs.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "sine";
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.25 / (i + 1), ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.8);
-      osc.start();
-      osc.stop(ctx.currentTime + 1.8);
-    });
-  } catch {
-    // ignore audio errors (e.g. autoplay policy)
-  }
-}
-
-function playFuckoffSound() {
-  try {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance("fuck off");
-    utter.rate = 1.1;
-    utter.pitch = 0.9;
-    utter.volume = 1;
-    window.speechSynthesis.speak(utter);
-  } catch {
-    // ignore audio errors (e.g. autoplay policy, unsupported browser)
-  }
-}
 
 export default function RoomPage() {
   const params = useParams();
