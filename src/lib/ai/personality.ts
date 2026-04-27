@@ -14,7 +14,6 @@ export type Traits = {
   decisiveness: number;
   trustInTeammates: number;
   helpfulness: number;
-  memoryHorizon: number; // 0..4
 
   // Pacing
   baseThinkMs: number;
@@ -42,7 +41,6 @@ function defaultTraits(): Traits {
     decisiveness: 0.5,
     trustInTeammates: 0.5,
     helpfulness: 0.5,
-    memoryHorizon: 2,
 
     baseThinkMs: 6000,
     thinkPerDifficultyMs: 6000,
@@ -73,16 +71,21 @@ export function randomTraits(archetype?: Archetype): { traits: Traits; archetype
 
 // Pacing windows derived from traits + current decision difficulty.
 // difficulty in [0,1] comes from entropy of top-candidate utilities.
-// Global pacing multiplier — bots act ~3x faster than raw trait values imply.
-const PACE_SCALE = 1 / 3;
+// Global pacing multiplier — bots act ~2x faster than raw trait values imply.
+// (Was 1/3 — too fast; humans couldn't orient before bots filled the board.)
+const PACE_SCALE = 1 / 2;
 
 export function thinkDelayMs(traits: Traits, difficulty: number): number {
   const jit = rand(0.85, 1.2);
   return Math.round((traits.baseThinkMs + difficulty * traits.thinkPerDifficultyMs) * jit * PACE_SCALE);
 }
 
+// Wider random range than thinkDelay — gives humans time to look at their
+// hand and the board before any bot acts. Floor is ~3-4s for the fastest
+// archetype (gut/anchor); slower archetypes (professor, deliberator) sit
+// closer to 10-15s on phase entry.
 export function firstActionDelayMs(traits: Traits): number {
-  return Math.round(traits.baseThinkMs * rand(0.8, 1.6) * PACE_SCALE);
+  return Math.round(traits.baseThinkMs * rand(1.5, 3.0) * PACE_SCALE);
 }
 
 const NAMES = [

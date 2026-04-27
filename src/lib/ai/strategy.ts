@@ -4,12 +4,14 @@
 //   2. Evaluation → score candidate actions by team-EV (inversion reduction).
 //   3. Selection  → softmax over top actions, modulated by Traits + Mood.
 
-import type { ClientMessage, GameState, Hand } from "../types";
+import type { AcquireRequest, ClientMessage, GameState, Hand } from "../types";
 import { estimateStrength } from "./handStrength";
 import type { Traits } from "./personality";
 import {
   newBeliefState,
   perceiveState,
+  reconcileTrades,
+  updateSkillFromReveal,
   onPhaseBoundary as beliefOnPhaseBoundary,
   type BeliefState,
 } from "./belief";
@@ -33,7 +35,6 @@ import {
 export type BotMemo = {
   estimates: Map<string, number>;
   estimatesPhase: string;
-  lastActionPhase: string;
   idleTicks: number;
   decisionCount: number;
   recentlyRejected: Set<string>;
@@ -47,13 +48,14 @@ export type BotMemo = {
   stallTicks: number;              // consecutive ticks where everyone ranked but not all ready
   ticksSinceProgress: number;      // ticks since last state-changing action (move/swap/accept/propose/ready)
   myProposalsThisPhase: number;    // proposals I've initiated in the current phase
+  prevAcquireRequests: AcquireRequest[]; // last tick's pending requests — used to classify accept/reject
+  proposalAges: Map<string, number>;     // ticks since each of my proposals was first seen
 };
 
 export function newBotMemo(): BotMemo {
   return {
     estimates: new Map(),
     estimatesPhase: "",
-    lastActionPhase: "",
     idleTicks: 0,
     decisionCount: 0,
     recentlyRejected: new Set(),
@@ -66,14 +68,22 @@ export function newBotMemo(): BotMemo {
     stallTicks: 0,
     ticksSinceProgress: 0,
     myProposalsThisPhase: 0,
+    prevAcquireRequests: [],
+    proposalAges: new Map(),
   };
 }
 
 function commitAction(memo: BotMemo, msg: ClientMessage): void {
+  // Anything that mutates the table or moves negotiation forward counts as
+  // progress — including outgoing proposals and rejections, so the stall
+  // breaker doesn't fire on a bot that's actively trading.
   if (
     msg.type === "move" ||
     msg.type === "swap" ||
     msg.type === "acceptChipMove" ||
+    msg.type === "rejectChipMove" ||
+    msg.type === "proposeChipMove" ||
+    msg.type === "cancelChipMove" ||
     msg.type === "ready"
   ) {
     memo.ticksSinceProgress = 0;
@@ -91,6 +101,25 @@ type Candidate = {
 
 function reqKey(a: string, b: string): string { return a + "|" + b; }
 function rankingSig(r: (string | null)[]): string { return r.map((x) => x ?? "_").join(","); }
+
+// Single source of truth for "should I propose this trade?" — used by both
+// acquire/swap and offer paths. Resignation raises the bar; the per-phase cap
+// stops bot pairs from ping-pong trading; the decision-cap kills voluntary
+// churn after we've already deliberated a lot.
+function canPropose(
+  memo: BotMemo,
+  resignation: number,
+  overDecisionCap: boolean,
+  teamInversionDelta: number,
+  tableSize: number
+): boolean {
+  if (overDecisionCap) return false;
+  if (resignation >= 0.7) return false;
+  const cap = Math.max(4, Math.ceil(tableSize * 0.8));
+  if (memo.myProposalsThisPhase >= cap) return false;
+  const proposeBar = 0.2 + resignation * 2.0;
+  return teamInversionDelta > proposeBar;
+}
 
 function getEstimate(
   memo: BotMemo,
@@ -140,6 +169,12 @@ export function decideAction(
   const nSims = opts?.nSims ?? Math.round(20 + 60 * traits.skill);
 
   if (memo.estimatesPhase !== state.phase) {
+    // When entering reveal we have ground truth — calibrate teammates'
+    // skillPrior before resetting per-phase state. This carries trust
+    // forward into the next round.
+    if (state.phase === "reveal" && state.trueRanking) {
+      updateSkillFromReveal(memo.belief, state, myPlayerId);
+    }
     memo.estimates.clear();
     memo.estimatesPhase = state.phase;
     memo.idleTicks = 0;
@@ -148,8 +183,8 @@ export function decideAction(
     memo.myRejectedKeys.clear();
     memo.ticksSinceProgress = 0;
     memo.myProposalsThisPhase = 0;
-    memo.lastActionPhase = state.phase;
-    beliefOnPhaseBoundary(memo.belief, state.phase);
+    memo.proposalAges.clear();
+    beliefOnPhaseBoundary(memo.belief);
     moodOnPhaseBoundary(memo.mood);
   }
 
@@ -186,7 +221,11 @@ export function decideAction(
   const effectiveAllRanked =
     state.ranking.every((s) => s !== null) || onlyOfflineUnrankedAll;
 
-  if (memo.decisionCount > 40) {
+  // Soft cap: once we've spent a lot of decisions in this phase, prefer to
+  // settle. We still allow mandatory work (placements, responding to incoming
+  // proposals) — just suppress voluntary churn (new proposals/swaps).
+  const overDecisionCap = memo.decisionCount > 40;
+  if (overDecisionCap) {
     if (effectiveAllRanked) {
       const me = state.players.find((p) => p.id === myPlayerId);
       if (me && !me.ready) {
@@ -194,7 +233,8 @@ export function decideAction(
         return { type: "ready", ready: true };
       }
     }
-    return null;
+    // Fall through — we may still need to place a hand or respond to a
+    // proposal targeting us. Voluntary candidates are gated below.
   }
 
   const myHands = state.hands.filter((h) => h.playerId === myPlayerId);
@@ -206,6 +246,13 @@ export function decideAction(
   for (const h of myHands) getEstimate(memo, h, board, fieldSize, nSims);
 
   // === 1. PERCEPTION ===
+  // First: reconcile last tick's pending trades against now. A vanished
+  // request was accepted (slot pattern matches) or rejected — both update
+  // belief with multi-observer evidence.
+  reconcileTrades(memo.belief, state, memo.prevAcquireRequests, myPlayerId);
+  // Snapshot now for next tick. Done BEFORE perceiveState mutates lastSlot
+  // so reconcileTrades next tick can still see the pre-swap slots it needs.
+  memo.prevAcquireRequests = state.acquireRequests.map((r) => ({ ...r }));
   perceiveState(memo.belief, state, myPlayerId);
 
   const sig = rankingSig(state.ranking);
@@ -233,8 +280,16 @@ export function decideAction(
 
   const alreadyReady = !!me?.ready;
 
+  // If a proposal targets ME, do NOT ready — answer first. Otherwise we close
+  // the phase and the proposer never gets a response.
+  const incomingProposal = state.acquireRequests.some((r) => {
+    const rh = state.hands.find((h) => h.id === r.recipientHandId);
+    return rh && rh.playerId === myPlayerId;
+  });
+
   // Hard stall breaker — before any expressive returns so ding loops can't block it.
-  if (effectiveAllRanked && !alreadyReady && (memo.ticksSinceProgress >= 3 || resignation >= 0.85)) {
+  if (effectiveAllRanked && !alreadyReady && !incomingProposal &&
+      (memo.ticksSinceProgress >= 3 || resignation >= 0.85)) {
     memo.ticksSinceProgress = 0;
     return { type: "ready", ready: true };
   }
@@ -242,7 +297,7 @@ export function decideAction(
   const othersAllReady = state.players
     .filter((p) => p.id !== myPlayerId && p.connected)
     .every((p) => p.ready);
-  if (!alreadyReady && myHandsPlaced && othersAllReady && effectiveAllRanked && memo.ticksSinceProgress >= 1) {
+  if (!alreadyReady && !incomingProposal && myHandsPlaced && othersAllReady && effectiveAllRanked && memo.ticksSinceProgress >= 1) {
     memo.ticksSinceProgress = 0;
     return { type: "ready", ready: true };
   }
@@ -335,40 +390,81 @@ export function decideAction(
 
   for (const p of proposalsToMe) {
     const after = rankingAfterChipMove(state.ranking, p.initiatorHandId, p.recipientHandId, p.kind);
-    const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+    // Score from MY view (raw delta).
+    const myScore = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+    // Score from a TRUST-BLENDED view: the proposer is asserting their hand
+    // belongs at its post-move slot. Treat that as evidence proportional to
+    // trustInTeammates. Without this, bots reject objectively-good swaps
+    // because the proposer's hand looks weak from the slot history alone.
+    const totalHands = state.hands.length;
+    const initIdxAfter = after.indexOf(p.initiatorHandId);
+    const trust = traitsM.trustInTeammates;
+    const overrides = new Map<string, number>();
+    if (initIdxAfter !== -1 && totalHands > 1) {
+      const proposerImplied = 1 - initIdxAfter / (totalHands - 1);
+      const myView = memo.belief.handStrength.get(p.initiatorHandId) ?? 0.5;
+      overrides.set(p.initiatorHandId, (1 - trust) * myView + trust * proposerImplied);
+    }
+    const trustedScore = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates, overrides);
+    // Final accept score = blend (with trust as weight) so high-trust bots
+    // weight the proposer's claim more heavily, low-trust bots stay skeptical.
+    const blendedDelta = (1 - trust) * myScore.teamInversionDelta + trust * trustedScore.teamInversionDelta;
+    const acceptScore: typeof myScore = {
+      teamInversionDelta: blendedDelta,
+      confidence: myScore.confidence,
+    };
     const initDefer = deferralWeight(memo.belief, signals, p.initiatorHandId);
-    // Resignation bumps acceptBoost — when we're tired, marginal trades look fine.
     const acceptBoost = traitsM.agreeableness * 0.3
       + initDefer * 0.2 * traitsM.trustInTeammates
-      + resignation * 0.4;
+      + resignation * 0.4
+      + traitsM.trustInTeammates * 0.5; // baseline trust-the-proposer bonus
     candidates.push({
       msg: { type: "acceptChipMove", initiatorHandId: p.initiatorHandId, recipientHandId: p.recipientHandId },
-      score,
-      utility: utilityFor(score, traitsM) + acceptBoost,
+      score: acceptScore,
+      utility: utilityFor(acceptScore, traitsM) + acceptBoost,
     });
 
     const k = reqKey(p.initiatorHandId, p.recipientHandId);
     if (!memo.recentlyRejected.has(k)) {
-      const rejectU = -score.teamInversionDelta * (0.4 + 0.6 * score.confidence)
-        + (1 - traitsM.agreeableness) * 0.25;
+      // Reject only when the swap looks meaningfully bad even after trusting
+      // the proposer. A 0.5 margin keeps marginal trades from being rejected.
+      const rejectMargin = 0.5;
+      const rejectU = (-blendedDelta - rejectMargin) * (0.4 + 0.6 * acceptScore.confidence)
+        + (1 - traitsM.agreeableness) * 0.25
+        - traitsM.trustInTeammates * 0.3;
       candidates.push({
         msg: { type: "rejectChipMove", initiatorHandId: p.initiatorHandId, recipientHandId: p.recipientHandId },
-        score: { teamInversionDelta: -score.teamInversionDelta, confidence: score.confidence },
+        score: { teamInversionDelta: -blendedDelta, confidence: acceptScore.confidence },
         utility: rejectU,
       });
     }
   }
 
+  // Track ages of my own pending proposals — stale ones get cancelled so we
+  // don't block the recipient's queue forever.
+  const myActivePropKeys = new Set<string>();
   for (const p of state.acquireRequests.filter((r) => r.initiatorId === myPlayerId)) {
+    const k = reqKey(p.initiatorHandId, p.recipientHandId);
+    myActivePropKeys.add(k);
+    memo.proposalAges.set(k, (memo.proposalAges.get(k) ?? 0) + 1);
+
     const after = rankingAfterChipMove(state.ranking, p.initiatorHandId, p.recipientHandId, p.kind);
     const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
-    if (score.teamInversionDelta <= 0.05) {
+    const age = memo.proposalAges.get(k) ?? 0;
+    const stale = age >= 5;
+    if (score.teamInversionDelta <= 0.05 || stale) {
       candidates.push({
         msg: { type: "cancelChipMove", initiatorHandId: p.initiatorHandId, recipientHandId: p.recipientHandId },
         score: { teamInversionDelta: 0.1, confidence: score.confidence },
-        utility: 0.15,
+        // Stale cancel beats other low-utility candidates so we actually flush
+        // the queue and try something else.
+        utility: stale ? 0.4 : 0.15,
       });
     }
+  }
+  // Drop ages for proposals that no longer exist.
+  for (const k of Array.from(memo.proposalAges.keys())) {
+    if (!myActivePropKeys.has(k)) memo.proposalAges.delete(k);
   }
 
   const emptySlots: number[] = [];
@@ -377,6 +473,7 @@ export function decideAction(
   for (const h of myUnranked) {
     for (const slot of emptySlots) {
       const after = rankingAfterMove(state.ranking, h.id, slot);
+      if (after === null) continue;
       const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
       candidates.push({
         msg: { type: "move", handId: h.id, toIndex: slot },
@@ -387,37 +484,42 @@ export function decideAction(
   }
 
   if (emptySlots.length > 0) {
-    for (const h of myHands) {
-      const from = state.ranking.indexOf(h.id);
-      if (from === -1) continue;
-      for (const slot of emptySlots) {
-        const after = rankingAfterMove(state.ranking, h.id, slot);
-        const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
-        if (score.teamInversionDelta > 0.2) {
-          candidates.push({
-            msg: { type: "move", handId: h.id, toIndex: slot },
-            score,
-            utility: utilityFor(score, traitsM),
-          });
+    if (!overDecisionCap) {
+      for (const h of myHands) {
+        const from = state.ranking.indexOf(h.id);
+        if (from === -1) continue;
+        for (const slot of emptySlots) {
+          const after = rankingAfterMove(state.ranking, h.id, slot);
+          if (after === null) continue;
+          const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+          if (score.teamInversionDelta > 0.2) {
+            candidates.push({
+              msg: { type: "move", handId: h.id, toIndex: slot },
+              score,
+              utility: utilityFor(score, traitsM),
+            });
+          }
         }
       }
     }
   }
 
-  const myRanked = myHands
-    .map((h) => ({ h, idx: state.ranking.indexOf(h.id) }))
-    .filter((x) => x.idx !== -1);
-  for (let i = 0; i < myRanked.length; i++) {
-    for (let j = i + 1; j < myRanked.length; j++) {
-      const a = myRanked[i], b = myRanked[j];
-      const after = rankingAfterSwap(state.ranking, a.h.id, b.h.id);
-      const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
-      if (score.teamInversionDelta > 0.2) {
-        candidates.push({
-          msg: { type: "swap", handIdA: a.h.id, handIdB: b.h.id },
-          score,
-          utility: utilityFor(score, traitsM),
-        });
+  if (!overDecisionCap) {
+    const myRanked = myHands
+      .map((h) => ({ h, idx: state.ranking.indexOf(h.id) }))
+      .filter((x) => x.idx !== -1);
+    for (let i = 0; i < myRanked.length; i++) {
+      for (let j = i + 1; j < myRanked.length; j++) {
+        const a = myRanked[i], b = myRanked[j];
+        const after = rankingAfterSwap(state.ranking, a.h.id, b.h.id);
+        const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+        if (score.teamInversionDelta > 0.2) {
+          candidates.push({
+            msg: { type: "swap", handIdA: a.h.id, handIdB: b.h.id },
+            score,
+            utility: utilityFor(score, traitsM),
+          });
+        }
       }
     }
   }
@@ -453,15 +555,7 @@ export function decideAction(
       const util = utilityFor(score, traitsM, { teamOnlyBenefit: score.teamInversionDelta })
         - deferPenalty + extraversionBonus;
 
-      // As resignation rises, require a steeper improvement before proposing
-      // — and eventually stop proposing at all. Also cap total proposals per
-      // phase so bot pairs can't ping-pong trades forever and wipe ready state.
-      const proposeBar = 0.3 + resignation * 2.0;
-      if (
-        resignation < 0.7 &&
-        memo.myProposalsThisPhase < 4 &&
-        score.teamInversionDelta > proposeBar
-      ) {
+      if (canPropose(memo, resignation, overDecisionCap, score.teamInversionDelta, state.hands.length)) {
         candidates.push({
           msg: { type: "proposeChipMove", initiatorHandId: h.id, recipientHandId: otherId },
           score,
@@ -495,8 +589,7 @@ export function decideAction(
       const extraversionBonus = (traitsM.extraversion - 0.5) * 0.2;
       const util = utilityFor(score, traitsM, { teamOnlyBenefit: score.teamInversionDelta })
         - deferPenalty + extraversionBonus;
-      const proposeBar = 0.3 + resignation * 2.0;
-      if (resignation < 0.7 && memo.myProposalsThisPhase < 4 && score.teamInversionDelta > proposeBar) {
+      if (canPropose(memo, resignation, overDecisionCap, score.teamInversionDelta, state.hands.length)) {
         candidates.push({
           msg: { type: "proposeChipMove", initiatorHandId: myH.id, recipientHandId: theirH.id },
           score,
@@ -535,30 +628,51 @@ export function decideAction(
   // at reveal is unscoreable — always worse than any placement.
   const haveUnranked = myHands.some((h) => state.ranking.indexOf(h.id) === -1);
   const haveEmpty = state.ranking.some((s) => s === null);
+  // If a proposal targets me, accept/reject must be in the pool — otherwise
+  // proposers wait forever while I'm placing.
+  const mustRespond = proposalsToMe.length > 0;
   let pool = candidates;
-  if (haveUnranked && haveEmpty) {
-    const placeOnly = candidates.filter(
-      (c) => c.msg.type === "move" &&
-        myHands.some((h) => h.id === (c.msg as { handId: string }).handId &&
-          state.ranking.indexOf(h.id) === -1)
+  // Priority 1: if a proposal is targeting me and was already pending last
+  // tick, RESPOND first. The proposer is burning ticks waiting; placements
+  // can wait one cycle. Fresh proposals (just arrived this tick) don't get
+  // priority — placement is still more important than a not-yet-confirmed
+  // request.
+  const stalePropToMe = mustRespond && memo.prevAcquireRequests.some((p) => {
+    const rh = state.hands.find((h) => h.id === p.recipientHandId);
+    return rh && rh.playerId === myPlayerId && state.acquireRequests.some(
+      (cur) => cur.initiatorHandId === p.initiatorHandId && cur.recipientHandId === p.recipientHandId
     );
+  });
+  if (stalePropToMe) {
+    const responses = candidates.filter(
+      (c) => c.msg.type === "acceptChipMove" || c.msg.type === "rejectChipMove"
+    );
+    if (responses.length > 0) pool = responses;
+  } else if (haveUnranked && haveEmpty) {
+    const placeOnly = candidates.filter((c) => {
+      if (c.msg.type === "move") {
+        const m = c.msg as { handId: string };
+        return myHands.some((h) => h.id === m.handId && state.ranking.indexOf(h.id) === -1);
+      }
+      // Always keep responses to incoming proposals so we don't ghost the table.
+      return mustRespond && (c.msg.type === "acceptChipMove" || c.msg.type === "rejectChipMove");
+    });
     if (placeOnly.length > 0) pool = placeOnly;
   }
   const top = pool.slice(0, 3);
 
-  // Never stall when a proposal targets me — must accept or reject so the
-  // table can move on.
-  const mustRespond = proposalsToMe.length > 0;
   if (!mustRespond && !(haveUnranked && haveEmpty) && top[0].utility <= 0 && top[0].msg.type !== "ready") {
     memo.idleTicks++;
     return null;
   }
 
-  const difficulty = Math.min(
-    1,
-    (top[0].utility - (top[top.length - 1]?.utility ?? 0)) < 0.1 ? 1 : 0.4
-  );
-  const honestMisread = Math.random() < (1 - traitsM.skill) * 0.08;
+  // Difficulty: low when top candidate clearly dominates, high when it's a
+  // close call. We use the GAP between #1 and #2 as the signal — a wide gap
+  // means the decision is easy and we should pick deterministically.
+  const gap = top[0].utility - (top[1]?.utility ?? top[0].utility);
+  const difficulty = Math.min(1, gap < 0.1 ? 1 : gap < 0.5 ? 0.6 : gap < 1.5 ? 0.3 : 0.1);
+
+  const honestMisread = Math.random() < Math.min(0.03, (1 - traitsM.skill) * 0.04);
   if (honestMisread && top.length >= 2) {
     memo.decisionCount++;
     memo.idleTicks = 0;
@@ -566,7 +680,11 @@ export function decideAction(
     return top[1].msg;
   }
 
-  const temperature = (1 - traitsM.skill) * 0.5 + memo.mood.concern * 0.4 + difficulty * 0.1;
+  // Temperature collapses toward 0 when top candidate clearly dominates so
+  // we're not gambling on lower-utility options. Skill and mood still pull
+  // it up for genuinely close decisions.
+  const tempBase = (1 - traitsM.skill) * 0.4 + memo.mood.concern * 0.3;
+  const temperature = tempBase * difficulty + 0.05;
   const scores = top.map((c) => c.utility);
   const pick = softmaxPick(top, scores, temperature);
 

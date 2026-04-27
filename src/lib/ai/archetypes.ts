@@ -45,7 +45,6 @@ const PRESETS: Record<Archetype, TraitPatch> = {
   newbie: {
     skill: 0.25, trustInTeammates: 0.85, conscientiousness: 0.5,
     decisiveness: 0.3, hesitationProb: 0.25, baseThinkMs: 7000, thinkPerDifficultyMs: 9000,
-    memoryHorizon: 0,
   },
   worrier: {
     neuroticism: 0.85, conscientiousness: 0.7, decisiveness: 0.3,

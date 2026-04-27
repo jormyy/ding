@@ -4,6 +4,12 @@ import { applyChipMoveToRanking } from "../chipMove";
 
 // Cheap inversion surrogate: given a proposed ranking (array of handIds),
 // plus our best guess at each hand's strength, count pairwise misorderings.
+//
+// We also add a small "absolute position misalignment" term so that the
+// metric isn't degenerate when few hands are placed: with only one placed
+// hand there are no pairs, but we still want to reward putting strong hands
+// in low-index slots. Without this term, the FIRST placement of a phase is
+// essentially random — every empty slot has identical pairwise score.
 export function expectedInversions(
   ranking: (string | null)[],
   strengthOf: (handId: string) => number
@@ -24,11 +30,27 @@ export function expectedInversions(
       if (a.slot > b.slot && a.s > b.s) inv++;
     }
   }
+  // Tie-breaker only: a tiny positional bias so that with only one or two
+  // hands placed (no pairs to compare yet), we still prefer to put strong
+  // hands in low-index slots. Coefficient is small enough that any real
+  // pairwise inversion (cost 1.0) dominates accumulated positional drift.
+  const N = ranking.length;
+  let positional = 0;
+  if (N > 1 && filled.length > 0) {
+    for (const f of filled) {
+      const ideal = (1 - f.s) * (N - 1);
+      const dist = Math.abs(f.slot - ideal);
+      positional += dist;
+    }
+    // Scale so total positional contribution stays well below 1 per hand
+    // even in worst case — this is a tiebreaker, not a score signal.
+    positional *= 0.05;
+  }
   // Penalty for unclaimed slots. A null slot = no chip placed → the hand
   // can't be scored at reveal, which is strictly worse than any ordering
   // mistake. Must dominate pairwise-inversion cost.
   const unclaimed = ranking.filter((x) => x === null).length;
-  return inv + unclaimed * (ranking.length + 1);
+  return inv + positional + unclaimed * (N + 1);
 }
 
 export type ActionScore = {
@@ -56,14 +78,25 @@ function buildStrengthFn(
 
 // Score the outcome of applying a hypothetical ranking change. Returns
 // team-EV in units of (expected) inversion reduction.
+//
+// `trustOverrides` lets callers (typically: evaluating an INCOMING proposal)
+// blend the proposer's implied view with their own belief — a teammate
+// proposing a chip move is asserting "my hand belongs at the new slot",
+// which is evidence we should weight by trust. Without this, bots routinely
+// reject good cross-player swaps because the proposer's hand sits in a
+// "wrong" slot from the recipient's perspective.
 export function scoreAction(
   state: GameState,
   after: (string | null)[],
   myPlayerId: string,
   belief: BeliefState,
-  myEstimates: Map<string, number>
+  myEstimates: Map<string, number>,
+  trustOverrides?: Map<string, number>
 ): ActionScore {
-  const strengthOf = buildStrengthFn(state, myPlayerId, belief, myEstimates);
+  const baseStrengthOf = buildStrengthFn(state, myPlayerId, belief, myEstimates);
+  const strengthOf = trustOverrides
+    ? (handId: string): number => trustOverrides.get(handId) ?? baseStrengthOf(handId)
+    : baseStrengthOf;
   const currInv = expectedInversions(state.ranking, strengthOf);
   const nextInv = expectedInversions(after, strengthOf);
 
@@ -92,21 +125,20 @@ export function scoreAction(
 
 // Helpers that produce the `after` ranking for common actions.
 
+// Returns the ranking after moving `handId` to `toIndex`, or null if the move
+// is illegal (target slot occupied by a different hand). Callers must filter
+// out null candidates so we don't score ghost moves as no-ops.
 export function rankingAfterMove(
   ranking: (string | null)[],
   handId: string,
   toIndex: number
-): (string | null)[] {
+): (string | null)[] | null {
+  if (toIndex < 0 || toIndex >= ranking.length) return null;
   const next = ranking.slice();
   const from = next.indexOf(handId);
-  // Remove from previous slot if any.
+  if (from === toIndex) return null; // no-op
   if (from !== -1) next[from] = null;
-  // If toIndex is occupied, cannot place — return unchanged.
-  if (next[toIndex] !== null && next[toIndex] !== undefined) {
-    // fallback: restore
-    if (from !== -1) next[from] = handId;
-    return next;
-  }
+  if (next[toIndex] !== null && next[toIndex] !== undefined) return null;
   next[toIndex] = handId;
   return next;
 }
