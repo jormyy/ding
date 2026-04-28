@@ -148,7 +148,7 @@ function speak(text: string, rate: number, pitch: number, voiceURI?: string | nu
 
   try {
     const synth = window.speechSynthesis;
-    console.error("[speak] state:", synth.speaking, synth.pending, synth.paused, "voices:", _voices.length, "voice set:", !!voice, "text:", text);
+    console.error("[speak] state:", synth.speaking, synth.pending, synth.paused, "voices:", _voices.length, "voice:", voice?.name ?? "default", "text:", text);
     synth.cancel();
     synth.speak(utter);
     console.error("[speak] after speak(), speaking:", synth.speaking, "pending:", synth.pending);
