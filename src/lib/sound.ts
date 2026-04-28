@@ -94,6 +94,16 @@ function getAudioCtx(): AudioContext {
   return _audioCtx;
 }
 
+export function primeAudio(): void {
+  if (typeof window === "undefined") return;
+  try {
+    const ctx = getAudioCtx();
+    if (ctx.state === "suspended") void ctx.resume();
+  } catch {
+    // ignore
+  }
+}
+
 export function playDingSound(): void {
   const volume = getVolume();
   if (volume <= 0) return;

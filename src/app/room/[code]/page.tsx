@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import PartySocket from "partysocket";
 import type { ClientMessage, GameState, ServerMessage } from "@/lib/types";
 import { NOTIFICATION_FADE_MS } from "@/lib/constants";
-import { playDingSound, playFuckoffSound, speakCustomOutput } from "@/lib/sound";
+import { playDingSound, playFuckoffSound, speakCustomOutput, primeAudio } from "@/lib/sound";
 import NameModal from "@/components/NameModal";
 import Lobby from "@/components/Lobby";
 import GameBoard from "@/components/GameBoard";
@@ -132,6 +132,7 @@ export default function RoomPage() {
   }
 
   function sendDing() {
+    primeAudio(); // unlock AudioContext from user gesture before WS roundtrip
     sendMessage({ type: "ding" });
   }
 
