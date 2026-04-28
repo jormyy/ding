@@ -103,6 +103,10 @@ export type GameState = {
   acquireRequests: AcquireRequest[];
   /** Room chat history, capped at 100 messages server-side. */
   chatMessages: ChatMessage[];
+  /** Recent ding events, newest last. Capped server-side at ~20. */
+  dingLog: SocialSignal[];
+  /** Recent fuckoff events, newest last. Capped server-side at ~20. */
+  fuckoffLog: SocialSignal[];
 };
 
 /** The three kinds of chip moves between players. */
@@ -128,6 +132,15 @@ export type ChatMessage = {
   playerId: string;
   playerName: string;
   text: string;
+  /** Unix timestamp in milliseconds. */
+  ts: number;
+};
+
+/** A social signal event (ding or fuckoff). */
+export type SocialSignal = {
+  playerId: string;
+  playerName: string;
+  phase: Phase;
   /** Unix timestamp in milliseconds. */
   ts: number;
 };

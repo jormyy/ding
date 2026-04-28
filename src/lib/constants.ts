@@ -9,6 +9,7 @@ export const ROOM_CODE_LENGTH = 4;
 export const MAX_CHAT_MESSAGES = 100;
 export const MAX_CHAT_LENGTH = 200;
 export const CHAT_THROTTLE_MS = 1000;
+export const MAX_SIGNAL_LOG = 20;
 
 // Phase order
 export const PHASE_ORDER: Phase[] = [

@@ -38,6 +38,14 @@ import {
   onPhaseBoundary as moodOnPhaseBoundary,
   type Mood,
 } from "./mood";
+import {
+  newSocialMemory,
+  processSocialSignals,
+  shouldSemanticDing,
+  shouldSemanticFuckoff,
+  socialOnPhaseBoundary,
+  type SocialMemory,
+} from "./socialMemory";
 
 /**
  * Per-bot persistent memory across ticks.
@@ -85,6 +93,8 @@ export type BotMemo = {
   classifiedHands: Map<string, ClassifiedHand>;
   /** Phase string for which classifications are valid. */
   handClassifiedPhase: string;
+  /** Social signal memory: tracking dings/fuckoffs from other players. */
+  socialMemory: SocialMemory;
 };
 
 /** Create a fresh bot memo with empty caches and counters. */
@@ -109,6 +119,7 @@ export function newBotMemo(): BotMemo {
     phaseDeferTicks: 0,
     classifiedHands: new Map(),
     handClassifiedPhase: "",
+    socialMemory: newSocialMemory(),
   };
 }
 
@@ -307,6 +318,7 @@ export function decideAction(
     memo.handClassifiedPhase = "";
     beliefOnPhaseBoundary(memo.belief);
     moodOnPhaseBoundary(memo.mood);
+    socialOnPhaseBoundary(memo.socialMemory, state, myPlayerId, memo.classifiedHands, memo.estimates);
   }
 
   if (state.phase === "reveal") {
@@ -413,6 +425,14 @@ export function decideAction(
   // so reconcileTrades next tick can still see the pre-swap slots it needs.
   memo.prevAcquireRequests = state.acquireRequests.map((r) => ({ ...r }));
   perceiveState(memo.belief, state, myPlayerId);
+
+  // === 1a. SOCIAL SIGNALS ===
+  const socialAdj = processSocialSignals(memo.socialMemory, state, myPlayerId);
+  // Apply strength boosts from interpreted teammate dings.
+  for (const [hid, boost] of socialAdj.strengthBoosts) {
+    const cur = memo.belief.handStrength.get(hid) ?? 0.5;
+    memo.belief.handStrength.set(hid, Math.min(1, cur + boost));
+  }
 
   const sig = rankingSig(state.ranking);
   if (memo.lastRankingSig && memo.lastRankingSig !== sig) {
@@ -534,34 +554,58 @@ export function decideAction(
   if (allRankedNow && someoneNotReady) memo.stallTicks++;
   else memo.stallTicks = 0;
 
-  // Expressive events — only when there are no strong actions to take.
-  // Lowered probabilities so bots focus on playing well rather than spamming chat.
-  if (myProposalVanished) {
-    const frustration = (1 - traitsM.agreeableness) * 0.22
-      + traitsM.neuroticism * 0.12
-      + memo.mood.concern * 0.12;
+  // === SEMANTIC EXPRESSIVE EVENTS ===
+  // Global per-phase caps: a bot should not spam signals.
+  const alreadyDingedThisPhase = state.dingLog.some(
+    (s) => s.playerId === myPlayerId && s.phase === state.phase
+  );
+  const alreadyFuckedOffThisPhase = state.fuckoffLog.some(
+    (s) => s.playerId === myPlayerId && s.phase === state.phase
+  );
+
+  // 1. Semantic ding: signal when we have a premium hand or improved.
+  if (!alreadyDingedThisPhase && shouldSemanticDing(state, myPlayerId, memo.classifiedHands, memo.estimates, memo.socialMemory, traitsM)) {
+    memo.idleTicks = 0;
+    return { type: "ding" };
+  }
+
+  // 2. Semantic fuckoff: hard NO to bad proposals / repeat offenders / defense.
+  const semanticFuckoff = !alreadyFuckedOffThisPhase
+    ? shouldSemanticFuckoff(state, myPlayerId, memo, memo.socialMemory, traitsM)
+    : null;
+  if (semanticFuckoff) {
+    memo.idleTicks = 0;
+    return { type: "fuckoff" };
+  }
+
+  // 3. Legacy expressive fallbacks — mood-based noise for personality flavor.
+  // These are lower probability and respect the per-phase caps.
+  if (!alreadyFuckedOffThisPhase && myProposalVanished) {
+    const frustration = (1 - traitsM.agreeableness) * 0.14
+      + traitsM.neuroticism * 0.08
+      + memo.mood.concern * 0.08;
     if (Math.random() < frustration) {
       memo.idleTicks = 0;
       return { type: "fuckoff" };
     }
   }
-  if (confidentChurn) {
-    const complaint = traitsM.extraversion * 0.18 + traitsM.helpfulness * 0.10
-      + memo.mood.concern * 0.08;
+  if (!alreadyDingedThisPhase && confidentChurn) {
+    const complaint = traitsM.extraversion * 0.10 + traitsM.helpfulness * 0.06
+      + memo.mood.concern * 0.04;
     if (Math.random() < complaint) {
       memo.idleTicks = 0;
       return { type: "ding" };
     }
   }
-  if (memo.stallTicks >= 3) {
-    const nudge = traitsM.extraversion * 0.12 + (1 - traitsM.conscientiousness) * 0.06;
+  if (!alreadyDingedThisPhase && memo.stallTicks >= 3) {
+    const nudge = traitsM.extraversion * 0.06 + (1 - traitsM.conscientiousness) * 0.03;
     if (Math.random() < nudge) {
       memo.idleTicks = 0;
       return { type: "ding" };
     }
   }
-  if (memo.mood.concern > 0.6 && traitsM.agreeableness < 0.45) {
-    if (Math.random() < 0.04 * traitsM.extraversion) {
+  if (!alreadyFuckedOffThisPhase && memo.mood.concern > 0.6 && traitsM.agreeableness < 0.45) {
+    if (Math.random() < 0.02 * traitsM.extraversion) {
       memo.idleTicks = 0;
       return { type: "fuckoff" };
     }
@@ -590,7 +634,8 @@ export function decideAction(
     const proposerHand = state.hands.find((x) => x.id === p.initiatorHandId);
     const proposerBelief = proposerHand ? memo.belief.perTeammate.get(proposerHand.playerId) : undefined;
     const proposerSkill = proposerBelief?.skillPrior ?? 0.5;
-    const trust = Math.min(1, baseTrust + proposerSkill * 0.25);
+    const socialTrustPenalty = proposerHand ? (socialAdj.trustPenalties.get(proposerHand.playerId) ?? 0) : 0;
+    const trust = Math.max(0, Math.min(1, baseTrust + proposerSkill * 0.25 - socialTrustPenalty));
     const overrides = new Map<string, number>();
     if (initIdxAfter !== -1 && totalHands > 1) {
       const proposerImplied = 1 - initIdxAfter / (totalHands - 1);
@@ -811,9 +856,11 @@ export function decideAction(
       const defer = deferralWeight(memo.belief, signals, otherId);
       const deferPenalty = defer * 0.5 * coopTraits.trustInTeammates;
       const extraversionBonus = (traitsM.extraversion - 0.5) * 0.2;
+      const defenseMult = otherHand ? (socialAdj.defenseMultipliers.get(otherHand.playerId) ?? 1.0) : 1.0;
+      const socialDefensePenalty = (defenseMult - 1.0) * 0.4;
 
       const util = utilityFor(score, coopTraits, { teamOnlyBenefit: score.teamInversionDelta })
-        - deferPenalty + extraversionBonus;
+        - deferPenalty - socialDefensePenalty + extraversionBonus;
 
       if (score.teamInversionDelta > 1.0 || canPropose(memo, resignation, overDecisionCap, score.teamInversionDelta, state.hands.length, coopEffectiveStubbornness)) {
         candidates.push({
@@ -847,8 +894,10 @@ export function decideAction(
       const defer = deferralWeight(memo.belief, signals, theirH.id);
       const deferPenalty = defer * 0.5 * coopTraits.trustInTeammates;
       const extraversionBonus = (traitsM.extraversion - 0.5) * 0.2;
+      const defenseMult = socialAdj.defenseMultipliers.get(theirH.playerId) ?? 1.0;
+      const socialDefensePenalty = (defenseMult - 1.0) * 0.4;
       const util = utilityFor(score, coopTraits, { teamOnlyBenefit: score.teamInversionDelta })
-        - deferPenalty + extraversionBonus;
+        - deferPenalty - socialDefensePenalty + extraversionBonus;
       if (score.teamInversionDelta > 1.0 || canPropose(memo, resignation, overDecisionCap, score.teamInversionDelta, state.hands.length, coopEffectiveStubbornness)) {
         candidates.push({
           msg: { type: "proposeChipMove", initiatorHandId: myH.id, recipientHandId: theirH.id },
@@ -876,7 +925,13 @@ export function decideAction(
 
   // === 3. SELECTION ===
   if (candidates.length === 0) {
-    const dingP = (1 - traitsM.conscientiousness) * 0.08 + traitsM.extraversion * 0.18;
+    // Idle fallback: very low probability ding for expressive bots.
+    const alreadyDingedThisPhase = state.dingLog.some(
+      (s) => s.playerId === myPlayerId && s.phase === state.phase
+    );
+    const dingP = alreadyDingedThisPhase
+      ? 0
+      : (1 - traitsM.conscientiousness) * 0.03 + traitsM.extraversion * 0.05;
     if (Math.random() < dingP) {
       memo.idleTicks++;
       return { type: "ding" };

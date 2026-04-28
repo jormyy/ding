@@ -213,6 +213,10 @@ export default class DingServer implements Party.Server {
       case "broadcast-raw":
         this.room.broadcast(result.payload);
         break;
+      case "broadcast-raw-and-state":
+        this.room.broadcast(result.payload);
+        this.broadcast();
+        break;
       case "broadcast-close-self":
         this.broadcast();
         if (sender) sender.close();

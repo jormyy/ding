@@ -37,6 +37,8 @@ export function createInitialState(): ServerGameState {
     allCommunityCards: [],
     acquireRequests: [],
     chatMessages: [],
+    dingLog: [],
+    fuckoffLog: [],
   };
 }
 
@@ -77,6 +79,8 @@ export function buildClientState(state: ServerGameState, playerId: string): Game
     rankHistory: state.rankHistory,
     acquireRequests: state.acquireRequests,
     chatMessages: state.chatMessages,
+    dingLog: state.dingLog,
+    fuckoffLog: state.fuckoffLog,
   };
 }
 

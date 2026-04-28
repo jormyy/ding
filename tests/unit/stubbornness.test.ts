@@ -31,6 +31,8 @@ function baseState(opts: Partial<GameState>): GameState {
     rankHistory: {},
     acquireRequests: [],
     chatMessages: [],
+    dingLog: [],
+    fuckoffLog: [],
     ...opts,
   };
 }

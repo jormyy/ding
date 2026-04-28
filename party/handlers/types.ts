@@ -8,6 +8,7 @@ export type HandlerResult =
   | { kind: "ignore" }
   | { kind: "broadcast" }
   | { kind: "broadcast-raw"; payload: string }
+  | { kind: "broadcast-raw-and-state"; payload: string }
   | { kind: "broadcast-close-self" }
 
 export interface HandlerCtx {
