@@ -25,6 +25,14 @@ export default function RoomPage() {
   const [fuckoffNotifications, setFuckoffNotifications] = useState<{ id: string; playerName: string }[]>([]);
 
   const socketRef = useRef<PartySocket | null>(null);
+  const myNameRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (gameState && myId) {
+      const me = gameState.players.find((p) => p.id === myId);
+      myNameRef.current = me?.name ?? null;
+    }
+  }, [gameState, myId]);
 
   const isCustom = gameState?.players.find((p) => p.id === myId)?.isCustom ?? false;
 
@@ -83,14 +91,18 @@ export default function RoomPage() {
             setDingNotifications((prev) => prev.filter((n) => n.id !== id));
           }, NOTIFICATION_FADE_MS);
         } else if (msg.type === "fuckoff") {
-          playFuckoffSound();
+          if (msg.playerName !== myNameRef.current) {
+            playFuckoffSound();
+          }
           const id = crypto.randomUUID();
           setFuckoffNotifications((prev) => [...prev, { id, playerName: msg.playerName }]);
           setTimeout(() => {
             setFuckoffNotifications((prev) => prev.filter((n) => n.id !== id));
           }, NOTIFICATION_FADE_MS);
         } else if (msg.type === "customOutput") {
-          speakCustomOutput(msg.text, msg.rate, msg.pitch);
+          if (msg.playerName !== myNameRef.current) {
+            speakCustomOutput(msg.text, msg.rate, msg.pitch);
+          }
         } else if (msg.type === "error") {
           if (msg.message === "Removed by host") {
             socketRef.current?.close();
@@ -124,6 +136,7 @@ export default function RoomPage() {
   }
 
   function sendFuckoff() {
+    playFuckoffSound();
     sendMessage({ type: "fuckoff" });
   }
 

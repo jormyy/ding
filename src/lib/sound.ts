@@ -64,7 +64,7 @@ export function playFuckoffSound(): void {
     utter.rate = 1.1;
     utter.pitch = 0.9;
     utter.volume = volume;
-    window.speechSynthesis.speak(utter);
+    setTimeout(() => window.speechSynthesis.speak(utter), 0);
   } catch {
     // ignore audio errors (e.g. autoplay policy, unsupported browser)
   }
@@ -80,7 +80,7 @@ export function speakCustomOutput(text: string, rate: number, pitch: number): vo
     utter.rate = rate;
     utter.pitch = pitch;
     utter.volume = volume;
-    window.speechSynthesis.speak(utter);
+    setTimeout(() => window.speechSynthesis.speak(utter), 0);
   } catch {
     // ignore audio errors
   }

@@ -52,6 +52,8 @@ export default function GameBoard({
         toastEl={toastEl}
         onDing={onDing}
         onFuckoff={onFuckoff}
+        dingNotifications={dingNotifications}
+        fuckoffNotifications={fuckoffNotifications}
         isCustom={isCustom}
         onCustomOutput={onCustomOutput}
       />

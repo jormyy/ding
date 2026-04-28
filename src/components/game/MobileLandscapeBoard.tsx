@@ -19,6 +19,8 @@ interface MobileLandscapeBoardProps {
   toastEl: React.ReactNode;
   onDing: () => void;
   onFuckoff: () => void;
+  dingNotifications: { id: string; playerName: string }[];
+  fuckoffNotifications: { id: string; playerName: string }[];
   isCustom: boolean;
   onCustomOutput: (text: string, rate: number, pitch: number) => void;
 }
@@ -30,6 +32,8 @@ export default function MobileLandscapeBoard({
   toastEl,
   onDing,
   onFuckoff,
+  dingNotifications,
+  fuckoffNotifications,
   isCustom,
   onCustomOutput,
 }: MobileLandscapeBoardProps) {
@@ -79,6 +83,14 @@ export default function MobileLandscapeBoard({
           onSlotClick={handleSlotClick}
         />
         <div className="absolute top-2 right-2 z-20 flex gap-1">
+          <div className="flex flex-col items-end gap-1 mr-1 pointer-events-none">
+            {dingNotifications.map((n) => (
+              <div key={n.id} className="bg-gray-900/90 border border-gray-700 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-lg animate-fade-out whitespace-nowrap">{n.playerName} dings</div>
+            ))}
+            {fuckoffNotifications.map((n) => (
+              <div key={n.id} className="bg-red-900/90 border border-red-700 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-lg animate-fade-out whitespace-nowrap">{n.playerName} says fuck off</div>
+            ))}
+          </div>
           <button onClick={onDing} className="w-8 h-8 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 text-lg" aria-label="Ding">🔔</button>
           <button onClick={onFuckoff} className="w-8 h-8 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 text-lg" aria-label="Fuck off">🖕</button>
           <VolumeControl size="sm" />
