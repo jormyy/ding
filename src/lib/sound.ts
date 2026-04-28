@@ -1,4 +1,5 @@
-const STORAGE_KEY = "ding-sound-volume";
+const VOLUME_KEY = "ding-sound-volume";
+const VOICE_KEY = "ding-voice-uri";
 const DEFAULT_VOLUME = 0.6;
 
 type Listener = (v: number) => void;
@@ -11,7 +12,7 @@ function clamp(v: number): number {
 
 export function getVolume(): number {
   if (typeof window === "undefined") return DEFAULT_VOLUME;
-  const raw = window.localStorage.getItem(STORAGE_KEY);
+  const raw = window.localStorage.getItem(VOLUME_KEY);
   if (raw === null) return DEFAULT_VOLUME;
   const n = Number(raw);
   return clamp(n);
@@ -20,7 +21,7 @@ export function getVolume(): number {
 export function setVolume(v: number): void {
   if (typeof window === "undefined") return;
   const c = clamp(v);
-  window.localStorage.setItem(STORAGE_KEY, String(c));
+  window.localStorage.setItem(VOLUME_KEY, String(c));
   listeners.forEach((fn) => fn(c));
 }
 
@@ -30,6 +31,59 @@ export function subscribeVolume(fn: Listener): () => void {
     listeners.delete(fn);
   };
 }
+
+// ── Voices ──────────────────────────────────────────────────────────────────
+
+type VoicesListener = () => void;
+const voicesListeners = new Set<VoicesListener>();
+let _voices: SpeechSynthesisVoice[] = [];
+
+function loadVoices() {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  _voices = window.speechSynthesis.getVoices();
+  if (_voices.length > 0) {
+    voicesListeners.forEach((fn) => fn());
+  }
+}
+
+export function getVoices(): SpeechSynthesisVoice[] {
+  return _voices;
+}
+
+export function subscribeVoices(fn: VoicesListener): () => void {
+  voicesListeners.add(fn);
+  loadVoices();
+  if (_voices.length > 0) fn();
+  if (typeof window !== "undefined" && window.speechSynthesis) {
+    window.speechSynthesis.onvoiceschanged = () => {
+      loadVoices();
+    };
+  }
+  return () => {
+    voicesListeners.delete(fn);
+  };
+}
+
+export function getSelectedVoiceURI(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(VOICE_KEY);
+}
+
+export function setSelectedVoiceURI(uri: string | null): void {
+  if (typeof window === "undefined") return;
+  if (uri) {
+    window.localStorage.setItem(VOICE_KEY, uri);
+  } else {
+    window.localStorage.removeItem(VOICE_KEY);
+  }
+}
+
+function findVoice(uri?: string | null): SpeechSynthesisVoice | undefined {
+  if (!uri) return _voices.find((v) => v.default) ?? _voices[0];
+  return _voices.find((v) => v.voiceURI === uri);
+}
+
+// ── Sound effects ───────────────────────────────────────────────────────────
 
 export function playDingSound(): void {
   const volume = getVolume();
@@ -50,57 +104,49 @@ export function playDingSound(): void {
       osc.stop(ctx.currentTime + 1.8);
     });
   } catch {
-    // ignore audio errors (e.g. autoplay policy)
+    // ignore
   }
 }
 
-function doSpeak(utter: SpeechSynthesisUtterance): void {
+function doSpeak(text: string, rate: number, pitch: number, voiceURI?: string | null): void {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
+  const volume = getVolume();
+  if (volume <= 0) return;
+
+  // Ensure voices are loaded — Chrome loads them async
+  loadVoices();
+  if (_voices.length === 0) {
+    // Voices not loaded yet; queue a retry on voiceschanged
+    if (window.speechSynthesis.onvoiceschanged !== null) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        loadVoices();
+        doSpeak(text, rate, pitch, voiceURI);
+      };
+    }
+    return;
+  }
+
+  const voice = findVoice(voiceURI);
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = rate;
+  utter.pitch = pitch;
+  utter.volume = volume;
+  if (voice) utter.voice = voice;
+
   try {
-    const synth = window.speechSynthesis;
-    synth.cancel();
-    synth.speak(utter);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter);
   } catch {
     // ignore
   }
 }
 
 export function playFuckoffSound(): void {
-  const volume = getVolume();
-  if (volume <= 0) return;
-  try {
-    // Use AudioContext buzzer — same approach as the ding, so it always works.
-    const ctx = new AudioContext();
-    const playBurst = (freq: number, startDelay: number, dur: number, vol: number) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "square";
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(vol, ctx.currentTime + startDelay);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + startDelay + dur);
-      osc.start(ctx.currentTime + startDelay);
-      osc.stop(ctx.currentTime + startDelay + dur);
-    };
-    // Two descending buzzes: "BUZZZZ... buzz"
-    playBurst(180, 0, 0.3, 0.3 * volume);
-    playBurst(120, 0.35, 0.25, 0.2 * volume);
-  } catch {
-    // ignore
-  }
+  const voiceURI = getSelectedVoiceURI();
+  doSpeak("fuck off", 1.1, 0.9, voiceURI);
 }
 
-export function speakCustomOutput(text: string, rate: number, pitch: number): void {
-  const volume = getVolume();
-  if (volume <= 0) return;
-  try {
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = rate;
-    utter.pitch = pitch;
-    utter.volume = volume;
-    doSpeak(utter);
-  } catch {
-    // ignore
-  }
+export function speakCustomOutput(text: string, rate: number, pitch: number, voiceURI?: string): void {
+  const uri = voiceURI ?? getSelectedVoiceURI();
+  doSpeak(text, rate, pitch, uri);
 }

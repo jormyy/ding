@@ -101,7 +101,7 @@ export default function RoomPage() {
           }, NOTIFICATION_FADE_MS);
         } else if (msg.type === "customOutput") {
           if (msg.playerName !== myNameRef.current) {
-            speakCustomOutput(msg.text, msg.rate, msg.pitch);
+            speakCustomOutput(msg.text, msg.rate, msg.pitch, msg.voiceURI);
           }
         } else if (msg.type === "error") {
           if (msg.message === "Removed by host") {
@@ -140,9 +140,9 @@ export default function RoomPage() {
     sendMessage({ type: "fuckoff" });
   }
 
-  function handleCustomOutput(text: string, rate: number, pitch: number) {
-    speakCustomOutput(text, rate, pitch);
-    sendMessage({ type: "customOutput", text, rate, pitch });
+  function handleCustomOutput(text: string, rate: number, pitch: number, voiceURI?: string) {
+    speakCustomOutput(text, rate, pitch, voiceURI);
+    sendMessage({ type: "customOutput", text, rate, pitch, voiceURI });
   }
 
   function handleNameSubmit(name: string) {

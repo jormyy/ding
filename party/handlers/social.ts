@@ -71,6 +71,7 @@ export const customOutput: Handler = (state, player, msg) => {
     text,
     rate: msg.rate,
     pitch: msg.pitch,
+    voiceURI: msg.voiceURI,
   };
   return { kind: "broadcast-raw", payload: JSON.stringify(serverMsg) };
 };

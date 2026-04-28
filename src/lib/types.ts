@@ -170,7 +170,7 @@ export type ClientMessage =
   | { type: "ding" }
   | { type: "fuckoff" }
   | { type: "chat"; text: string }
-  | { type: "customOutput"; text: string; rate: number; pitch: number }
+  | { type: "customOutput"; text: string; rate: number; pitch: number; voiceURI?: string }
   | { type: "kick"; playerId: string }
   | { type: "leave" }
   | { type: "addBot" };
@@ -184,5 +184,5 @@ export type ServerMessage =
   | { type: "welcome"; playerId: string }
   | { type: "ding"; playerName: string }
   | { type: "fuckoff"; playerName: string }
-  | { type: "customOutput"; playerName: string; text: string; rate: number; pitch: number }
+  | { type: "customOutput"; playerName: string; text: string; rate: number; pitch: number; voiceURI?: string }
   | { type: "error"; message: string };

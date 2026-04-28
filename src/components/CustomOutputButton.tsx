@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { getVoices, subscribeVoices, getSelectedVoiceURI, setSelectedVoiceURI } from "@/lib/sound";
 
 type Size = "sm" | "md";
 
@@ -26,6 +27,11 @@ function loadString(key: string, fallback: string): string {
   return localStorage.getItem(key) ?? fallback;
 }
 
+function voicesLabel(count: number): string {
+  if (count === 0) return "(loading)";
+  return `${count} voices`;
+}
+
 export default function CustomOutputButton({
   size = "md",
   className = "",
@@ -35,19 +41,25 @@ export default function CustomOutputButton({
   size?: Size;
   className?: string;
   buttonStyle?: React.CSSProperties;
-  onSpeak: (text: string, rate: number, pitch: number) => void;
+  onSpeak: (text: string, rate: number, pitch: number, voiceURI?: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("Hello!");
   const [rate, setRate] = useState(1.0);
   const [pitch, setPitch] = useState(1.0);
   const [speaking, setSpeaking] = useState(false);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceURI, setSelectedVoiceState] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setText(loadString(STORAGE_TEXT, "Hello!"));
     setRate(loadNumber(STORAGE_RATE, 1.0));
     setPitch(loadNumber(STORAGE_PITCH, 1.0));
+    setSelectedVoiceState(getSelectedVoiceURI());
+    return subscribeVoices(() => {
+      setVoices(getVoices());
+    });
   }, []);
 
   useEffect(() => {
@@ -61,7 +73,7 @@ export default function CustomOutputButton({
 
   function handleSpeak() {
     if (!text.trim()) return;
-    onSpeak(text, rate, pitch);
+    onSpeak(text, rate, pitch, selectedVoiceURI ?? undefined);
     setSpeaking(true);
     setTimeout(() => setSpeaking(false), 800);
   }
@@ -81,7 +93,13 @@ export default function CustomOutputButton({
     localStorage.setItem(STORAGE_PITCH, String(val));
   }
 
+  function handleVoiceChange(uri: string | null) {
+    setSelectedVoiceState(uri);
+    setSelectedVoiceURI(uri);
+  }
+
   const s = sizeMap[size];
+  const voiceOptions = voices.filter((v) => v.lang.startsWith("en"));
 
   return (
     <div ref={wrapRef} className={`relative ${className}`}>
@@ -96,7 +114,7 @@ export default function CustomOutputButton({
       {open && (
         <div
           className="absolute right-0 mt-1 z-50 bg-gray-900/95 border border-gray-700 rounded-lg shadow-xl p-3 flex flex-col gap-2.5"
-          style={{ minWidth: 200 }}
+          style={{ minWidth: 220 }}
         >
           <label className="flex flex-col gap-1">
             <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Text</span>
@@ -109,6 +127,24 @@ export default function CustomOutputButton({
               placeholder="Say something..."
               className="w-full bg-gray-800 border border-gray-700 rounded-md px-2 py-1.5 text-white text-xs focus:outline-none focus:border-yellow-500"
             />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+              Voice <span className="text-yellow-400">{voicesLabel(voiceOptions.length)}</span>
+            </span>
+            <select
+              value={selectedVoiceURI ?? ""}
+              onChange={(e) => handleVoiceChange(e.target.value || null)}
+              className="w-full bg-gray-800 border border-gray-700 rounded-md px-2 py-1.5 text-white text-xs focus:outline-none focus:border-yellow-500"
+            >
+              <option value="">Default</option>
+              {voiceOptions.map((v) => (
+                <option key={v.voiceURI} value={v.voiceURI}>
+                  {v.name} ({v.lang})
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="flex flex-col gap-1">
