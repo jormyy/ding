@@ -150,8 +150,11 @@ function speak(text: string, rate: number, pitch: number, voiceURI?: string | nu
 
   try {
     const synth = window.speechSynthesis;
-    synth.cancel();
-    synth.resume(); // Chrome: cancel() leaves synth paused; resume before speak
+    if (synth.speaking || synth.pending) {
+      // Chrome: cancel() leaves synth paused, so resume before speaking again
+      synth.cancel();
+      synth.resume();
+    }
     synth.speak(utter);
   } catch {
     // ignore
