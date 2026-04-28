@@ -11,6 +11,7 @@ import {
 } from "./state";
 import { handlerMap } from "./handlers/index";
 import type { HandlerCtx } from "./handlers/types";
+import { advancePhaseIfAllReady } from "./handlers/lifecycle";
 
 export { buildClientState } from "./state";
 export type { ServerGameState } from "./state";
@@ -41,10 +42,65 @@ export default class DingServer implements Party.Server {
       dispatch: (playerId, msg) => this.dispatchBotAction(playerId, msg),
       mask: (playerId) => buildClientState(this.state, playerId),
     });
+    // Periodic round-timer enforcement: auto-ready all players (bots and
+    // humans) when the round timer expires.  Runs every second so the server
+    // can enforce the timer even when no client messages arrive.
+    this.startRoundTimerCheck();
   }
 
   private getPlayerByConn(connId: string): Player | undefined {
     return this.state.players.find((p) => p.connId === connId);
+  }
+
+  /**
+   * If the round timer is active and has expired, auto-ready all connected
+   * players and advance the phase if everyone is ready.  This enforces the
+   * timer server-side so bots (which never send WebSocket messages) also get
+   * auto-readied.
+   *
+   * Only fires when all online players have placed their hands (same guard
+   * as the `ready` handler), so the timer never advances a phase with
+   * unranked hands from connected players.
+   *
+   * Returns true if the phase was advanced (state mutated, needs broadcast).
+   */
+  private applyRoundTimerIfExpired(): boolean {
+    const { roundTimerSeconds, phaseStartedAt, phase } = this.state;
+    if (roundTimerSeconds <= 0 || phaseStartedAt === null) return false;
+    if (phase === "lobby" || phase === "reveal") return false;
+
+    const expiresAt = phaseStartedAt + roundTimerSeconds * 1000;
+    if (Date.now() < expiresAt) return false;
+
+    // Safety: don't force-ready if online players haven't placed their hands.
+    // Same guard the `ready` handler uses — prevents advancing a phase with
+    // unranked hands from connected players.
+    const unrankedHands = this.state.hands.filter(
+      (h) => !this.state.ranking.includes(h.id)
+    );
+    const onlyOfflineUnranked = unrankedHands.every((h) => {
+      const owner = this.state.players.find((p) => p.id === h.playerId);
+      return owner ? !owner.connected : true;
+    });
+    if (!onlyOfflineUnranked) return false;
+
+    for (const p of this.state.players) {
+      if (p.connected) p.ready = true;
+    }
+    return advancePhaseIfAllReady(this.state);
+  }
+
+  /**
+   * Start a 1-second interval that checks for round timer expiry.  The
+   * interval is cleaned up automatically when the PartyKit worker stops
+   * (room hibernates or server restarts).
+   */
+  private startRoundTimerCheck(): void {
+    setInterval(() => {
+      if (this.applyRoundTimerIfExpired()) {
+        this.broadcast();
+      }
+    }, 1000);
   }
 
   private removePlayerFromLobby(targetId: string): void {
@@ -63,6 +119,9 @@ export default class DingServer implements Party.Server {
 
   private broadcast(): void {
     assertRankingInvariant(this.state);
+    // Enforce the round timer server-side on every state change so bots
+    // get auto-readied without waiting for the 1-second interval.
+    this.applyRoundTimerIfExpired();
     broadcastStateTo(this.room, this.state, this.connections);
     this.botController.notifyStateChanged();
   }

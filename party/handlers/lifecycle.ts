@@ -1,10 +1,59 @@
 import type { Phase } from "../../src/lib/types";
 import { PHASE_ORDER } from "../../src/lib/constants";
-import { createInitialState } from "../state";
+import {
+  type ServerGameState,
+  createInitialState,
+} from "../state";
 import { computeTrueRanking, computeTrueRanks, countInversions } from "../scoring";
 import { solveHands, solvedHandName } from "../solver";
 import type { Handler } from "./types";
 import { inGamePhase } from "./types";
+
+/**
+ * If all connected players are ready, advance the phase. Returns true if the
+ * phase was advanced.
+ *
+ * Called from the `ready` handler (normal path) and from server-side round
+ * timer enforcement (auto-ready on expiry).
+ */
+export function advancePhaseIfAllReady(state: ServerGameState): boolean {
+  const allReady = state.players.every((p) => !p.connected || p.ready);
+  if (!allReady) return false;
+
+  for (const hand of state.hands) {
+    const idx = state.ranking.indexOf(hand.id);
+    if (!state.rankHistory[hand.id]) state.rankHistory[hand.id] = [];
+    state.rankHistory[hand.id].push(idx === -1 ? null : idx + 1);
+  }
+
+  const currentIndex = PHASE_ORDER.indexOf(state.phase as Phase);
+  const nextPhase = PHASE_ORDER[currentIndex + 1];
+  state.acquireRequests = [];
+
+  if (nextPhase === "reveal") {
+    const solvedMap = solveHands(state.hands, state.allCommunityCards);
+    for (const hand of state.hands) {
+      const solved = solvedMap.get(hand.id);
+      if (solved) hand.madeHandName = solvedHandName(solved);
+    }
+    state.trueRanking = computeTrueRanking(state.hands, state.allCommunityCards);
+    state.trueRanks = computeTrueRanks(
+      state.trueRanking,
+      state.hands,
+      state.allCommunityCards
+    );
+    state.revealIndex = 0;
+  } else {
+    state.ranking = Array(state.hands.length).fill(null);
+  }
+
+  state.phase = nextPhase;
+  state.phaseStartedAt = Date.now();
+
+  for (const p of state.players) p.ready = false;
+
+  return true;
+}
 
 export const ready: Handler = (state, player, msg) => {
   if (msg.type !== "ready") return { kind: "ignore" };
@@ -21,40 +70,7 @@ export const ready: Handler = (state, player, msg) => {
 
   player.ready = msg.ready;
 
-  const allReady = state.players.every((p) => !p.connected || p.ready);
-  if (allReady) {
-    for (const hand of state.hands) {
-      const idx = state.ranking.indexOf(hand.id);
-      if (!state.rankHistory[hand.id]) state.rankHistory[hand.id] = [];
-      state.rankHistory[hand.id].push(idx === -1 ? null : idx + 1);
-    }
-
-    const currentIndex = PHASE_ORDER.indexOf(state.phase as Phase);
-    const nextPhase = PHASE_ORDER[currentIndex + 1];
-    state.acquireRequests = [];
-
-    if (nextPhase === "reveal") {
-      const solvedMap = solveHands(state.hands, state.allCommunityCards);
-      for (const hand of state.hands) {
-        const solved = solvedMap.get(hand.id);
-        if (solved) hand.madeHandName = solvedHandName(solved);
-      }
-      state.trueRanking = computeTrueRanking(state.hands, state.allCommunityCards);
-      state.trueRanks = computeTrueRanks(
-        state.trueRanking,
-        state.hands,
-        state.allCommunityCards
-      );
-      state.revealIndex = 0;
-    } else {
-      state.ranking = Array(state.hands.length).fill(null);
-    }
-
-    state.phase = nextPhase;
-    state.phaseStartedAt = Date.now();
-
-    for (const p of state.players) p.ready = false;
-  }
+  advancePhaseIfAllReady(state);
 
   return { kind: "broadcast" };
 };
