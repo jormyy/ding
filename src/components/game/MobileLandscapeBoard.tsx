@@ -11,6 +11,7 @@ import RankChip from "../RankChip";
 import VolumeControl from "../VolumeControl";
 import CustomOutputButton from "../CustomOutputButton";
 import RequestItem from "./RequestItem";
+import GameTimer from "./GameTimer";
 
 interface MobileLandscapeBoardProps {
   board: UseBoardReturn;
@@ -64,6 +65,7 @@ export default function MobileLandscapeBoard({
           <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#2fb873" }}>
             {gameState.phase === "preflop" ? "pre-flop" : gameState.phase}
           </span>
+          <GameTimer gameState={gameState} onAutoReady={() => handleReady(true)} />
           {isCreator && (confirmingEnd
             ? <button onClick={handleEndGameClick} className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ background: "#c06060", color: "#fff" }}>sure?</button>
             : <button onClick={handleEndGameClick} className="text-[10px] font-bold" style={{ color: "#c06060" }}>end</button>

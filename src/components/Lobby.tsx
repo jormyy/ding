@@ -40,6 +40,32 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
     onSend({ type: "configure", handsPerPlayer: n });
   }
 
+  function handleSetGameTimer(s: number) {
+    onSend({ type: "configure", gameTimerSeconds: s });
+  }
+
+  function handleSetRoundTimer(s: number) {
+    onSend({ type: "configure", roundTimerSeconds: s });
+  }
+
+  const GAME_TIMER_OPTIONS = [
+    { label: "Off", value: 0 },
+    { label: "5m", value: 300 },
+    { label: "10m", value: 600 },
+    { label: "15m", value: 900 },
+    { label: "20m", value: 1200 },
+    { label: "30m", value: 1800 },
+  ];
+
+  const ROUND_TIMER_OPTIONS = [
+    { label: "Off", value: 0 },
+    { label: "30s", value: 30 },
+    { label: "1m", value: 60 },
+    { label: "2m", value: 120 },
+    { label: "3m", value: 180 },
+    { label: "5m", value: 300 },
+  ];
+
   const playerCount = gameState.players.length;
   const maxHands = Math.floor(MAX_TOTAL_HANDS / playerCount);
   const canAddBot =
@@ -229,6 +255,74 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
               <span className="font-bold" style={{ color: D.goldBright }}>
                 {gameState.players.length * gameState.handsPerPlayer} hands to rank
               </span>
+            </p>
+          </div>
+        )}
+
+        {/* Game timer (creator only) */}
+        {isCreator && (
+          <div
+            className="rounded-xl p-4"
+            style={{ background: "rgba(10,30,18,0.6)", border: "1px solid rgba(255,255,255,0.06)" }}
+          >
+            <div className="text-[10px] font-black tracking-[0.25em] uppercase mb-3" style={{ color: D.sub }}>
+              Game timer
+            </div>
+            <div className="flex gap-2">
+              {GAME_TIMER_OPTIONS.map(({ label, value }) => {
+                const active = gameState.gameTimerSeconds === value;
+                return (
+                  <button
+                    key={value}
+                    onClick={() => handleSetGameTimer(value)}
+                    className="flex-1 rounded-lg text-xs font-black py-2 transition-all"
+                    style={active
+                      ? { background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink, border: "none" }
+                      : { background: "rgba(0,0,0,0.3)", color: D.goldBright, border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer" }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs mt-2" style={{ color: D.muted }}>
+              {gameState.gameTimerSeconds > 0
+                ? `Countdown visible for the whole game`
+                : "No overall time limit"}
+            </p>
+          </div>
+        )}
+
+        {/* Round timer (creator only) */}
+        {isCreator && (
+          <div
+            className="rounded-xl p-4"
+            style={{ background: "rgba(10,30,18,0.6)", border: "1px solid rgba(255,255,255,0.06)" }}
+          >
+            <div className="text-[10px] font-black tracking-[0.25em] uppercase mb-3" style={{ color: D.sub }}>
+              Round timer
+            </div>
+            <div className="flex gap-2">
+              {ROUND_TIMER_OPTIONS.map(({ label, value }) => {
+                const active = gameState.roundTimerSeconds === value;
+                return (
+                  <button
+                    key={value}
+                    onClick={() => handleSetRoundTimer(value)}
+                    className="flex-1 rounded-lg text-xs font-black py-2 transition-all"
+                    style={active
+                      ? { background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink, border: "none" }
+                      : { background: "rgba(0,0,0,0.3)", color: D.goldBright, border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer" }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs mt-2" style={{ color: D.muted }}>
+              {gameState.roundTimerSeconds > 0
+                ? `Auto-ready all players when time runs out`
+                : "No per-round time limit"}
             </p>
           </div>
         )}

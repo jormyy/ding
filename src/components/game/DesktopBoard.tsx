@@ -11,6 +11,7 @@ import RankChip, { HistoryChip } from "../RankChip";
 import VolumeControl from "../VolumeControl";
 import CustomOutputButton from "../CustomOutputButton";
 import RequestItem from "./RequestItem";
+import GameTimer from "./GameTimer";
 
 interface DesktopBoardProps {
   board: UseBoardReturn;
@@ -79,6 +80,7 @@ export default function DesktopBoard({
         <span className="text-[10px] font-bold hidden sm:block" style={{ color: "#6a8a72" }}>
           {gameState.players.length}p · {gameState.handsPerPlayer}h · {totalHands}
         </span>
+        <GameTimer gameState={gameState} onAutoReady={() => handleReady(true)} />
         {isCreator && (confirmingEnd ? (
           <button onClick={handleEndGameClick} className="text-[11px] font-black px-3 py-1 rounded-full transition-all" style={{ background: "#c06060", color: "#fff" }}>sure?</button>
         ) : (

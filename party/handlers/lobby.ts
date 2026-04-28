@@ -7,10 +7,17 @@ import type { Handler, HandlerCtx, HandlerResult } from "./types";
 export const configure: Handler = (state, player, msg) => {
   if (msg.type !== "configure") return { kind: "ignore" };
   if (!player.isCreator || state.phase !== "lobby") return { kind: "ignore" };
-  const playerCount = state.players.length;
-  const maxHands = Math.floor(MAX_TOTAL_HANDS / playerCount);
-  const n = Math.max(1, Math.min(maxHands, msg.handsPerPlayer));
-  state.handsPerPlayer = n;
+  if (msg.handsPerPlayer !== undefined) {
+    const playerCount = state.players.length;
+    const maxHands = Math.floor(MAX_TOTAL_HANDS / playerCount);
+    state.handsPerPlayer = Math.max(1, Math.min(maxHands, msg.handsPerPlayer));
+  }
+  if (msg.gameTimerSeconds !== undefined) {
+    state.gameTimerSeconds = Math.max(0, msg.gameTimerSeconds);
+  }
+  if (msg.roundTimerSeconds !== undefined) {
+    state.roundTimerSeconds = Math.max(0, msg.roundTimerSeconds);
+  }
   return { kind: "broadcast" };
 };
 
@@ -47,6 +54,7 @@ export const start: Handler = (state, player) => {
     }
   }
 
+  const now = Date.now();
   state.hands = hands;
   state.ranking = Array(hands.length).fill(null);
   state.rankHistory = {};
@@ -57,6 +65,8 @@ export const start: Handler = (state, player) => {
   state.trueRanking = null;
   state.trueRanks = null;
   state.score = null;
+  state.gameStartedAt = now;
+  state.phaseStartedAt = now;
 
   for (const p of state.players) p.ready = false;
 

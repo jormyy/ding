@@ -75,6 +75,14 @@ export type GameState = {
   players: Player[];
   /** Configured at lobby. Capped by total hand limits based on player count. */
   handsPerPlayer: number;
+  /** Total game timer in seconds. 0 = disabled. */
+  gameTimerSeconds: number;
+  /** Per-round timer in seconds. 0 = disabled. When it expires, all connected players are auto-readied. */
+  roundTimerSeconds: number;
+  /** Server timestamp (ms) when the current phase started. Null during lobby. */
+  phaseStartedAt: number | null;
+  /** Server timestamp (ms) when the game started (first phase). Null during lobby. */
+  gameStartedAt: number | null;
   /** Community cards revealed so far for this phase. */
   communityCards: Card[];
   /**
@@ -153,7 +161,7 @@ export type SocialSignal = {
  */
 export type ClientMessage =
   | { type: "join"; name: string; pid: string }
-  | { type: "configure"; handsPerPlayer: number }
+  | { type: "configure"; handsPerPlayer?: number; gameTimerSeconds?: number; roundTimerSeconds?: number }
   | { type: "start" }
   | { type: "move"; handId: string; toIndex: number }
   | { type: "swap"; handIdA: string; handIdB: string }

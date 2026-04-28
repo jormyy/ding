@@ -51,6 +51,7 @@ export const ready: Handler = (state, player, msg) => {
     }
 
     state.phase = nextPhase;
+    state.phaseStartedAt = Date.now();
 
     for (const p of state.players) p.ready = false;
   }
@@ -113,6 +114,8 @@ export const playAgain: Handler = (state, player, _msg, ctx) => {
   const newState = createInitialState();
   newState.players = players;
   newState.chatMessages = chat;
+  newState.gameTimerSeconds = state.gameTimerSeconds;
+  newState.roundTimerSeconds = state.roundTimerSeconds;
   ctx.resetState(newState);
 
   return { kind: "broadcast" };
@@ -127,6 +130,8 @@ export const endGame: Handler = (state, player, _msg, ctx) => {
   const newState = createInitialState();
   newState.players = players;
   newState.chatMessages = chat;
+  newState.gameTimerSeconds = state.gameTimerSeconds;
+  newState.roundTimerSeconds = state.roundTimerSeconds;
   ctx.resetState(newState);
 
   return { kind: "broadcast" };
