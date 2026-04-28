@@ -147,10 +147,13 @@ function speak(text: string, rate: number, pitch: number, voiceURI?: string | nu
   if (voice) utter.voice = voice;
 
   try {
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utter);
-  } catch {
-    // ignore
+    const synth = window.speechSynthesis;
+    console.error("[speak] state:", synth.speaking, synth.pending, synth.paused, "voices:", _voices.length, "voice set:", !!voice, "text:", text);
+    synth.cancel();
+    synth.speak(utter);
+    console.error("[speak] after speak(), speaking:", synth.speaking, "pending:", synth.pending);
+  } catch (e) {
+    console.error("[speak] threw:", e);
   }
 }
 
