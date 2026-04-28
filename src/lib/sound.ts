@@ -54,24 +54,40 @@ export function playDingSound(): void {
   }
 }
 
-function doSpeak(utter: SpeechSynthesisUtterance, volume: number): void {
+function doSpeak(utter: SpeechSynthesisUtterance): void {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
-  utter.volume = volume;
-  const synth = window.speechSynthesis;
-  synth.cancel();
-  synth.speak(utter);
+  try {
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    synth.speak(utter);
+  } catch {
+    // ignore
+  }
 }
 
 export function playFuckoffSound(): void {
   const volume = getVolume();
   if (volume <= 0) return;
   try {
-    const utter = new SpeechSynthesisUtterance("fuck off");
-    utter.rate = 1.1;
-    utter.pitch = 0.9;
-    doSpeak(utter, volume);
+    // Use AudioContext buzzer — same approach as the ding, so it always works.
+    const ctx = new AudioContext();
+    const playBurst = (freq: number, startDelay: number, dur: number, vol: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "square";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(vol, ctx.currentTime + startDelay);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + startDelay + dur);
+      osc.start(ctx.currentTime + startDelay);
+      osc.stop(ctx.currentTime + startDelay + dur);
+    };
+    // Two descending buzzes: "BUZZZZ... buzz"
+    playBurst(180, 0, 0.3, 0.3 * volume);
+    playBurst(120, 0.35, 0.25, 0.2 * volume);
   } catch {
-    // ignore audio errors
+    // ignore
   }
 }
 
@@ -82,8 +98,9 @@ export function speakCustomOutput(text: string, rate: number, pitch: number): vo
     const utter = new SpeechSynthesisUtterance(text);
     utter.rate = rate;
     utter.pitch = pitch;
-    doSpeak(utter, volume);
+    utter.volume = volume;
+    doSpeak(utter);
   } catch {
-    // ignore audio errors
+    // ignore
   }
 }
