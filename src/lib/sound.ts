@@ -148,12 +148,27 @@ function speak(text: string, rate: number, pitch: number, voiceURI?: string | nu
 
   try {
     const synth = window.speechSynthesis;
-    console.error("[speak] state:", synth.speaking, synth.pending, synth.paused, "voices:", _voices.length, "voice:", voice?.name ?? "default", "text:", text);
+    if (voice) {
+      // Some system voices (e.g. macOS novelty voices) are listed but produce no
+      // audio via the Web Speech API. If the utterance hasn't started within 1.5s,
+      // cancel and retry with the browser default voice.
+      let started = false;
+      utter.onstart = () => { started = true; };
+      setTimeout(() => {
+        if (!started) {
+          synth.cancel();
+          const fallback = new SpeechSynthesisUtterance(text);
+          fallback.rate = rate;
+          fallback.pitch = pitch;
+          fallback.volume = volume;
+          synth.speak(fallback);
+        }
+      }, 1500);
+    }
     synth.cancel();
     synth.speak(utter);
-    console.error("[speak] after speak(), speaking:", synth.speaking, "pending:", synth.pending);
-  } catch (e) {
-    console.error("[speak] threw:", e);
+  } catch {
+    // ignore
   }
 }
 
