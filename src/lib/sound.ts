@@ -139,9 +139,7 @@ function speak(text: string, rate: number, pitch: number, voiceURI?: string | nu
   const volume = getVolume();
   if (volume <= 0) return;
 
-  loadVoices();
   const voice = voiceURI ? findVoice(voiceURI) : undefined;
-
   const utter = new SpeechSynthesisUtterance(text);
   utter.rate = rate;
   utter.pitch = pitch;
@@ -149,13 +147,8 @@ function speak(text: string, rate: number, pitch: number, voiceURI?: string | nu
   if (voice) utter.voice = voice;
 
   try {
-    const synth = window.speechSynthesis;
-    if (synth.speaking || synth.pending) {
-      // Chrome: cancel() leaves synth paused, so resume before speaking again
-      synth.cancel();
-      synth.resume();
-    }
-    synth.speak(utter);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter);
   } catch {
     // ignore
   }
