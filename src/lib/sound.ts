@@ -56,16 +56,10 @@ export function playDingSound(): void {
 
 function doSpeak(utter: SpeechSynthesisUtterance, volume: number): void {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
+  utter.volume = volume;
   const synth = window.speechSynthesis;
   synth.cancel();
-  // Chrome bug: cancel() puts speechSynthesis into a paused state, so resume before speaking.
-  synth.resume();
-  utter.volume = volume;
-  // Defer so resume() has time to take effect before speak().
-  setTimeout(() => {
-    synth.resume();
-    synth.speak(utter);
-  }, 10);
+  synth.speak(utter);
 }
 
 export function playFuckoffSound(): void {
