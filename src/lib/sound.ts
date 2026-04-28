@@ -108,25 +108,14 @@ export function playDingSound(): void {
   }
 }
 
-function doSpeak(text: string, rate: number, pitch: number, voiceURI?: string | null): void {
+function speak(text: string, rate: number, pitch: number, voiceURI?: string | null): void {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
   const volume = getVolume();
   if (volume <= 0) return;
 
-  // Ensure voices are loaded — Chrome loads them async
   loadVoices();
-  if (_voices.length === 0) {
-    // Voices not loaded yet; queue a retry on voiceschanged
-    if (window.speechSynthesis.onvoiceschanged !== null) {
-      window.speechSynthesis.onvoiceschanged = () => {
-        loadVoices();
-        doSpeak(text, rate, pitch, voiceURI);
-      };
-    }
-    return;
-  }
+  const voice = voiceURI ? findVoice(voiceURI) : undefined;
 
-  const voice = findVoice(voiceURI);
   const utter = new SpeechSynthesisUtterance(text);
   utter.rate = rate;
   utter.pitch = pitch;
@@ -142,11 +131,9 @@ function doSpeak(text: string, rate: number, pitch: number, voiceURI?: string | 
 }
 
 export function playFuckoffSound(): void {
-  const voiceURI = getSelectedVoiceURI();
-  doSpeak("fuck off", 1.1, 0.9, voiceURI);
+  speak("fuck off", 1.1, 0.9, getSelectedVoiceURI());
 }
 
 export function speakCustomOutput(text: string, rate: number, pitch: number, voiceURI?: string): void {
-  const uri = voiceURI ?? getSelectedVoiceURI();
-  doSpeak(text, rate, pitch, uri);
+  speak(text, rate, pitch, voiceURI ?? getSelectedVoiceURI());
 }
