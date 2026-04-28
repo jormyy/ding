@@ -9,6 +9,7 @@ import ReadyButton from "../ReadyButton";
 import { CardFace } from "../CardFace";
 import RankChip from "../RankChip";
 import VolumeControl from "../VolumeControl";
+import CustomOutputButton from "../CustomOutputButton";
 import RequestItem from "./RequestItem";
 
 interface MobileLandscapeBoardProps {
@@ -18,6 +19,8 @@ interface MobileLandscapeBoardProps {
   toastEl: React.ReactNode;
   onDing: () => void;
   onFuckoff: () => void;
+  isCustom: boolean;
+  onCustomOutput: (text: string, rate: number, pitch: number) => void;
 }
 
 export default function MobileLandscapeBoard({
@@ -27,6 +30,8 @@ export default function MobileLandscapeBoard({
   toastEl,
   onDing,
   onFuckoff,
+  isCustom,
+  onCustomOutput,
 }: MobileLandscapeBoardProps) {
   const {
     displayState, selectedHandId, selectedSlot,
@@ -77,6 +82,7 @@ export default function MobileLandscapeBoard({
           <button onClick={onDing} className="w-8 h-8 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 text-lg" aria-label="Ding">🔔</button>
           <button onClick={onFuckoff} className="w-8 h-8 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 text-lg" aria-label="Fuck off">🖕</button>
           <VolumeControl size="sm" />
+          {isCustom && <CustomOutputButton size="sm" onSpeak={onCustomOutput} />}
           <button onClick={() => setMobileChatOpen((v) => !v)} className="w-8 h-8 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 text-lg" aria-label="Chat">💬</button>
         </div>
         {mobileChatOpen && (

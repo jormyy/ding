@@ -4,7 +4,7 @@ import { configure, addBot, start, kick, leave } from "./lobby";
 import { move, swap, unclaim, transferOwnChip } from "./ranking";
 import { proposeChipMove, acceptChipMove, rejectChipMove, cancelChipMove } from "./trading";
 import { ready, flip, playAgain, endGame } from "./lifecycle";
-import { ding, fuckoff, chat } from "./social";
+import { ding, fuckoff, chat, customOutput } from "./social";
 
 const ignore: Handler = () => ({ kind: "ignore" });
 
@@ -29,5 +29,6 @@ export const handlerMap: Record<ClientMessage["type"], Handler> = {
   endGame,
   ding,
   fuckoff,
+  customOutput,
   chat,
 };

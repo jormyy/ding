@@ -60,3 +60,17 @@ export const chat: Handler = (state, player, msg, ctx) => {
 
   return { kind: "broadcast" };
 };
+
+export const customOutput: Handler = (state, player, msg) => {
+  if (msg.type !== "customOutput") return { kind: "ignore" };
+  const text = (msg.text ?? "").slice(0, 200);
+  if (!text.trim()) return { kind: "ignore" };
+  const serverMsg: ServerMessage = {
+    type: "customOutput",
+    playerName: player.name,
+    text,
+    rate: msg.rate,
+    pitch: msg.pitch,
+  };
+  return { kind: "broadcast-raw", payload: JSON.stringify(serverMsg) };
+};

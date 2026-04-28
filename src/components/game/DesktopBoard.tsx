@@ -9,6 +9,7 @@ import ReadyButton from "../ReadyButton";
 import { CardFace } from "../CardFace";
 import RankChip, { HistoryChip } from "../RankChip";
 import VolumeControl from "../VolumeControl";
+import CustomOutputButton from "../CustomOutputButton";
 import RequestItem from "./RequestItem";
 
 interface DesktopBoardProps {
@@ -21,6 +22,8 @@ interface DesktopBoardProps {
   dingNotifications: { id: string; playerName: string }[];
   onFuckoff: () => void;
   fuckoffNotifications: { id: string; playerName: string }[];
+  isCustom: boolean;
+  onCustomOutput: (text: string, rate: number, pitch: number) => void;
 }
 
 export default function DesktopBoard({
@@ -33,6 +36,8 @@ export default function DesktopBoard({
   dingNotifications,
   onFuckoff,
   fuckoffNotifications,
+  isCustom,
+  onCustomOutput,
 }: DesktopBoardProps) {
   const {
     displayState, localRanking, selectedHandId, selectedSlot,
@@ -99,6 +104,7 @@ export default function DesktopBoard({
               <button onClick={onDing} className="w-9 h-9 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 transition-all text-xl select-none" aria-label="Ding">🔔</button>
               <button onClick={onFuckoff} className="w-9 h-9 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 active:scale-90 transition-all text-xl select-none" aria-label="Fuck off">🖕</button>
               <VolumeControl size="md" />
+              {isCustom && <CustomOutputButton size="md" onSpeak={onCustomOutput} />}
               <div className="flex flex-col items-end gap-1 pointer-events-none">
                 {dingNotifications.map((n) => (
                   <div key={n.id} className="bg-gray-900/90 border border-gray-700 text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg animate-fade-out whitespace-nowrap">{n.playerName} dings</div>

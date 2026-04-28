@@ -69,3 +69,19 @@ export function playFuckoffSound(): void {
     // ignore audio errors (e.g. autoplay policy, unsupported browser)
   }
 }
+
+export function speakCustomOutput(text: string, rate: number, pitch: number): void {
+  const volume = getVolume();
+  if (volume <= 0) return;
+  try {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = rate;
+    utter.pitch = pitch;
+    utter.volume = volume;
+    window.speechSynthesis.speak(utter);
+  } catch {
+    // ignore audio errors
+  }
+}

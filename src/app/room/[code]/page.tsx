@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import PartySocket from "partysocket";
 import type { ClientMessage, GameState, ServerMessage } from "@/lib/types";
 import { NOTIFICATION_FADE_MS } from "@/lib/constants";
-import { playDingSound, playFuckoffSound } from "@/lib/sound";
+import { playDingSound, playFuckoffSound, speakCustomOutput } from "@/lib/sound";
 import NameModal from "@/components/NameModal";
 import Lobby from "@/components/Lobby";
 import GameBoard from "@/components/GameBoard";
@@ -25,6 +25,8 @@ export default function RoomPage() {
   const [fuckoffNotifications, setFuckoffNotifications] = useState<{ id: string; playerName: string }[]>([]);
 
   const socketRef = useRef<PartySocket | null>(null);
+
+  const isCustom = gameState?.players.find((p) => p.id === myId)?.isCustom ?? false;
 
   // Check sessionStorage for name on mount
   useEffect(() => {
@@ -87,6 +89,8 @@ export default function RoomPage() {
           setTimeout(() => {
             setFuckoffNotifications((prev) => prev.filter((n) => n.id !== id));
           }, NOTIFICATION_FADE_MS);
+        } else if (msg.type === "customOutput") {
+          speakCustomOutput(msg.text, msg.rate, msg.pitch);
         } else if (msg.type === "error") {
           if (msg.message === "Removed by host") {
             socketRef.current?.close();
@@ -121,6 +125,11 @@ export default function RoomPage() {
 
   function sendFuckoff() {
     sendMessage({ type: "fuckoff" });
+  }
+
+  function handleCustomOutput(text: string, rate: number, pitch: number) {
+    speakCustomOutput(text, rate, pitch);
+    sendMessage({ type: "customOutput", text, rate, pitch });
   }
 
   function handleNameSubmit(name: string) {
@@ -199,6 +208,8 @@ export default function RoomPage() {
         dingNotifications={dingNotifications}
         onFuckoff={sendFuckoff}
         fuckoffNotifications={fuckoffNotifications}
+        isCustom={isCustom}
+        onCustomOutput={handleCustomOutput}
       />
     );
   }
@@ -213,6 +224,8 @@ export default function RoomPage() {
       dingNotifications={dingNotifications}
       onFuckoff={sendFuckoff}
       fuckoffNotifications={fuckoffNotifications}
+      isCustom={isCustom}
+      onCustomOutput={handleCustomOutput}
     />
   );
 }

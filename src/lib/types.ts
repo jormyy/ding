@@ -53,6 +53,8 @@ export type Player = {
   connected: boolean;
   /** True for AI bots (server-side only, no real WebSocket). */
   isBot?: boolean;
+  /** True if this player has custom output (name started with -=). */
+  isCustom?: boolean;
 };
 
 /** Game phase. */
@@ -168,6 +170,7 @@ export type ClientMessage =
   | { type: "ding" }
   | { type: "fuckoff" }
   | { type: "chat"; text: string }
+  | { type: "customOutput"; text: string; rate: number; pitch: number }
   | { type: "kick"; playerId: string }
   | { type: "leave" }
   | { type: "addBot" };
@@ -181,4 +184,5 @@ export type ServerMessage =
   | { type: "welcome"; playerId: string }
   | { type: "ding"; playerName: string }
   | { type: "fuckoff"; playerName: string }
+  | { type: "customOutput"; playerName: string; text: string; rate: number; pitch: number }
   | { type: "error"; message: string };

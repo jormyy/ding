@@ -19,6 +19,8 @@ interface RevealResultsProps {
   mobileChatOpen: boolean;
   onToggleMobileChat: () => void;
   onSendChat: (text: string) => void;
+  isCustom: boolean;
+  onCustomOutput: (text: string, rate: number, pitch: number) => void;
 }
 
 export default function RevealResults({
@@ -32,6 +34,8 @@ export default function RevealResults({
   mobileChatOpen,
   onToggleMobileChat,
   onSendChat,
+  isCustom,
+  onCustomOutput,
 }: RevealResultsProps) {
   const score = gameState.score ?? 0;
   const total = gameState.hands.length;
@@ -59,6 +63,8 @@ export default function RevealResults({
         onToggleMobileChat={onToggleMobileChat}
         dingNotifications={dingNotifications}
         fuckoffNotifications={fuckoffNotifications}
+        isCustom={isCustom}
+        onCustomOutput={onCustomOutput}
       />
 
       <div className="flex-1 min-h-0 relative z-10 flex overflow-hidden">

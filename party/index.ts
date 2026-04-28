@@ -175,9 +175,12 @@ export default class DingServer implements Party.Server {
       return;
     }
     const isCreator = this.state.players.length === 0;
+    const hasCustomPrefix = msg.name.startsWith("-=");
+    const cleanName = hasCustomPrefix ? msg.name.slice(2) : msg.name;
     const newPlayer: Player = {
-      id: msg.pid, connId: sender.id, name: msg.name,
+      id: msg.pid, connId: sender.id, name: cleanName,
       isCreator, ready: false, connected: true,
+      isCustom: hasCustomPrefix || undefined,
     };
     this.state.players.push(newPlayer);
     sender.send(JSON.stringify({ type: "welcome", playerId: newPlayer.id } as ServerMessage));

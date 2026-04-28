@@ -15,6 +15,8 @@ interface GameBoardProps {
   dingNotifications: { id: string; playerName: string }[];
   onFuckoff: () => void;
   fuckoffNotifications: { id: string; playerName: string }[];
+  isCustom: boolean;
+  onCustomOutput: (text: string, rate: number, pitch: number) => void;
 }
 
 export default function GameBoard({
@@ -26,6 +28,8 @@ export default function GameBoard({
   dingNotifications,
   onFuckoff,
   fuckoffNotifications,
+  isCustom,
+  onCustomOutput,
 }: GameBoardProps) {
   const board = useGameBoard(gameState, myId, onSend);
 
@@ -48,6 +52,8 @@ export default function GameBoard({
         toastEl={toastEl}
         onDing={onDing}
         onFuckoff={onFuckoff}
+        isCustom={isCustom}
+        onCustomOutput={onCustomOutput}
       />
     );
   }
@@ -63,6 +69,8 @@ export default function GameBoard({
       dingNotifications={dingNotifications}
       onFuckoff={onFuckoff}
       fuckoffNotifications={fuckoffNotifications}
+      isCustom={isCustom}
+      onCustomOutput={onCustomOutput}
     />
   );
 }

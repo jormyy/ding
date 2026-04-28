@@ -3,6 +3,7 @@
 import type { GameState } from "@/lib/types";
 import { CardFace } from "../../CardFace";
 import VolumeControl from "../../VolumeControl";
+import CustomOutputButton from "../../CustomOutputButton";
 import { D } from "@/lib/theme";
 
 interface RevealHeaderProps {
@@ -16,6 +17,8 @@ interface RevealHeaderProps {
   onToggleMobileChat: () => void;
   dingNotifications: { id: string; playerName: string }[];
   fuckoffNotifications: { id: string; playerName: string }[];
+  isCustom: boolean;
+  onCustomOutput: (text: string, rate: number, pitch: number) => void;
 }
 
 export default function RevealHeader({
@@ -29,6 +32,8 @@ export default function RevealHeader({
   onToggleMobileChat,
   dingNotifications,
   fuckoffNotifications,
+  isCustom,
+  onCustomOutput,
 }: RevealHeaderProps) {
   return (
     <div
@@ -91,6 +96,7 @@ export default function RevealHeader({
         <button onClick={onDing} className="w-8 h-8 flex items-center justify-center rounded-full text-lg select-none transition-all active:scale-90" style={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.1)" }}>🔔</button>
         <button onClick={onFuckoff} className="w-8 h-8 flex items-center justify-center rounded-full text-lg select-none transition-all active:scale-90" style={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.1)" }}>🖕</button>
         <VolumeControl size="sm" buttonStyle={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.1)" }} />
+        {isCustom && <CustomOutputButton size="sm" buttonStyle={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.1)" }} onSpeak={onCustomOutput} />}
         <button onClick={onToggleMobileChat} className="sm:hidden w-8 h-8 flex items-center justify-center rounded-full text-lg select-none" style={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.1)" }}>💬</button>
       </div>
 
