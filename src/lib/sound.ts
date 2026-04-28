@@ -54,19 +54,30 @@ export function playDingSound(): void {
   }
 }
 
+function doSpeak(utter: SpeechSynthesisUtterance, volume: number): void {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  const synth = window.speechSynthesis;
+  synth.cancel();
+  // Chrome bug: cancel() puts speechSynthesis into a paused state, so resume before speaking.
+  synth.resume();
+  utter.volume = volume;
+  // Defer so resume() has time to take effect before speak().
+  setTimeout(() => {
+    synth.resume();
+    synth.speak(utter);
+  }, 10);
+}
+
 export function playFuckoffSound(): void {
   const volume = getVolume();
   if (volume <= 0) return;
   try {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance("fuck off");
     utter.rate = 1.1;
     utter.pitch = 0.9;
-    utter.volume = volume;
-    setTimeout(() => window.speechSynthesis.speak(utter), 0);
+    doSpeak(utter, volume);
   } catch {
-    // ignore audio errors (e.g. autoplay policy, unsupported browser)
+    // ignore audio errors
   }
 }
 
@@ -74,13 +85,10 @@ export function speakCustomOutput(text: string, rate: number, pitch: number): vo
   const volume = getVolume();
   if (volume <= 0) return;
   try {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
     utter.rate = rate;
     utter.pitch = pitch;
-    utter.volume = volume;
-    setTimeout(() => window.speechSynthesis.speak(utter), 0);
+    doSpeak(utter, volume);
   } catch {
     // ignore audio errors
   }
