@@ -85,24 +85,40 @@ function findVoice(uri?: string | null): SpeechSynthesisVoice | undefined {
 
 // ── Sound effects ───────────────────────────────────────────────────────────
 
+let _audioCtx: AudioContext | null = null;
+
+function getAudioCtx(): AudioContext {
+  if (!_audioCtx || _audioCtx.state === "closed") {
+    _audioCtx = new AudioContext();
+  }
+  return _audioCtx;
+}
+
 export function playDingSound(): void {
   const volume = getVolume();
   if (volume <= 0) return;
   try {
-    const ctx = new AudioContext();
-    const freqs = [1318.5, 1760, 2637]; // E6, A6, E7
-    freqs.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "sine";
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime((0.25 * volume) / (i + 1), ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.8);
-      osc.start();
-      osc.stop(ctx.currentTime + 1.8);
-    });
+    const ctx = getAudioCtx();
+    const play = () => {
+      const freqs = [1318.5, 1760, 2637]; // E6, A6, E7
+      freqs.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime((0.25 * volume) / (i + 1), ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.8);
+        osc.start();
+        osc.stop(ctx.currentTime + 1.8);
+      });
+    };
+    if (ctx.state === "suspended") {
+      ctx.resume().then(play);
+    } else {
+      play();
+    }
   } catch {
     // ignore
   }
@@ -123,8 +139,10 @@ function speak(text: string, rate: number, pitch: number, voiceURI?: string | nu
   if (voice) utter.voice = voice;
 
   try {
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utter);
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    synth.resume(); // Chrome: cancel() leaves synth paused; resume before speak
+    synth.speak(utter);
   } catch {
     // ignore
   }
