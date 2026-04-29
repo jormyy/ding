@@ -72,14 +72,18 @@ export default function RevealResults({
       <div className="flex-1 min-h-0 relative z-10 flex overflow-hidden">
         <div className="flex-1 min-w-0 flex flex-col p-4 gap-3 overflow-hidden">
           <div
-            className="flex-none px-2 grid gap-2 text-[9px] font-black uppercase tracking-widest"
-            style={{ gridTemplateColumns: "30px 60px 1fr 76px 66px 28px", color: "rgba(201,165,74,0.55)" }}
+            className="flex-none px-2 grid gap-1 text-[9px] font-black uppercase tracking-widest"
+            style={{ gridTemplateColumns: "26px 52px 1fr 24px 24px 24px 24px 40px 40px 20px", color: "rgba(201,165,74,0.55)" }}
           >
-            <div>True</div>
+            <div>#</div>
             <div>Hole</div>
-            <div>Made hand</div>
-            <div>Streets</div>
-            <div>Guessed</div>
+            <div>Hand</div>
+            <div className="text-center">P</div>
+            <div className="text-center">F</div>
+            <div className="text-center">T</div>
+            <div className="text-center">R</div>
+            <div className="text-center">SCORE</div>
+            <div>Guess</div>
             <div />
           </div>
 

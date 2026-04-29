@@ -12,10 +12,9 @@ interface PhasePerformanceProps {
 export default function PhasePerformance({ data, totalHands }: PhasePerformanceProps) {
   if (data.entries.length === 0) return null;
 
-  const phases = ["preflop", "flop", "turn", "river"] as const;
-
   const bestInCol: Record<string, number> = {};
   const worstInCol: Record<string, number> = {};
+  const phases = ["preflop", "flop", "turn", "river"] as const;
   for (const phase of phases) {
     const vals = data.entries
       .map((e) => e[`${phase}Avg` as keyof typeof e] as number | null)
@@ -25,103 +24,68 @@ export default function PhasePerformance({ data, totalHands }: PhasePerformanceP
       worstInCol[phase] = Math.max(...vals);
     }
   }
-  const cumVals = data.entries.map((e) => e.cumulativeAvg);
-  bestInCol["cumulative"] = Math.min(...cumVals);
-  worstInCol["cumulative"] = Math.max(...cumVals);
 
   const fmt = (v: number | null) => (v !== null ? v.toFixed(1) : "–");
 
   return (
-    <div
-      className="flex-none"
-      style={{
-        marginTop: 8,
-        padding: "10px 12px",
-        borderRadius: 10,
-        background: "rgba(201,165,74,0.04)",
-        border: "1px solid rgba(201,165,74,0.15)",
-      }}
-    >
-      <div className="flex items-center gap-3 mb-2 flex-wrap">
-        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "rgba(201,165,74,0.55)" }}>
-          Phase Leaders
-        </span>
+    <>
+      <div
+        className="flex items-center gap-2 px-2 mt-1"
+        style={{ color: "rgba(201,165,74,0.45)", fontSize: 8, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.12em" }}
+      >
+        <span style={{ width: 1, height: 10, background: "rgba(201,165,74,0.2)", borderRadius: 1 }} />
+        Phase leaders:
         {phases.map((phase) => (
-          <div key={phase} className="flex items-center gap-1">
-            <span
-              className="text-[9px] font-black"
-              style={{ color: "rgba(201,165,74,0.45)" }}
-            >
-              {PHASE_SHORT_LABELS[phases.indexOf(phase)]}
-            </span>
-            <span
-              className="text-[11px] font-bold truncate max-w-[80px]"
-              style={{ color: data.phaseLeaders[phase] ? D.goldTop : "rgba(255,255,255,0.2)" }}
-            >
-              {data.phaseLeaders[phase] ?? "–"}
-            </span>
-          </div>
+          <span key={phase} style={{ color: data.phaseLeaders[phase] ? D.gold : "rgba(255,255,255,0.2)" }}>
+            {PHASE_SHORT_LABELS[phases.indexOf(phase)]}: {data.phaseLeaders[phase] ?? "–"}
+          </span>
+        ))}
+        <span className="opacity-50">| Inv:</span>
+        {phases.map((phase) => (
+          <span key={phase} className="tabular-nums" style={{ color: data.teamInversions[phase] === 0 ? D.accent : D.goldBright }}>
+            {data.teamInversions[phase]}
+          </span>
         ))}
       </div>
 
-      <div className="flex items-center gap-3 mb-3 flex-wrap">
-        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "rgba(201,165,74,0.55)" }}>
-          Team Inv
-        </span>
-        {phases.map((phase) => {
-          const inv = data.teamInversions[phase];
-          const maxInv = (totalHands * (totalHands - 1)) / 2;
-          const pct = maxInv > 0 ? Math.round((1 - inv / maxInv) * 100) : 100;
-          return (
-            <div key={phase} className="flex items-center gap-1">
-              <span className="text-[9px] font-black" style={{ color: "rgba(201,165,74,0.45)" }}>
-                {PHASE_SHORT_LABELS[phases.indexOf(phase)]}
-              </span>
-              <span
-                className="text-[11px] font-bold tabular-nums"
-                style={{ color: inv === 0 ? D.accent : D.goldBright }}
-              >
-                {inv}
-              </span>
-              <span className="text-[9px] tabular-nums" style={{ color: "rgba(255,255,255,0.25)" }}>
-                ({pct}%)
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
       <div
-        className="grid gap-1.5 text-[9px] font-black uppercase tracking-wider mb-1.5"
+        className="grid gap-1 items-center px-2 py-1 text-[9px] font-black uppercase tracking-wider"
         style={{
-          gridTemplateColumns: "1fr 42px 42px 42px 42px 48px",
-          color: "rgba(201,165,74,0.45)",
+          gridTemplateColumns: "26px 52px 1fr 24px 24px 24px 24px 40px 40px 20px",
+          color: "rgba(201,165,74,0.4)",
         }}
       >
-        <div className="pl-1">Player</div>
+        <div />
+        <div />
+        <div>Player avg</div>
         <div className="text-center">{PHASE_SHORT_LABELS[0]}</div>
         <div className="text-center">{PHASE_SHORT_LABELS[1]}</div>
         <div className="text-center">{PHASE_SHORT_LABELS[2]}</div>
         <div className="text-center">{PHASE_SHORT_LABELS[3]}</div>
-        <div className="text-center">Avg</div>
+        <div className="text-center">TOT</div>
+        <div />
+        <div />
       </div>
 
-      {data.entries.slice(0, 8).map((entry) => (
+      {data.entries.map((entry) => (
         <div
           key={entry.playerId}
-          className="grid gap-1.5 items-center py-1 rounded"
+          className="grid gap-1 items-center px-2 py-1 rounded"
           style={{
-            gridTemplateColumns: "1fr 42px 42px 42px 42px 48px",
-            background: entry.mine ? `${D.gold}18` : "transparent",
+            gridTemplateColumns: "26px 52px 1fr 24px 24px 24px 24px 40px 40px 20px",
+            background: entry.mine ? `${D.gold}14` : "rgba(255,255,255,0.02)",
+            border: `1px solid ${entry.mine ? D.gold + "44" : "rgba(255,255,255,0.04)"}`,
           }}
         >
+          <div />
+          <div />
           <div
-            className="text-xs font-bold truncate pl-1"
+            className="text-[11px] font-bold truncate"
             style={{ color: entry.mine ? D.goldTop : D.text }}
           >
             {entry.name}
             {entry.mine && (
-              <span className="text-[9px] ml-1" style={{ color: D.accent }}>(you)</span>
+              <span className="text-[8px] ml-1" style={{ color: D.accent }}>(you)</span>
             )}
           </div>
 
@@ -132,7 +96,7 @@ export default function PhasePerformance({ data, totalHands }: PhasePerformanceP
             return (
               <div
                 key={phase}
-                className="text-[11px] font-bold text-center tabular-nums rounded py-px"
+                className="text-[10px] font-bold text-center tabular-nums"
                 style={{
                   color: val === null
                     ? "rgba(255,255,255,0.2)"
@@ -141,11 +105,6 @@ export default function PhasePerformance({ data, totalHands }: PhasePerformanceP
                     : isWorst
                     ? D.danger
                     : D.goldBright,
-                  background: isBest
-                    ? "rgba(47,184,115,0.12)"
-                    : isWorst
-                    ? "rgba(192,96,96,0.12)"
-                    : "transparent",
                 }}
               >
                 {fmt(val)}
@@ -154,24 +113,15 @@ export default function PhasePerformance({ data, totalHands }: PhasePerformanceP
           })}
 
           <div
-            className="text-[11px] font-bold text-center tabular-nums rounded py-px"
-            style={{
-              color: entry.cumulativeAvg === bestInCol["cumulative"] && bestInCol["cumulative"] !== worstInCol["cumulative"]
-                ? D.accent
-                : entry.cumulativeAvg === worstInCol["cumulative"] && bestInCol["cumulative"] !== worstInCol["cumulative"]
-                ? D.danger
-                : D.goldBright,
-              background: entry.cumulativeAvg === bestInCol["cumulative"] && bestInCol["cumulative"] !== worstInCol["cumulative"]
-                ? "rgba(47,184,115,0.12)"
-                : entry.cumulativeAvg === worstInCol["cumulative"] && bestInCol["cumulative"] !== worstInCol["cumulative"]
-                ? "rgba(192,96,96,0.12)"
-                : "transparent",
-            }}
+            className="text-[10px] font-bold text-center tabular-nums"
+            style={{ color: D.goldBright }}
           >
             {fmt(entry.cumulativeAvg)}
           </div>
+          <div />
+          <div />
         </div>
       ))}
-    </div>
+    </>
   );
 }

@@ -10,6 +10,8 @@ export interface RevealRow {
   correct: boolean;
   madeHand: string;
   history: (number | null)[];
+  phaseDisplacements: (number | null)[];
+  phaseScore: number;
   mine: boolean;
 }
 
@@ -50,6 +52,7 @@ export function computeRevealRows(gameState: GameState, myId: string): RevealRow
   const trueRanks = gameState.trueRanks!;
   const trueRanking = gameState.trueRanking!;
   const handMap = new Map<string, Hand>(gameState.hands.map((h) => [h.id, h]));
+  const total = gameState.hands.length;
 
   return trueRanking.map((handId) => {
     const hand = handMap.get(handId)!;
@@ -59,15 +62,47 @@ export function computeRevealRows(gameState: GameState, myId: string): RevealRow
     const guessedRank = guessedIdx === -1 ? null : guessedIdx + 1;
     const tieGroupMin = trueRanking.findIndex((id) => trueRanks[id] === trueRank) + 1;
     const tieGroupSize = Object.values(trueRanks).filter((r) => r === trueRank).length;
+    const tieGroupMax = tieGroupMin + tieGroupSize - 1;
     const correct =
       guessedRank !== null &&
       guessedRank >= tieGroupMin &&
-      guessedRank <= tieGroupMin + tieGroupSize - 1;
+      guessedRank <= tieGroupMax;
     const delta = guessedRank !== null ? guessedRank - trueRank : null;
     const madeHand = hand.flipped ? (hand.madeHandName ?? "") : "";
     const history = gameState.rankHistory[handId] ?? [null, null, null, null];
     const mine = hand.playerId === myId;
-    return { handId, hand, player, trueRank, guessedRank, delta, correct, madeHand, history, mine };
+
+    const phaseWeights = [0.15, 0.25, 0.30, 0.30];
+    const phaseDisplacements: (number | null)[] = [];
+    let phaseScore = 0;
+    let totalWeight = 0;
+
+    for (let pi = 0; pi < 4; pi++) {
+      const rank = history[pi];
+      if (rank === null || rank === undefined) {
+        phaseDisplacements.push(null);
+        continue;
+      }
+      let displacement = 0;
+      if (rank < tieGroupMin) {
+        displacement = tieGroupMin - rank;
+      } else if (rank > tieGroupMax) {
+        displacement = rank - tieGroupMax;
+      }
+      phaseDisplacements.push(displacement);
+      const accuracy = 1 - displacement / total;
+      phaseScore += accuracy * phaseWeights[pi];
+      totalWeight += phaseWeights[pi];
+    }
+
+    if (totalWeight > 0) {
+      phaseScore = phaseScore / totalWeight;
+    }
+
+    return {
+      handId, hand, player, trueRank, guessedRank, delta, correct, madeHand,
+      history, phaseDisplacements, phaseScore, mine,
+    };
   });
 }
 
