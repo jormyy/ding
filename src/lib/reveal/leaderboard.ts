@@ -150,6 +150,13 @@ export function computeDisplacementLeaderboard(
   return { ranked, best, worst, maxOff, myEntry };
 }
 
+export interface InversionsData {
+  invByPlayer: Record<string, number[]>;
+  teamSeries: number[];
+  players: Array<{ id: string; name: string }>;
+  myId: string;
+}
+
 const PHASE_KEYS = ["preflop", "flop", "turn", "river"] as const;
 
 export function computePhasePerformance(
@@ -275,4 +282,75 @@ export function computePhasePerformance(
     teamInversions: teamInversions as PhasePerformanceData["teamInversions"],
     entries,
   };
+}
+
+export function computeInversionsData(gameState: GameState, myId: string): InversionsData {
+  const { hands, ranking, rankHistory, trueRanks, trueRanking } = gameState;
+  if (!trueRanks || !trueRanking) {
+    return { invByPlayer: {}, teamSeries: [0, 0, 0, 0, 0], players: [], myId };
+  }
+
+  const players = gameState.players.map((p) => ({ id: p.id, name: p.name }));
+  const invByPlayer: Record<string, number[]> = {};
+  players.forEach((p) => { invByPlayer[p.id] = [0, 0, 0, 0, 0]; });
+
+  function tallyPhase(getRank: (h: (typeof hands)[0]) => number | null | undefined, slot: number) {
+    const claimed: { rank: number; playerId: string; trueRank: number }[] = [];
+    for (const hand of hands) {
+      const r = getRank(hand);
+      if (r != null) {
+        claimed.push({ rank: r, playerId: hand.playerId, trueRank: trueRanks![hand.id] ?? 0 });
+      }
+    }
+    claimed.sort((a, b) => a.rank - b.rank);
+    for (let i = 0; i < claimed.length; i++) {
+      for (let j = i + 1; j < claimed.length; j++) {
+        if (claimed[i].trueRank > claimed[j].trueRank) {
+          const a = claimed[i].playerId;
+          const b = claimed[j].playerId;
+          if (invByPlayer[a]) invByPlayer[a][slot]++;
+          if (invByPlayer[b] && b !== a) invByPlayer[b][slot]++;
+        }
+      }
+    }
+  }
+
+  for (let pi = 0; pi < 4; pi++) {
+    tallyPhase((h) => (rankHistory[h.id] ?? [])[pi], pi);
+  }
+
+  const finalClaimed = hands
+    .map((h) => {
+      const idx = ranking.indexOf(h.id);
+      return idx === -1 ? null : { rank: idx + 1, playerId: h.playerId, trueRank: trueRanks[h.id] ?? 0 };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    .sort((a, b) => a.rank - b.rank);
+
+  for (let i = 0; i < finalClaimed.length; i++) {
+    for (let j = i + 1; j < finalClaimed.length; j++) {
+      if (finalClaimed[i].trueRank > finalClaimed[j].trueRank) {
+        const a = finalClaimed[i].playerId;
+        const b = finalClaimed[j].playerId;
+        if (invByPlayer[a]) invByPlayer[a][4]++;
+        if (invByPlayer[b] && b !== a) invByPlayer[b][4]++;
+      }
+    }
+  }
+
+  const teamInv = computePhasePerformance(gameState, myId).teamInversions;
+  const finalSorted = [...hands]
+    .map((h) => ({ idx: ranking.indexOf(h.id), trueRank: trueRanks[h.id] ?? 0 }))
+    .filter((x) => x.idx !== -1)
+    .sort((a, b) => a.idx - b.idx);
+  let finalInv = 0;
+  for (let i = 0; i < finalSorted.length; i++) {
+    for (let j = i + 1; j < finalSorted.length; j++) {
+      if (finalSorted[i].trueRank > finalSorted[j].trueRank) finalInv++;
+    }
+  }
+
+  const teamSeries = [teamInv.preflop, teamInv.flop, teamInv.turn, teamInv.river, finalInv];
+
+  return { invByPlayer, teamSeries, players, myId };
 }
