@@ -104,6 +104,30 @@ export function useGameBoard(
   const allReady = gameState.players.every((p) => p.ready);
   const hasUnclaimedSlots = localRanking.some((slot) => slot === null);
 
+  // Spacebar toggles ready/unready
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.code !== "Space") return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      e.preventDefault();
+      const ready = myPlayer?.ready ?? false;
+      if (ready || !hasUnclaimedSlots) {
+        handleReady(!ready);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [myPlayer?.ready, hasUnclaimedSlots]);
+
   const rankMap = new Map<string, number>();
   localRanking.forEach((id, i) => { if (id !== null) rankMap.set(id, i + 1); });
 
