@@ -4,50 +4,131 @@ import { createDeck } from "../deckUtils";
 
 import { Hand as PokerHand } from "pokersolver";
 
-/** Numeric value for each rank, used by preflop heuristics. */
 const RANK_VALUE: Record<Rank, number> = {
   "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9,
   T: 10, J: 11, Q: 12, K: 13, A: 14,
 };
 
-/** Unique string key for a card, used for Set deduplication. */
 function cardKey(c: Card): string {
   return c.rank + c.suit;
 }
 
 /**
- * Chen-style preflop heuristic returning a strength score in [0, 1].
- * Premium hands (AA) → ~1.0, weak hands (72o) → ~0.2.
- * Used as a fast path when no community cards are visible.
+ * Tier-based preflop scoring per the strategy guide.
+ *
+ * Tier 1  (pairs):     0.80–1.00 — every pair beats every non-pair.
+ * Tier 2  (A-high):    0.60–0.78
+ * Tier 3  (K-high):    0.45–0.58
+ * Tier 4  (Q-high):    0.32–0.43
+ * Tier 5  (J-high):    0.22–0.30
+ * Tier 6  (4..10-hi):  0.10–0.20
+ * Bottom  (32/23):     0.05
+ *
+ * Suits/connectors/gaps are deliberately ignored — this is a coordination
+ * convention shared with humans following the same guide.
  */
-function preflopStrength(hole: Card[]): number {
-  // Returns a [0, 1] score derived from Chen-style preflop heuristics.
+export function preflopTierStrength(hole: Card[]): number {
   if (hole.length !== 2) return 0.5;
-  const [a, b] = hole;
-  const hi = Math.max(RANK_VALUE[a.rank], RANK_VALUE[b.rank]);
-  const lo = Math.min(RANK_VALUE[a.rank], RANK_VALUE[b.rank]);
-  const suited = a.suit === b.suit;
-  const pair = a.rank === b.rank;
-  const gap = hi - lo; // 0 = pair (handled separately)
+  const a = RANK_VALUE[hole[0].rank];
+  const b = RANK_VALUE[hole[1].rank];
+  const hi = Math.max(a, b);
+  const lo = Math.min(a, b);
 
-  let score: number;
-  if (pair) {
-    // Pairs: 22 ≈ 0.50, AA = 1.0
-    score = 0.50 + ((hi - 2) / 12) * 0.50;
-  } else {
-    // High-card foundation
-    score = (hi / 14) * 0.55 + (lo / 14) * 0.25;
-    if (suited) score += 0.05;
-    if (gap === 1) score += 0.04; // connector
-    else if (gap === 2) score += 0.02;
-    else if (gap >= 5) score -= 0.04;
-    if (hi >= 12 && lo >= 10) score += 0.04; // broadway
+  if (hi === lo) {
+    // Pairs: 22=0.80, AA=1.00.
+    return 0.80 + ((hi - 2) / 12) * 0.20;
   }
 
-  return Math.max(0, Math.min(1, score));
+  if (hi === 14) {
+    // Ace-high: AK=0.78, A2=0.60.
+    return 0.60 + ((lo - 2) / 11) * 0.18;
+  }
+  if (hi === 13) {
+    // King-high: KQ=0.58, K2=0.45.
+    return 0.45 + ((lo - 2) / 10) * 0.13;
+  }
+  if (hi === 12) {
+    // Queen-high: QJ=0.43, Q2=0.32.
+    return 0.32 + ((lo - 2) / 9) * 0.11;
+  }
+  if (hi === 11) {
+    // Jack-high: JT=0.30, J2=0.22.
+    return 0.22 + ((lo - 2) / 8) * 0.08;
+  }
+  if (hi >= 4 && hi <= 10) {
+    // T-high through 4-high: 0.10–0.20.
+    return 0.10 + ((hi - 4) / 6) * 0.06 + ((lo - 2) / 8) * 0.04;
+  }
+  // 32 / 23 — explicit bottom anchor.
+  return 0.05;
 }
 
-/** Fisher-Yates shuffle, mutates the array in place. */
+// pokersolver rank: 1=High Card, 2=Pair, 3=Two Pair, 4=Three of a Kind,
+// 5=Straight, 6=Flush, 7=Full House, 8=Quads, 9=Straight Flush.
+
+/**
+ * "Rank what you have, not what you could have."
+ *
+ * Returns a strength score for the bot's actual current made hand on the
+ * cards visible so far — never crediting future-card draw equity. A flush
+ * draw on the flop with no pair returns the low-end "high card" score, not
+ * the equity it'd have at showdown.
+ */
+export function currentHandStrength(hole: Card[], board: Card[]): number {
+  if (hole.length < 2) return 0.10;
+
+  // Preflop: tier-based score (no made hand to read).
+  if (board.length === 0) return preflopTierStrength(hole);
+
+  const all = [...hole, ...board];
+  const ph = PokerHand.solve(all.map(cardToPokersolverStr));
+  const rank = ph.rank;
+
+  if (rank === 9) {
+    // Straight flush / royal flush. Royal = top straight, treat marginally higher.
+    const isRoyal = /royal/i.test(ph.name ?? "");
+    return isRoyal ? 1.00 : 0.97;
+  }
+  if (rank === 8) return 0.93; // quads
+  if (rank === 7) return 0.88; // full house
+  if (rank === 6) return 0.80; // flush
+  if (rank === 5) return 0.72; // straight
+  if (rank === 4) return 0.62; // three of a kind
+
+  if (rank === 3) {
+    // Two pair: bonus for top-two.
+    const topBoard = Math.max(...board.map((c) => RANK_VALUE[c.rank]));
+    const holeRanks = hole.map((c) => RANK_VALUE[c.rank]);
+    const topTwo = holeRanks.every((r) => r >= topBoard);
+    return topTwo ? 0.55 : 0.52;
+  }
+
+  if (rank === 2) {
+    // Pair: overpair > top-pair > middle > under.
+    const boardRanks = board.map((c) => RANK_VALUE[c.rank]);
+    const topBoard = Math.max(...boardRanks);
+    const holeRanks = hole.map((c) => RANK_VALUE[c.rank]);
+    // Find the pair rank.
+    const ranks = [...hole, ...board].map((c) => RANK_VALUE[c.rank]);
+    const counts = new Map<number, number>();
+    for (const r of ranks) counts.set(r, (counts.get(r) ?? 0) + 1);
+    let pairRank = 0;
+    for (const [r, n] of counts) {
+      if (n >= 2 && r > pairRank) pairRank = r;
+    }
+    if (pairRank === 0) return 0.35;
+    const isPocketPair = holeRanks[0] === holeRanks[1];
+    if (isPocketPair && pairRank > topBoard) return 0.45; // overpair
+    if (pairRank === topBoard) return 0.40;               // top pair
+    if (pairRank > Math.min(...boardRanks)) return 0.37;  // middle pair
+    return 0.35;                                          // under pair
+  }
+
+  // High card: scale by hole-card kicker, A=top.
+  const hiHole = Math.max(RANK_VALUE[hole[0].rank], RANK_VALUE[hole[1].rank]);
+  return 0.10 + ((hiHole - 2) / 12) * 0.15;
+}
+
 function shuffleInPlace<T>(arr: T[]): void {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -56,17 +137,13 @@ function shuffleInPlace<T>(arr: T[]): void {
 }
 
 /**
- * Estimate how strong a hole-card hand is against random opponents.
+ * Monte-Carlo win-rate against random opponents.
  *
- * - Preflop (board.length === 0): uses fast Chen-style heuristic.
- * - Postflop: runs Monte Carlo rollouts. For each simulation, completes the board
- *   and deals random opponent hands, then compares via pokersolver.
+ * Used by `range.ts` and for inferring unknown teammates' hand strength —
+ * NOT for the bot's own made-hand score (use `currentHandStrength` for that).
  *
- * @param hole       The player's hole cards (usually 2).
- * @param board      Visible community cards.
- * @param fieldSize  Number of opponents to simulate against.
- * @param nSims      Number of Monte Carlo simulations (default 40).
- * @returns          Win rate in [0, 1], or 0.5 for unknown/invalid inputs.
+ * - Preflop: returns the tier score (no rollouts needed).
+ * - Postflop: random rollouts to showdown via pokersolver.
  */
 export function estimateStrength(
   hole: Card[],
@@ -76,10 +153,8 @@ export function estimateStrength(
 ): number {
   if (hole.length === 0) return 0.5;
 
-  // Preflop fast path — high-card pokersolver rank doesn't distinguish pocket
-  // pairs from random trash well enough.
   if (board.length === 0) {
-    return preflopStrength(hole);
+    return preflopTierStrength(hole);
   }
 
   if (fieldSize <= 0) return 0.5;
@@ -89,13 +164,10 @@ export function estimateStrength(
   for (const c of board) used.add(cardKey(c));
   const remaining: Card[] = createDeck().filter((c) => !used.has(cardKey(c)));
 
-  // How many extra board cards we still need to draw each sim.
   const boardToDraw = Math.max(0, 5 - board.length);
-  // Cards needed per sim: remaining board + 2 per opponent
   const need = boardToDraw + fieldSize * 2;
 
   if (need > remaining.length) {
-    // Not enough cards to simulate — degrade gracefully.
     return 0.5;
   }
 
@@ -123,7 +195,7 @@ export function estimateStrength(
       const opp = PokerHand.solve(oppHole.concat(fullBoard));
       const winners = PokerHand.winners([mine, opp]);
       if (winners.length === 2) {
-        totalBeats += 0.5; // tie
+        totalBeats += 0.5;
       } else if (winners[0] === mine) {
         totalBeats += 1;
       }

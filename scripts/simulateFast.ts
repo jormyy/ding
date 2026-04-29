@@ -189,7 +189,7 @@ async function runOneGame(gameIdx: number): Promise<SimResult> {
           // weight ~ infinity).
           let tb = rec.memo.belief.perTeammate.get(h.playerId);
           if (!tb) {
-            tb = { hands: new Map(), churnRate: 0, skillPrior: 1.0, habits: { proposalsInitiated: 0, proposalsAccepted: 0, proposalsRejected: 0, placementLatency: 0.5, slotAdjustments: 0, overvaluationBias: 0, phasesObserved: 0 } };
+            tb = { hands: new Map(), churnRate: 0, skillPrior: 1.0, habits: { overvaluationBias: 0, phasesObserved: 0 } };
             rec.memo.belief.perTeammate.set(h.playerId, tb);
           }
           tb.skillPrior = 1.0;

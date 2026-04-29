@@ -1,4 +1,10 @@
-import { pickArchetype, archetypePatch, type Archetype } from "./archetypes";
+import {
+  pickArchetype,
+  archetypePatch,
+  archetypeFlavor,
+  type Archetype,
+  type ArchetypeQuirks,
+} from "./archetypes";
 
 // Trait-based bot personality. See plan "Trait Model".
 export type Traits = {
@@ -20,6 +26,11 @@ export type Traits = {
   baseThinkMs: number;
   thinkPerDifficultyMs: number;
   hesitationProb: number;
+
+  // Archetype flavor (read by strategy + socialMemory).
+  dingTendency: number;
+  fuckoffTendency: number;
+  quirks: ArchetypeQuirks;
 };
 
 function rand(min: number, max: number): number {
@@ -47,12 +58,17 @@ function defaultTraits(): Traits {
     baseThinkMs: 6000,
     thinkPerDifficultyMs: 6000,
     hesitationProb: 0.08,
+
+    dingTendency: 1.0,
+    fuckoffTendency: 1.0,
+    quirks: {},
   };
 }
 
 export function randomTraits(archetype?: Archetype): { traits: Traits; archetype: Archetype } {
   const a = archetype ?? pickArchetype();
   const merged: Traits = { ...defaultTraits(), ...archetypePatch(a) } as Traits;
+  const flavor = archetypeFlavor(a);
   const jittered: Traits = {
     ...merged,
     openness: jitter(merged.openness),
@@ -68,6 +84,9 @@ export function randomTraits(archetype?: Archetype): { traits: Traits; archetype
     hesitationProb: jitter(merged.hesitationProb, 0.04),
     baseThinkMs: Math.round(merged.baseThinkMs * rand(0.85, 1.15)),
     thinkPerDifficultyMs: Math.round(merged.thinkPerDifficultyMs * rand(0.85, 1.15)),
+    dingTendency: flavor.dingTendency,
+    fuckoffTendency: flavor.fuckoffTendency,
+    quirks: flavor.quirks,
   };
   return { traits: jittered, archetype: a };
 }
@@ -98,7 +117,17 @@ const NAMES = [
   "Bot-Pia", "Bot-Quinn", "Bot-Remy", "Bot-Sai", "Bot-Tess",
 ];
 
-export function pickBotName(taken: Set<string>): string {
+/**
+ * Prefer a name from the archetype's pool (so each archetype feels distinct);
+ * fall back to the global pool, then a random suffix.
+ */
+export function pickBotName(taken: Set<string>, archetype?: Archetype): string {
+  if (archetype) {
+    const pool = archetypeFlavor(archetype).namePool;
+    for (const n of pool) {
+      if (!taken.has(n)) return n;
+    }
+  }
   for (const n of NAMES) {
     if (!taken.has(n)) return n;
   }

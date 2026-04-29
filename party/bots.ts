@@ -7,8 +7,7 @@ import {
   firstActionDelayMs,
   type Traits,
 } from "../src/lib/ai/personality";
-import { moodAdjustedTraits } from "../src/lib/ai/mood";
-import type { Archetype } from "../src/lib/ai/archetypes";
+import { pickUnusedArchetype, type Archetype } from "../src/lib/ai/archetypes";
 
 /** Internal state for a single bot player. */
 type BotRecord = {
@@ -66,7 +65,12 @@ export class BotController {
    */
   addBot(idFactory?: () => string): Player {
     const takenNames = new Set(this.opts.getState().players.map((p) => p.name));
-    const name = pickBotName(takenNames);
+    // Prefer an unused archetype so a room of N bots gets N distinct
+    // archetypes (up to 10) — the user wants each bot to feel different.
+    const usedArchetypes = new Set<Archetype>();
+    for (const rec of this.bots.values()) usedArchetypes.add(rec.archetype);
+    const archetype = pickUnusedArchetype(usedArchetypes);
+    const name = pickBotName(takenNames, archetype);
     const pid = (idFactory && idFactory()) || `bot-${crypto.randomUUID()}`;
     const connId = `bot:${pid}`;
     const player: Player = {
@@ -78,7 +82,7 @@ export class BotController {
       connected: true,
       isBot: true,
     };
-    const { traits, archetype } = randomTraits();
+    const { traits } = randomTraits(archetype);
     this.bots.set(pid, {
       player,
       traits,
@@ -252,12 +256,9 @@ export class BotController {
     const msg = decideAction(masked, playerId, rec.traits, rec.memo);
     if (msg) {
       // Hesitation: occasionally pause before emitting — looks like a bot
-      // reconsidering. We DELAY the same action rather than discarding it,
-      // and we use mood-adjusted hesitationProb so stressed bots actually do
-      // hesitate more (matches the mood model in mood.ts).
-      const adjusted = moodAdjustedTraits(rec.traits, rec.memo.mood);
+      // reconsidering. We DELAY the same action rather than discarding it.
       const canHesitate = msg.type !== "ready" && msg.type !== "flip";
-      const hesitated = canHesitate && Math.random() < adjusted.hesitationProb;
+      const hesitated = canHesitate && Math.random() < rec.traits.hesitationProb;
       const botBotTrade = this.isBotBotTradeMsg(playerId, msg);
       if (hesitated) {
         let pause = Math.round(thinkDelayMs(rec.traits, 0.5) / 2);

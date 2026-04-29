@@ -57,16 +57,6 @@ export type TeammateBelief = {
 
 /** Learned behavioral patterns for a teammate, updated at each reveal. */
 export type TeammateHabits = {
-  /** Total proposals they've initiated. */
-  proposalsInitiated: number;
-  /** Total proposals they've accepted. */
-  proposalsAccepted: number;
-  /** Total proposals they've rejected. */
-  proposalsRejected: number;
-  /** EMA of ticks before first placement per phase (0 = very fast). */
-  placementLatency: number;
-  /** How often they reposition within a phase. */
-  slotAdjustments: number;
   /** EMA of (impliedSlot - trueSlot); positive means they systematically overvalue hands. */
   overvaluationBias: number;
   /** Number of phases observed (denominator for EMAs). */
@@ -103,14 +93,22 @@ export function newBeliefState(): BeliefState {
 
 function freshHabits(): TeammateHabits {
   return {
-    proposalsInitiated: 0,
-    proposalsAccepted: 0,
-    proposalsRejected: 0,
-    placementLatency: 0.5,
-    slotAdjustments: 0,
     overvaluationBias: 0,
     phasesObserved: 0,
   };
+}
+
+/**
+ * Deterministic tiny offset in roughly [-0.02, 0.02] derived from a hand id.
+ * Used to break ties between unknown hands so they don't all collapse to 0.5.
+ */
+function handJitter(handId: string): number {
+  let h = 0;
+  for (let i = 0; i < handId.length; i++) {
+    h = (h * 31 + handId.charCodeAt(i)) | 0;
+  }
+  // Map to roughly [-0.02, 0.02].
+  return ((h & 0xff) / 255 - 0.5) * 0.04;
 }
 
 function getOrInitTeammate(b: BeliefState, pid: string, skillPrior = 0.5): TeammateBelief {
@@ -163,7 +161,8 @@ export function updateFromPlacement(
   const impliedStrength = totalHands <= 1 ? 0.5 : 1 - slot / (totalHands - 1);
   let hb = t.hands.get(handId);
   if (!hb) {
-    hb = { mean: 0.5, concentration: 1, lastSlot: null, slotStableFor: 0, phaseSlots: [] as number[] };
+    // Tiny per-hand prior jitter prevents unknown hands from clustering at 0.5.
+    hb = { mean: 0.5 + handJitter(handId), concentration: 1, lastSlot: null, slotStableFor: 0, phaseSlots: [] as number[] };
     t.hands.set(handId, hb);
   }
 
@@ -389,19 +388,11 @@ export function perceiveState(
   // now at slot Y (or unranked). Decay confidence before re-perceiving.
   for (const [pid, t] of b.perTeammate) {
     if (pid === myPlayerId) continue;
-    let movedThisTick = false;
     for (const [hid, hb] of t.hands) {
       const cur = currentSlot.has(hid) ? currentSlot.get(hid)! : null;
       if (hb.lastSlot !== null && cur !== hb.lastSlot) {
         decayOnChurn(b, pid, hid);
-        movedThisTick = true;
       }
-    }
-    // Track repositioning frequency as a behavioral signal.
-    if (movedThisTick) {
-      const h = t.habits;
-      h.slotAdjustments++;
-      // EMA normalize: if they adjust every 3 phases, that's a pattern.
     }
   }
 
@@ -498,7 +489,6 @@ function refreshRangePercentiles(
  * - **Rejected/Cancelled**: the recipient affirmed their current placement.
  *   We boost concentration on the recipient hand at its current slot.
  *
- * Also updates habit counters (proposalsAccepted / proposalsRejected) on the initiator.
  */
 export function reconcileTrades(
   b: BeliefState,
@@ -518,11 +508,6 @@ export function reconcileTrades(
     if (stillPending(r)) continue;
     const initSlot = rankingPos.get(r.initiatorHandId);
     const recSlot = rankingPos.get(r.recipientHandId);
-
-    // Habit tracking: record this proposal's outcome on the initiator.
-    const initHand = state.hands.find((x) => x.id === r.initiatorHandId);
-    const initPlayer = initHand ? state.players.find((p) => p.id === initHand.playerId) : null;
-    const initHabits = initPlayer ? b.perTeammate.get(initPlayer.id)?.habits : null;
 
     let accepted = false;
     if (r.kind === "swap") {
@@ -548,7 +533,6 @@ export function reconcileTrades(
       // Double-evidence boost on both hands at their new slots.
       bumpConsensus(b, r.initiatorHandId, 2);
       bumpConsensus(b, r.recipientHandId, 2);
-      if (initHabits) initHabits.proposalsAccepted++;
       // The slot change was intentional, not churn — sync lastSlot so the
       // subsequent perceiveState pass doesn't decay our just-affirmed belief.
       const hbI = findHandBelief(b, r.initiatorHandId);
@@ -562,7 +546,6 @@ export function reconcileTrades(
       // perceiveState. Either way, give a small concentration boost on the
       // recipient hand at its current slot.
       if (recSlot !== undefined) bumpConsensus(b, r.recipientHandId, 1);
-      if (initHabits) initHabits.proposalsRejected++;
       void myPlayerId;
     }
   }
