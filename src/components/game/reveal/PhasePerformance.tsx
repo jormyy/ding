@@ -26,6 +26,7 @@ export default function PhasePerformance({ data, totalHands }: PhasePerformanceP
   }
 
   const fmt = (v: number | null) => (v !== null ? v.toFixed(1) : "–");
+  const maxInv = (totalHands * (totalHands - 1)) / 2;
 
   return (
     <>
@@ -40,12 +41,15 @@ export default function PhasePerformance({ data, totalHands }: PhasePerformanceP
             {PHASE_SHORT_LABELS[phases.indexOf(phase)]}: {data.phaseLeaders[phase] ?? "–"}
           </span>
         ))}
-        <span className="opacity-50">| Inv:</span>
-        {phases.map((phase) => (
-          <span key={phase} className="tabular-nums" style={{ color: data.teamInversions[phase] === 0 ? D.accent : D.goldBright }}>
-            {data.teamInversions[phase]}
-          </span>
-        ))}
+        <span className="opacity-50">| Acc:</span>
+        {phases.map((phase) => {
+          const pct = maxInv > 0 ? Math.round((1 - data.teamInversions[phase] / maxInv) * 100) : 100;
+          return (
+            <span key={phase} className="tabular-nums" style={{ color: pct >= 90 ? D.accent : pct >= 70 ? D.goldBright : D.danger }}>
+              {pct}%
+            </span>
+          );
+        })}
       </div>
 
       <div
