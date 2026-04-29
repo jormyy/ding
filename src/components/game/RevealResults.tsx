@@ -3,10 +3,11 @@
 import type { GameState } from "@/lib/types";
 import ChatPanel from "../ChatPanel";
 import { D } from "@/lib/theme";
-import { computeRevealRows, computeDisplacementLeaderboard } from "@/lib/reveal/leaderboard";
+import { computeRevealRows, computeDisplacementLeaderboard, computePhasePerformance } from "@/lib/reveal/leaderboard";
 import RevealHeader from "./reveal/RevealHeader";
 import RevealRow from "./reveal/RevealRow";
 import AccuracySidebar from "./reveal/AccuracySidebar";
+import PhasePerformance from "./reveal/PhasePerformance";
 
 interface RevealResultsProps {
   gameState: GameState;
@@ -43,6 +44,7 @@ export default function RevealResults({
 
   const rows = computeRevealRows(gameState, myId);
   const { ranked, best, worst, maxOff, myEntry } = computeDisplacementLeaderboard(gameState, myId);
+  const phaseData = computePhasePerformance(gameState, myId);
 
   return (
     <div
@@ -85,6 +87,7 @@ export default function RevealResults({
             {rows.map((row) => (
               <RevealRow key={row.handId} row={row} total={total} />
             ))}
+            <PhasePerformance data={phaseData} totalHands={total} />
           </div>
         </div>
 
