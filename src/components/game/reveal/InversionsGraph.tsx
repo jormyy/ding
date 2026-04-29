@@ -27,6 +27,12 @@ function Graph({ data, width, height }: GraphProps) {
   const maxY = Math.max(...allVals, 1);
   const yFor = (v: number) => padT + (1 - v / maxY) * innerH;
 
+  // Spread player lines by 0.1 of one Y-unit total, divided evenly across players
+  const unitPx = innerH / maxY;
+  const staggerBand = unitPx * 0.1;
+  const staggerStep = players.length > 1 ? staggerBand / (players.length - 1) : 0;
+  const staggerFor = (idx: number) => (idx - (players.length - 1) / 2) * staggerStep;
+
   const ticks: number[] = [];
   const tickCount = Math.min(5, maxY);
   for (let i = 0; i <= tickCount; i++) ticks.push(Math.round((i / tickCount) * maxY));
@@ -76,7 +82,7 @@ function Graph({ data, width, height }: GraphProps) {
           .map((p, idx) => {
             const series = invByPlayer[p.id];
             if (!series || series.length === 0) return null;
-            return { p, idx, series, rawY: yFor(series[series.length - 1]) };
+            return { p, idx, series, rawY: yFor(series[series.length - 1]) + staggerFor(idx) };
           })
           .filter((x): x is NonNullable<typeof x> => x !== null)
           .sort((a, b) => a.rawY - b.rawY);
@@ -94,7 +100,9 @@ function Graph({ data, width, height }: GraphProps) {
           const c = isMe ? D.accent : PALETTE[idx % PALETTE.length];
           const dashIdx = isMe ? 0 : (idx % (DASH_PATTERNS.length - 1)) + 1;
           const dash = DASH_PATTERNS[dashIdx];
-          const path = series.map((v, i) => `${i === 0 ? "M" : "L"} ${xFor(i)} ${yFor(v)}`).join(" ");
+          const off = staggerFor(idx);
+          const yOff = (v: number) => yFor(v) + off;
+          const path = series.map((v, i) => `${i === 0 ? "M" : "L"} ${xFor(i)} ${yOff(v)}`).join(" ");
           const displayName = p.name.length > 8 ? p.name.slice(0, 8) + "…" : p.name;
           return (
             <g key={p.id}>
@@ -104,13 +112,13 @@ function Graph({ data, width, height }: GraphProps) {
                 opacity={isMe ? 1 : 0.85}
                 strokeLinejoin="round" strokeLinecap="round" />
               {series.map((v, i) => (
-                <circle key={i} cx={xFor(i)} cy={yFor(v)} r={isMe ? 3.5 : 2.5}
+                <circle key={i} cx={xFor(i)} cy={yOff(v)} r={isMe ? 3.5 : 2.5}
                   fill={c} stroke={D.cardBg} strokeWidth={1} />
               ))}
               {/* Connector tick from line end to staggered label */}
-              {labelY[li] !== labeled[li].rawY + 3 && (
+              {labelY[li] !== labeled[li].rawY + off + 3 && (
                 <line
-                  x1={xFor(series.length - 1) + 4} y1={labeled[li].rawY}
+                  x1={xFor(series.length - 1) + 4} y1={yOff(series[series.length - 1])}
                   x2={xFor(series.length - 1) + 4} y2={labelY[li] - 2}
                   stroke={c} strokeWidth={0.75} opacity={0.4}
                 />
