@@ -6,6 +6,8 @@ import { D } from "@/lib/theme";
 
 const PHASES = ["Pre-flop", "Flop", "Turn", "River", "Reveal"] as const;
 const PALETTE = ["#f0d278", "#e9a080", "#7aaac0", "#9fc5a8", "#d6a8d8", "#88c0a8", "#e8b563", "#c9a54a"];
+// Unique dash patterns so overlapping lines stay distinguishable
+const DASH_PATTERNS = ["none", "6 3", "2 3", "8 3 2 3", "1 4", "6 2 1 2"];
 
 interface GraphProps {
   data: InversionsData;
@@ -15,7 +17,7 @@ interface GraphProps {
 
 function Graph({ data, width, height }: GraphProps) {
   const { invByPlayer, teamSeries, players, myId } = data;
-  const padL = 36, padR = 16, padT = 16, padB = 30;
+  const padL = 36, padR = 72, padT = 16, padB = 30;
   const innerW = width - padL - padR;
   const innerH = height - padT - padB;
 
@@ -67,28 +69,59 @@ function Graph({ data, width, height }: GraphProps) {
         Inversions
       </text>
 
-      {players.map((p, idx) => {
-        const series = invByPlayer[p.id];
-        if (!series || series.length === 0) return null;
-        const isMe = p.id === myId;
-        const c = isMe ? D.accent : PALETTE[idx % PALETTE.length];
-        const path = series.map((v, i) => `${i === 0 ? "M" : "L"} ${xFor(i)} ${yFor(v)}`).join(" ");
-        const lastV = series[series.length - 1];
-        const displayName = p.name.length > 8 ? p.name.slice(0, 8) + "…" : p.name;
-        return (
-          <g key={p.id}>
-            <path d={path} fill="none" stroke={c} strokeWidth={isMe ? 2.5 : 1.5}
-              opacity={isMe ? 1 : 0.8} strokeLinejoin="round" strokeLinecap="round" />
-            {series.map((v, i) => (
-              <circle key={i} cx={xFor(i)} cy={yFor(v)} r={isMe ? 3.5 : 2.5}
-                fill={c} stroke={D.cardBg} strokeWidth={1} />
-            ))}
-            <text x={xFor(series.length - 1) + 6} y={yFor(lastV) + 3} fill={c} fontSize={9} fontWeight={800}>
-              {displayName}
-            </text>
-          </g>
-        );
-      })}
+      {(() => {
+        // Compute staggered end-label Y positions to avoid overlap
+        const labelSpacing = 13;
+        const labeled = players
+          .map((p, idx) => {
+            const series = invByPlayer[p.id];
+            if (!series || series.length === 0) return null;
+            return { p, idx, series, rawY: yFor(series[series.length - 1]) };
+          })
+          .filter((x): x is NonNullable<typeof x> => x !== null)
+          .sort((a, b) => a.rawY - b.rawY);
+
+        // Push labels apart greedily from top
+        const labelY: number[] = [];
+        for (let i = 0; i < labeled.length; i++) {
+          const desired = labeled[i].rawY + 3;
+          const min = i === 0 ? desired : labelY[i - 1] + labelSpacing;
+          labelY.push(Math.max(desired, min));
+        }
+
+        return labeled.map(({ p, idx, series }, li) => {
+          const isMe = p.id === myId;
+          const c = isMe ? D.accent : PALETTE[idx % PALETTE.length];
+          const dashIdx = isMe ? 0 : (idx % (DASH_PATTERNS.length - 1)) + 1;
+          const dash = DASH_PATTERNS[dashIdx];
+          const path = series.map((v, i) => `${i === 0 ? "M" : "L"} ${xFor(i)} ${yFor(v)}`).join(" ");
+          const displayName = p.name.length > 8 ? p.name.slice(0, 8) + "…" : p.name;
+          return (
+            <g key={p.id}>
+              <path d={path} fill="none" stroke={c}
+                strokeWidth={isMe ? 2.5 : 1.5}
+                strokeDasharray={dash === "none" ? undefined : dash}
+                opacity={isMe ? 1 : 0.85}
+                strokeLinejoin="round" strokeLinecap="round" />
+              {series.map((v, i) => (
+                <circle key={i} cx={xFor(i)} cy={yFor(v)} r={isMe ? 3.5 : 2.5}
+                  fill={c} stroke={D.cardBg} strokeWidth={1} />
+              ))}
+              {/* Connector tick from line end to staggered label */}
+              {labelY[li] !== labeled[li].rawY + 3 && (
+                <line
+                  x1={xFor(series.length - 1) + 4} y1={labeled[li].rawY}
+                  x2={xFor(series.length - 1) + 4} y2={labelY[li] - 2}
+                  stroke={c} strokeWidth={0.75} opacity={0.4}
+                />
+              )}
+              <text x={xFor(series.length - 1) + 7} y={labelY[li]} fill={c} fontSize={9} fontWeight={800}>
+                {displayName}
+              </text>
+            </g>
+          );
+        });
+      })()}
 
       <path
         d={teamSeries.map((v, i) => `${i === 0 ? "M" : "L"} ${xFor(i)} ${yFor(v)}`).join(" ")}
