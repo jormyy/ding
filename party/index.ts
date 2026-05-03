@@ -1,7 +1,7 @@
 import type * as Party from "partykit/server";
 import type { ClientMessage, Player, ServerMessage } from "../src/lib/types";
-import { MAX_PLAYERS } from "../src/lib/constants";
-import { BotController } from "./bots";
+import { LOBBY_GRACE_MS, MAX_PLAYERS } from "../src/lib/constants";
+import { BotController, type BotMeta } from "./bots";
 import {
   type ServerGameState,
   createInitialState,
@@ -16,6 +16,10 @@ import { advancePhaseIfAllReady } from "./handlers/lifecycle";
 export { buildClientState } from "./state";
 export type { ServerGameState } from "./state";
 
+const STORAGE_KEY_STATE = "state";
+const STORAGE_KEY_BOT_META = "botMeta";
+const STORAGE_KEY_KICKED = "kickedPids";
+
 /**
  * Main PartyKit server for Ding.
  *
@@ -25,6 +29,8 @@ export type { ServerGameState } from "./state";
  * - Validate and dispatch all player actions through `handlerMap`
  * - Broadcast masked game state to each connected client
  * - Manage the `BotController` for AI players
+ * - Persist state, bot personalities, and kicked-pid set across DO hibernation
+ * - Drive timer expiry via DO alarms (no always-on setInterval)
  *
  * Bots bypass WebSockets entirely; they call `dispatchBotAction()` directly.
  */
@@ -33,19 +39,56 @@ export default class DingServer implements Party.Server {
   private connections: Map<string, Party.Connection> = new Map();
   private lastChatAt: Map<string, number> = new Map();
   private kickedPids: Set<string> = new Set();
+  private botMeta: Record<string, BotMeta> = {};
   private botController: BotController;
 
   constructor(readonly room: Party.Room) {
     this.state = createInitialState();
-    this.botController = new BotController({
+    this.botController = this.makeBotController();
+  }
+
+  private makeBotController(): BotController {
+    return new BotController({
       getState: () => this.state,
       dispatch: (playerId, msg) => this.dispatchBotAction(playerId, msg),
       mask: (playerId) => buildClientState(this.state, playerId),
+      persistBotMeta: (playerId, meta) => {
+        this.botMeta[playerId] = meta;
+        void this.room.storage.put(STORAGE_KEY_BOT_META, this.botMeta);
+      },
     });
-    // Periodic round-timer enforcement: auto-ready all players (bots and
-    // humans) when the round timer expires.  Runs every second so the server
-    // can enforce the timer even when no client messages arrive.
-    this.startRoundTimerCheck();
+  }
+
+  /**
+   * Lifecycle hook called by PartyKit before any messages are delivered.
+   * Restores state, bot personalities, and the kicked-pid set from storage
+   * so the room survives DO hibernation, deploys, and evictions.
+   */
+  async onStart(): Promise<void> {
+    try {
+      const stored = await this.room.storage.get<ServerGameState>(STORAGE_KEY_STATE);
+      if (stored) this.state = stored;
+      const meta = await this.room.storage.get<Record<string, BotMeta>>(STORAGE_KEY_BOT_META);
+      if (meta) this.botMeta = meta;
+      const kicked = await this.room.storage.get<string[]>(STORAGE_KEY_KICKED);
+      if (kicked) this.kickedPids = new Set(kicked);
+    } catch (err) {
+      // Corrupt storage: fall back to fresh state. The schema is unversioned
+      // — first incompatible change should add a version field and migrate.
+      // eslint-disable-next-line no-console
+      console.error("[ding] failed to load persisted state, using fresh", err);
+      this.state = createInitialState();
+      this.botMeta = {};
+      this.kickedPids = new Set();
+    }
+
+    // Re-register bots for the post-hibernation BotController so they tick
+    // again. Without this, bots become inert players sitting at the table.
+    for (const p of this.state.players.filter((p) => p.isBot)) {
+      this.botController.rehydrateBot(p, this.botMeta[p.id]);
+    }
+    this.botController.notifyStateChanged();
+    await this.scheduleNextAlarm();
   }
 
   private getPlayerByConn(connId: string): Player | undefined {
@@ -91,16 +134,22 @@ export default class DingServer implements Party.Server {
   }
 
   /**
-   * Start a 1-second interval that checks for round timer expiry.  The
-   * interval is cleaned up automatically when the PartyKit worker stops
-   * (room hibernates or server restarts).
+   * Evict lobby players whose grace window has elapsed since they
+   * disconnected. Reuses `removePlayerFromLobby` for creator transfer.
+   * Returns true if any player was removed.
    */
-  private startRoundTimerCheck(): void {
-    setInterval(() => {
-      if (this.applyRoundTimerIfExpired()) {
-        this.broadcast();
-      }
-    }, 1000);
+  private sweepLobbyGhosts(): boolean {
+    if (this.state.phase !== "lobby") return false;
+    const now = Date.now();
+    const stale = this.state.players.filter(
+      (p) =>
+        !p.connected &&
+        p.disconnectedAt !== null &&
+        p.disconnectedAt !== undefined &&
+        p.disconnectedAt + LOBBY_GRACE_MS <= now
+    );
+    for (const p of stale) this.removePlayerFromLobby(p.id);
+    return stale.length > 0;
   }
 
   private removePlayerFromLobby(targetId: string): void {
@@ -114,16 +163,89 @@ export default class DingServer implements Party.Server {
       next.isCreator = true;
     }
     this.lastChatAt.delete(targetId);
-    if (removed.isBot) this.botController.removeBot(removed.id);
+    if (removed.isBot) {
+      this.botController.removeBot(removed.id);
+      delete this.botMeta[removed.id];
+      void this.room.storage.put(STORAGE_KEY_BOT_META, this.botMeta);
+    }
   }
 
+  /**
+   * Synchronously broadcast the current masked state to every connection
+   * and notify the bot controller. Persistence + alarm scheduling are
+   * fire-and-forget so this stays sync — DO keeps the worker alive for
+   * in-flight promises until they resolve.
+   */
   private broadcast(): void {
     assertRankingInvariant(this.state);
     // Enforce the round timer server-side on every state change so bots
-    // get auto-readied without waiting for the 1-second interval.
+    // get auto-readied without waiting for the alarm to fire.
     this.applyRoundTimerIfExpired();
     broadcastStateTo(this.room, this.state, this.connections);
     this.botController.notifyStateChanged();
+    void this.persistState();
+    void this.scheduleNextAlarm();
+  }
+
+  private async persistState(): Promise<void> {
+    try {
+      await this.room.storage.put(STORAGE_KEY_STATE, this.state);
+      await this.room.storage.put(STORAGE_KEY_KICKED, Array.from(this.kickedPids));
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[ding] persistState failed", err);
+    }
+  }
+
+  /**
+   * Compute the next time the alarm should fire (round-timer expiry or
+   * lobby-ghost grace expiry) and arm it. Deletes the alarm entirely if
+   * nothing pending — this lets the DO hibernate.
+   */
+  private async scheduleNextAlarm(): Promise<void> {
+    const candidates: number[] = [];
+    const { phase, phaseStartedAt, roundTimerSeconds } = this.state;
+    if (
+      phaseStartedAt !== null &&
+      roundTimerSeconds > 0 &&
+      phase !== "lobby" &&
+      phase !== "reveal"
+    ) {
+      candidates.push(phaseStartedAt + roundTimerSeconds * 1000);
+    }
+    if (phase === "lobby") {
+      for (const p of this.state.players) {
+        if (
+          !p.connected &&
+          p.disconnectedAt !== null &&
+          p.disconnectedAt !== undefined
+        ) {
+          candidates.push(p.disconnectedAt + LOBBY_GRACE_MS);
+        }
+      }
+    }
+    try {
+      if (candidates.length === 0) {
+        await this.room.storage.deleteAlarm();
+        return;
+      }
+      const next = Math.max(Date.now() + 100, Math.min(...candidates));
+      await this.room.storage.setAlarm(next);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[ding] scheduleNextAlarm failed", err);
+    }
+  }
+
+  /**
+   * DO alarm handler — backstop for "no actions arrived since the timer
+   * expired" and the lobby-ghost sweeper. Inline checks at action
+   * boundaries do most of the work; this just covers the idle case.
+   */
+  async onAlarm(): Promise<void> {
+    this.sweepLobbyGhosts();
+    // broadcast() runs applyRoundTimerIfExpired and re-arms the next alarm.
+    this.broadcast();
   }
 
   private dispatchBotAction(playerId: string, msg: ClientMessage): void {
@@ -140,7 +262,8 @@ export default class DingServer implements Party.Server {
   /**
    * Handle WebSocket disconnect.
    *
-   * In lobby: marks player disconnected; may transfer creator role.
+   * In lobby: marks player disconnected and stamps `disconnectedAt` so the
+   *   ghost sweeper can evict them after the grace window.
    * In-game: marks disconnected and un-readies them.
    *
    * If all humans disconnect, the bot controller is reset so it will be
@@ -152,6 +275,7 @@ export default class DingServer implements Party.Server {
     if (player) {
       if (this.state.phase === "lobby") {
         player.connected = false;
+        player.disconnectedAt = Date.now();
         if (player.isCreator) {
           const nextConnected = this.state.players.find((p) => p.connected && !p.isBot);
           if (nextConnected) {
@@ -167,11 +291,7 @@ export default class DingServer implements Party.Server {
     }
     if (this.connections.size === 0) {
       this.botController.dispose();
-      this.botController = new BotController({
-        getState: () => this.state,
-        dispatch: (playerId, msg) => this.dispatchBotAction(playerId, msg),
-        mask: (playerId) => buildClientState(this.state, playerId),
-      });
+      this.botController = this.makeBotController();
     }
   }
 
@@ -199,6 +319,10 @@ export default class DingServer implements Party.Server {
    * 1. **Reconnect**: matching `pid` exists → update connId, mark connected.
    * 2. **New join in lobby**: fresh player, room not full.
    * 3. **Rejected**: game in progress, room full, or player was kicked.
+   *
+   * Belt-and-suspenders for room-full: opportunistically sweep lobby ghosts
+   * before rejecting so a kicked tab leaving doesn't block a new join for
+   * 30 seconds.
    */
   private handleJoin(
     msg: Extract<ClientMessage, { type: "join" }>,
@@ -213,6 +337,7 @@ export default class DingServer implements Party.Server {
     if (existingPlayer) {
       existingPlayer.connId = sender.id;
       existingPlayer.connected = true;
+      existingPlayer.disconnectedAt = null;
       sender.send(JSON.stringify({ type: "welcome", playerId: existingPlayer.id } as ServerMessage));
       this.broadcast();
       return;
@@ -227,6 +352,10 @@ export default class DingServer implements Party.Server {
       sender.send(JSON.stringify({ type: "error", message: "Game already in progress" } as ServerMessage));
       sender.close();
       return;
+    }
+    if (this.state.players.length >= MAX_PLAYERS) {
+      // Try to free a seat from a stale ghost before refusing.
+      this.sweepLobbyGhosts();
     }
     if (this.state.players.length >= MAX_PLAYERS) {
       sender.send(JSON.stringify({ type: "error", message: `Room is full (max ${MAX_PLAYERS} players)` } as ServerMessage));

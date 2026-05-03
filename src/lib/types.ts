@@ -55,6 +55,11 @@ export type Player = {
   isBot?: boolean;
   /** True if this player has custom output (name started with -=). */
   isCustom?: boolean;
+  /**
+   * Server timestamp (ms) when the lobby player disconnected, used by the
+   * lobby-ghost sweeper. Cleared when they reconnect or leave the lobby.
+   */
+  disconnectedAt?: number | null;
 };
 
 /** Game phase. */

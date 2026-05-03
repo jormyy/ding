@@ -170,13 +170,10 @@ describe('Round timer server-side enforcement', () => {
     }
 
     // Both hands should now be placed.  The round timer (5s) is expired.
-    // The next interval tick should auto-ready both players and advance
-    // the phase.
-    for (let i = 0; i < 5; i++) {
-      vi.advanceTimersByTime(1000)
-      state = getBroadcastState(conn)
-      if (state.phase !== 'preflop') break
-    }
+    // Fire the DO alarm directly — in production the PartyKit framework
+    // wakes the worker at the scheduled time; under fake timers we trigger
+    // it manually since no framework is running.
+    await (srv as unknown as { onAlarm: () => Promise<void> }).onAlarm()
 
     state = getBroadcastState(conn)
     expect(state.phase).not.toBe('preflop')

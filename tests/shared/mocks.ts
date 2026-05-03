@@ -49,15 +49,55 @@ export class FakeConn {
 }
 
 /**
+ * In-memory stub of `Party.Storage` so tests don't need to wire DO storage.
+ */
+class FakeStorage {
+  data: Map<string, unknown> = new Map()
+  alarmTime: number | null = null
+
+  async get<T>(key: string): Promise<T | undefined> {
+    return this.data.get(key) as T | undefined
+  }
+  async put<T>(key: string, value: T): Promise<void> {
+    // Deep-clone to mimic Cloudflare's serialize-on-put semantics; otherwise
+    // tests would see live references mutate after the put resolves.
+    this.data.set(key, JSON.parse(JSON.stringify(value)))
+  }
+  async delete(key: string): Promise<boolean> {
+    return this.data.delete(key)
+  }
+  async setAlarm(time: number): Promise<void> {
+    this.alarmTime = time
+  }
+  async getAlarm(): Promise<number | null> {
+    return this.alarmTime
+  }
+  async deleteAlarm(): Promise<void> {
+    this.alarmTime = null
+  }
+}
+
+/**
  * Fake Room that tracks connections and broadcasts
  */
 export class FakeRoom {
   id: string
   connections: Map<string, FakeConn> = new Map()
   broadcastMessages: any[] = []
+  storage: FakeStorage = new FakeStorage()
 
   constructor(id = 'test-room') {
     this.id = id
+  }
+
+  async setAlarm(time: number): Promise<void> {
+    this.storage.alarmTime = time
+  }
+  async getMyAlarm(): Promise<number | null> {
+    return this.storage.alarmTime
+  }
+  async deleteAlarm(): Promise<void> {
+    this.storage.alarmTime = null
   }
 
   addConnection(conn: FakeConn): void {

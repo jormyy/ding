@@ -3,7 +3,14 @@ import type { Phase } from "./types";
 // Player / room limits
 export const MAX_PLAYERS = 8;
 export const MAX_TOTAL_HANDS = 22;
-export const ROOM_CODE_LENGTH = 4;
+export const ROOM_CODE_LENGTH = 6;
+
+/**
+ * How long a disconnected lobby player lingers before the server evicts
+ * them. Prevents disconnected ghosts from holding seats and blocking new
+ * joiners. Reconnects within the window restore the seat.
+ */
+export const LOBBY_GRACE_MS = 30_000;
 
 // Chat limits
 export const MAX_CHAT_MESSAGES = 100;

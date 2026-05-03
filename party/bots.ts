@@ -9,6 +9,12 @@ import {
 } from "../src/lib/ai/personality";
 import { pickUnusedArchetype, type Archetype } from "../src/lib/ai/archetypes";
 
+/** Persisted-across-hibernation identity for a single bot. */
+export type BotMeta = {
+  archetype: Archetype;
+  traits: Traits;
+};
+
 /** Internal state for a single bot player. */
 type BotRecord = {
   player: Player;
@@ -29,6 +35,11 @@ export type BotControllerOptions = {
   dispatch: (playerId: string, msg: ClientMessage) => void;
   /** Build a masked client state for a specific bot (same view humans see). */
   mask: (playerId: string) => GameState;
+  /**
+   * Persist a bot's archetype + traits so it survives DO hibernation with
+   * the same personality. Called from `addBot`; safe to fire-and-forget.
+   */
+  persistBotMeta?: (playerId: string, meta: BotMeta) => void;
 };
 
 /**
@@ -93,7 +104,39 @@ export class BotController {
       earliestNextActionAt: 0,
       firstActionPhase: "",
     });
+    this.opts.persistBotMeta?.(pid, { archetype, traits });
     return player;
+  }
+
+  /**
+   * Re-register a bot for an existing Player (post-hibernation rehydration).
+   * Does NOT push to state — caller is replaying state already loaded from
+   * storage. If `meta` is missing (e.g. botMeta key got dropped), generates
+   * a fresh personality so the bot still acts.
+   */
+  rehydrateBot(player: Player, meta?: BotMeta): void {
+    if (this.bots.has(player.id)) return;
+    let archetype: Archetype;
+    let traits: Traits;
+    if (meta) {
+      archetype = meta.archetype;
+      traits = meta.traits;
+    } else {
+      const usedArchetypes = new Set<Archetype>();
+      for (const rec of this.bots.values()) usedArchetypes.add(rec.archetype);
+      archetype = pickUnusedArchetype(usedArchetypes);
+      traits = randomTraits(archetype).traits;
+    }
+    this.bots.set(player.id, {
+      player,
+      traits,
+      archetype,
+      memo: newBotMemo(),
+      timer: null,
+      pending: false,
+      earliestNextActionAt: 0,
+      firstActionPhase: "",
+    });
   }
 
   /** Remove a bot and clear its pending timer. */

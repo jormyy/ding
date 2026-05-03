@@ -7,14 +7,11 @@ import { ROOM_CODE_LENGTH } from "@/lib/constants";
 
 export default function HomePage() {
   const router = useRouter();
-  const [joinCode, setJoinCode] = useState<string[]>(["", "", "", ""]);
+  const [joinCode, setJoinCode] = useState<string[]>(() =>
+    Array(ROOM_CODE_LENGTH).fill("")
+  );
   const [joinError, setJoinError] = useState("");
-  const inputRefs = [
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-  ];
+  const inputRefs = useRef<HTMLInputElement[]>([]);
 
   function handleCreateGame() {
     const code = generateRoomCode();
@@ -24,7 +21,7 @@ export default function HomePage() {
   function handleJoinGame() {
     const code = joinCode.join("").trim().toUpperCase();
     if (code.length !== ROOM_CODE_LENGTH) {
-      setJoinError("Enter all 4 characters");
+      setJoinError(`Enter all ${ROOM_CODE_LENGTH} characters`);
       return;
     }
     router.push(`/room/${code}`);
@@ -36,12 +33,12 @@ export default function HomePage() {
     next[i] = ch;
     setJoinCode(next);
     setJoinError("");
-    if (ch && i < 3) inputRefs[i + 1].current?.focus();
+    if (ch && i < ROOM_CODE_LENGTH - 1) inputRefs.current[i + 1]?.focus();
   }
 
   function handleCharKeyDown(i: number, e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Backspace" && !joinCode[i] && i > 0) {
-      inputRefs[i - 1].current?.focus();
+      inputRefs.current[i - 1]?.focus();
     }
     if (e.key === "Enter") handleJoinGame();
   }
@@ -102,7 +99,7 @@ export default function HomePage() {
             <div>
               <p className="text-[10px] font-black tracking-[0.25em] uppercase mb-1" style={{ color: "#9fc5a8" }}>New Table</p>
               <h2 className="font-serif text-2xl font-bold" style={{ color: "#f5e6b8" }}>Host a game</h2>
-              <p className="text-sm mt-1" style={{ color: "#9fc5a8" }}>Start a room. Share a 4-letter code.</p>
+              <p className="text-sm mt-1" style={{ color: "#9fc5a8" }}>Start a room. Share a {ROOM_CODE_LENGTH}-letter code.</p>
             </div>
             <GoldButton onClick={handleCreateGame}>Deal me in →</GoldButton>
           </div>
@@ -117,12 +114,14 @@ export default function HomePage() {
           >
             <div>
               <p className="text-[10px] font-black tracking-[0.25em] uppercase mb-3" style={{ color: "#9fc5a8" }}>Join a Table</p>
-              {/* 4-char boxes */}
+              {/* Code boxes — count driven by ROOM_CODE_LENGTH */}
               <div className="flex gap-2">
-                {[0, 1, 2, 3].map((i) => (
+                {Array.from({ length: ROOM_CODE_LENGTH }, (_, i) => (
                   <input
                     key={i}
-                    ref={inputRefs[i]}
+                    ref={(el) => {
+                      if (el) inputRefs.current[i] = el;
+                    }}
                     type="text"
                     inputMode="text"
                     value={joinCode[i]}
@@ -135,7 +134,7 @@ export default function HomePage() {
                       background: "rgba(0,0,0,0.4)",
                       border: `1.5px solid ${joinCode[i] ? "#c9a54a" : "rgba(201,165,74,0.35)"}`,
                       color: "#f5e6b8",
-                      fontSize: "clamp(24px, 6vw, 36px)",
+                      fontSize: "clamp(20px, 5vw, 32px)",
                     }}
                     aria-label={`Room code digit ${i + 1}`}
                   />
