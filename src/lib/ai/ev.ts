@@ -26,6 +26,7 @@ export function expectedInversions(
       const a = filled[i], b = filled[j];
       // lower slot index = claimed stronger. Inversion if stronger-by-estimate
       // sits at a higher (worse) slot than weaker-by-estimate.
+      // Inversion counting without threshold (original behavior).
       if (a.slot < b.slot && a.s < b.s) inv++;
       if (a.slot > b.slot && a.s > b.s) inv++;
     }

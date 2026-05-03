@@ -15,7 +15,10 @@ import { randomTraits, type Traits } from "../src/lib/ai/personality";
 import type { Archetype } from "../src/lib/ai/archetypes";
 import type { ClientMessage } from "../src/lib/types";
 import type * as Party from "partykit/server";
-import { computeTrueRanks } from "../party/scoring";
+import { computeTrueRanks, computeTrueRanking } from "../party/scoring";
+import type { TraceSink, TruthTrace } from "../src/lib/ai/trace";
+import { currentHandStrength } from "../src/lib/ai/handStrength";
+import * as fs from "fs";
 
 function argOr(name: string, fallback: number): number {
   const i = process.argv.indexOf("--" + name);
@@ -25,6 +28,12 @@ function argOr(name: string, fallback: number): number {
 function argFlag(name: string): boolean {
   return process.argv.indexOf("--" + name) !== -1;
 }
+function argStr(name: string): string | null {
+  const i = process.argv.indexOf("--" + name);
+  if (i === -1) return null;
+  const v = process.argv[i + 1];
+  return v ?? null;
+}
 
 const NUM_GAMES = argOr("games", 50);
 const NUM_BOTS = argOr("bots", 4); // bots added via addBot
@@ -33,6 +42,8 @@ const NSIMS = argOr("nSims", 80);
 const VERBOSE = argFlag("verbose");
 const SEED_BASE = argOr("seed", 0);
 const ORACLE = argFlag("oracle");
+const TRACE_PATH = argStr("trace");
+const COOLDOWN_MS = argOr("cooldown", 0); // sleep between games to limit thermal load
 
 class FakeConn {
   public closed = false;
@@ -42,6 +53,20 @@ class FakeConn {
 }
 function asPartyConnection(c: FakeConn): Party.Connection { return c as unknown as Party.Connection; }
 function makeFakeRoom(): Party.Room {
+  // No-op storage: the persistence path was added when DO alarms replaced
+  // setInterval, but the fast harness has no need for durable state — we
+  // throw away the room after each game.
+  const storage = {
+    get: async () => undefined,
+    put: async () => {},
+    delete: async () => false,
+    deleteAll: async () => {},
+    list: async () => new Map(),
+    getAlarm: async () => null,
+    setAlarm: async () => {},
+    deleteAlarm: async () => {},
+    transaction: async (cb: (txn: unknown) => Promise<void>) => { await cb({}); },
+  };
   return {
     id: "sim-room", internalID: "sim-room",
     env: {} as Record<string, unknown>,
@@ -52,7 +77,7 @@ function makeFakeRoom(): Party.Room {
     getMyAlarm: () => Promise.resolve(null),
     setAlarm: () => Promise.resolve(),
     deleteAlarm: () => Promise.resolve(),
-    storage: {} as unknown as Party.Storage,
+    storage: storage as unknown as Party.Storage,
   };
 }
 
@@ -96,9 +121,56 @@ type SimResult = {
   crossInversions: number;      // misordered pairs across players (cooperation)
 };
 
-async function runOneGame(gameIdx: number): Promise<SimResult> {
+type TraceWriter = ((line: string) => void) | null;
+
+async function runOneGame(gameIdx: number, traceWriter: TraceWriter): Promise<SimResult> {
   const stats = freshStats();
   let integrityFailures = 0;
+  // Per-bot wrapped trace sink — adds gameId / tick before serializing.
+  let curTick = 0;
+  const makeSink = (archetype: Archetype): TraceSink | undefined => {
+    if (!traceWriter) return undefined;
+    return (event) => {
+      traceWriter(JSON.stringify({ ...event, gameId: gameIdx, tick: curTick, archetype }));
+    };
+  };
+  // Emit a truth event capturing ground truth at the current state. Called
+  // once per phase boundary (when entering a new game phase) and again at
+  // reveal so audit checks can compare belief/placement to ground truth.
+  let lastTruthPhase = "";
+  const emitTruth = (s: ServerGameState): void => {
+    if (!traceWriter) return;
+    const phasesWithCards = ["preflop", "flop", "turn", "river", "reveal"];
+    if (!phasesWithCards.includes(s.phase)) return;
+    if (s.phase === lastTruthPhase) return;
+    if (s.hands.length === 0) return;
+    lastTruthPhase = s.phase;
+    const board = s.allCommunityCards.length > 0 ? s.allCommunityCards : s.communityCards;
+    const ranking = computeTrueRanking(s.hands, board);
+    const truePercentile: Record<string, number> = {};
+    const N = Math.max(1, ranking.length - 1);
+    ranking.forEach((id, i) => { truePercentile[id] = 1 - i / N; });
+    const handPlayers: Record<string, string> = {};
+    const trueStrength: Record<string, number> = {};
+    for (const h of s.hands) {
+      handPlayers[h.id] = h.playerId;
+      // currentHandStrength is the same scale used by bot estimates — gives
+      // us a like-for-like number for own-hand misplacement checks.
+      if (h.cards.length >= 2) {
+        trueStrength[h.id] = currentHandStrength(h.cards, board);
+      }
+    }
+    const ev: TruthTrace = {
+      type: "truth",
+      phase: s.phase,
+      trueRanking: ranking,
+      truePercentile,
+      ranking: s.ranking.slice(),
+      handPlayers,
+      trueStrength,
+    };
+    traceWriter(JSON.stringify({ ...ev, gameId: gameIdx, tick: curTick }));
+  };
 
   const room = makeFakeRoom();
   const server = new DingServer(room);
@@ -130,9 +202,10 @@ async function runOneGame(gameIdx: number): Promise<SimResult> {
   // Per-bot record, keyed by pid. The control "human" gets one too — same
   // brain; we just dispatch via onMessage instead of dispatchBotAction so
   // it goes through the human path.
-  type Rec = { traits: Traits; memo: BotMemo; archetype: Archetype; isCtl: boolean };
+  type Rec = { traits: Traits; memo: BotMemo; archetype: Archetype; isCtl: boolean; sink?: TraceSink };
   const recs = new Map<string, Rec>();
-  recs.set(ctlPid, { ...randomTraits(), memo: newBotMemo(), isCtl: true });
+  const ctlInit = randomTraits();
+  recs.set(ctlPid, { ...ctlInit, memo: newBotMemo(), isCtl: true, sink: makeSink(ctlInit.archetype) });
   // Pull bot pids and reuse their existing traits/memos via reflection.
   // We cannot access BotController's internals directly here, but we can mirror
   // by giving each bot a fresh memo + new random traits — driving them through
@@ -140,7 +213,8 @@ async function runOneGame(gameIdx: number): Promise<SimResult> {
   // our own memo per pid.
   const botPids = typedServer.botController.listPlayerIds();
   for (const pid of botPids) {
-    recs.set(pid, { ...randomTraits(), memo: newBotMemo(), isCtl: false });
+    const r = randomTraits();
+    recs.set(pid, { ...r, memo: newBotMemo(), isCtl: false, sink: makeSink(r.archetype) });
   }
 
   const archetypes = Array.from(recs.values()).map((r) => r.archetype);
@@ -214,6 +288,8 @@ async function runOneGame(gameIdx: number): Promise<SimResult> {
     const s = typedServer.state;
     if (s.phase === "reveal" && s.score !== null) break;
     setOracleBeliefs();
+    curTick = ticks;
+    emitTruth(s);
 
     // Integrity: count at most one violation per game.
     if (integrityFailures === 0) {
@@ -232,7 +308,7 @@ async function runOneGame(gameIdx: number): Promise<SimResult> {
       const player = s.players.find((p) => p.id === pid);
       if (!player) continue;
       const masked = buildClientState(s, pid);
-      const msg = decideAction(masked, pid, rec.traits, rec.memo, { nSims: NSIMS });
+      const msg = decideAction(masked, pid, rec.traits, rec.memo, { nSims: NSIMS, trace: rec.sink });
       if (!msg) continue;
       // Skip purely-expressive actions for benchmark speed (still counted).
       if (rec.isCtl) {
@@ -344,6 +420,16 @@ function mean(xs: number[]): number {
 async function main() {
   // eslint-disable-next-line no-console
   console.log(`Running ${NUM_GAMES} games (FAST): ${NUM_BOTS} bots + 1 ctrl, ${HANDS} hands/player, nSims=${NSIMS}`);
+  let traceFh: number | null = null;
+  let traceWriter: TraceWriter = null;
+  if (TRACE_PATH) {
+    traceFh = fs.openSync(TRACE_PATH, "w");
+    traceWriter = (line: string) => {
+      fs.writeSync(traceFh!, line + "\n");
+    };
+    // eslint-disable-next-line no-console
+    console.log(`Tracing to ${TRACE_PATH}`);
+  }
   const inversions: number[] = [];
   const allStats: Stats[] = [];
   const archetypeWins = new Map<Archetype, { wins: number; games: number }>();
@@ -353,7 +439,8 @@ async function main() {
   let totalOwnInv = 0, totalCrossInv = 0;
   const startMs = Date.now();
   for (let g = 0; g < NUM_GAMES; g++) {
-    const r = await runOneGame(g);
+    if (COOLDOWN_MS > 0 && g > 0) await new Promise((r) => setTimeout(r, COOLDOWN_MS));
+    const r = await runOneGame(g, traceWriter);
     totalIntegrityFails += r.integrityFailures;
     for (const a of r.archetypes) {
       const cur = archetypeWins.get(a) ?? { wins: 0, games: 0 };
@@ -414,6 +501,7 @@ async function main() {
     // eslint-disable-next-line no-console
     console.log(`  ${a.padEnd(14)} ${wr.toFixed(1)}%   (${st.wins}/${st.games})`);
   }
+  if (traceFh !== null) fs.closeSync(traceFh);
   process.exit(totalIntegrityFails > 0 ? 1 : 0);
 }
 

@@ -16,6 +16,7 @@ import type { Card } from "../types";
 import { Hand as PokerHand } from "pokersolver";
 import { cardToPokersolverStr } from "../utils";
 import { createDeck } from "../deckUtils";
+import { preflopTierStrength, currentHandStrength } from "./handStrength";
 
 /** String key for a 2-card combo, e.g. "AS-KH". Deterministic order. */
 export type ComboKey = string;
@@ -73,29 +74,10 @@ export function initRange(
  */
 export type PercentileMap = Map<ComboKey, number>;
 
-const RANK_VALUE: Record<string, number> = {
-  "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9,
-  T: 10, J: 11, Q: 12, K: 13, A: 14,
-};
-
 function preflopScalar(a: Card, b: Card): number {
-  const hi = Math.max(RANK_VALUE[a.rank], RANK_VALUE[b.rank]);
-  const lo = Math.min(RANK_VALUE[a.rank], RANK_VALUE[b.rank]);
-  const suited = a.suit === b.suit;
-  const pair = a.rank === b.rank;
-  const gap = hi - lo;
-  let score: number;
-  if (pair) {
-    score = 0.5 + ((hi - 2) / 12) * 0.5;
-  } else {
-    score = (hi / 14) * 0.55 + (lo / 14) * 0.25;
-    if (suited) score += 0.05;
-    if (gap === 1) score += 0.04;
-    else if (gap === 2) score += 0.02;
-    else if (gap >= 5) score -= 0.04;
-    if (hi >= 12 && lo >= 10) score += 0.04;
-  }
-  return Math.max(0, Math.min(1, score));
+  // Use the same tier-based scoring as the bot's own hand estimates so
+  // that range beliefs and scalar beliefs share the same strength scale.
+  return preflopTierStrength([a, b]);
 }
 
 /**
@@ -178,6 +160,31 @@ export function applyPlacement(
 }
 
 /**
+ * Map from combo key to its absolute strength on the current board.
+ * Uses the same `currentHandStrength` scale as the bot's own hand estimates,
+ * so range-derived beliefs are directly comparable to scalar beliefs.
+ */
+export type AbsoluteStrengthMap = Map<ComboKey, number>;
+
+/**
+ * Build an absolute strength map for all possible 2-card combos on the board.
+ */
+export function buildAbsoluteStrengthMap(
+  excluded: Set<string>,
+  board: Card[]
+): AbsoluteStrengthMap {
+  const candidates = createDeck().filter((c) => !excluded.has(cardKey(c)));
+  const out: AbsoluteStrengthMap = new Map();
+  for (let i = 0; i < candidates.length; i++) {
+    for (let j = i + 1; j < candidates.length; j++) {
+      const a = candidates[i], b = candidates[j];
+      out.set(makeComboKey(a, b), currentHandStrength([a, b], board));
+    }
+  }
+  return out;
+}
+
+/**
  * Remove combos from a range that are inconsistent with newly known cards.
  * Called when the board changes or a hand is flipped, revealing new cards.
  */
@@ -204,6 +211,27 @@ export function rangeMeanStrength(
     if (p === undefined) continue;
     totalW += w;
     acc += p * w;
+  }
+  if (totalW <= 0) return 0.5;
+  return acc / totalW;
+}
+
+/**
+ * Weighted-mean absolute strength across a range belief.
+ * Uses the same scale as `currentHandStrength`, making it directly
+ * compatible with scalar beliefs and own-hand estimates.
+ */
+export function rangeMeanAbsoluteStrength(
+  range: RangeBelief,
+  strengths: AbsoluteStrengthMap
+): number {
+  let totalW = 0;
+  let acc = 0;
+  for (const [key, w] of range.weights) {
+    const s = strengths.get(key);
+    if (s === undefined) continue;
+    totalW += w;
+    acc += s * w;
   }
   if (totalW <= 0) return 0.5;
   return acc / totalW;

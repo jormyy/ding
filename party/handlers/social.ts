@@ -7,32 +7,36 @@ import {
 } from "../../src/lib/constants";
 import type { Handler } from "./types";
 
-export const ding: Handler = (state, player) => {
+export const ding: Handler = (state, player, msg) => {
+  if (msg.type !== "ding") return { kind: "ignore" };
   state.dingLog.push({
     playerId: player.id,
     playerName: player.name,
     phase: state.phase,
     ts: Date.now(),
+    handId: msg.handId,
   });
   if (state.dingLog.length > MAX_SIGNAL_LOG) {
     state.dingLog = state.dingLog.slice(-MAX_SIGNAL_LOG);
   }
-  const msg: ServerMessage = { type: "ding", playerName: player.name };
-  return { kind: "broadcast-raw-and-state", payload: JSON.stringify(msg) };
+  const serverMsg: ServerMessage = { type: "ding", playerName: player.name };
+  return { kind: "broadcast-raw-and-state", payload: JSON.stringify(serverMsg) };
 };
 
-export const fuckoff: Handler = (state, player) => {
+export const fuckoff: Handler = (state, player, msg) => {
+  if (msg.type !== "fuckoff") return { kind: "ignore" };
   state.fuckoffLog.push({
     playerId: player.id,
     playerName: player.name,
     phase: state.phase,
     ts: Date.now(),
+    handId: msg.handId,
   });
   if (state.fuckoffLog.length > MAX_SIGNAL_LOG) {
     state.fuckoffLog = state.fuckoffLog.slice(-MAX_SIGNAL_LOG);
   }
-  const msg: ServerMessage = { type: "fuckoff", playerName: player.name };
-  return { kind: "broadcast-raw-and-state", payload: JSON.stringify(msg) };
+  const serverMsg: ServerMessage = { type: "fuckoff", playerName: player.name };
+  return { kind: "broadcast-raw-and-state", payload: JSON.stringify(serverMsg) };
 };
 
 export const chat: Handler = (state, player, msg, ctx) => {

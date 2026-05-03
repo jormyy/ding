@@ -100,8 +100,53 @@ export function processSocialSignals(
       }
     }
 
-    if (candidate) {
-      boosts.set(candidate, (boosts.get(candidate) ?? 0) + 0.10);
+    // If the ding includes a specific handId, boost that hand strongly.
+    // Otherwise boost all of the teammate's hands slightly.
+    if (sig.handId) {
+      boosts.set(sig.handId, (boosts.get(sig.handId) ?? 0) + 0.25);
+    } else {
+      for (const h of theirHands) {
+        boosts.set(h.id, (boosts.get(h.id) ?? 0) + 0.10);
+      }
+    }
+  }
+
+  const newFuckoffs = state.fuckoffLog.slice(mem.processedFuckoffLen);
+  mem.processedFuckoffLen = state.fuckoffLog.length;
+
+  for (const sig of newFuckoffs) {
+    if (sig.playerId === myPlayerId) continue;
+    const theirHands = state.hands.filter((h) => h.playerId === sig.playerId);
+    let candidate: string | null = null;
+    let bestDrop = 0;
+    for (const h of theirHands) {
+      const prevSlot = mem.prevSlots.get(h.id);
+      const curSlot = state.ranking.indexOf(h.id);
+      if (prevSlot !== undefined && prevSlot !== -1 && curSlot !== -1 && curSlot > prevSlot) {
+        const drop = curSlot - prevSlot;
+        if (drop > bestDrop) {
+          bestDrop = drop;
+          candidate = h.id;
+        }
+      }
+    }
+    if (!candidate) {
+      for (const h of theirHands) {
+        const curSlot = state.ranking.indexOf(h.id);
+        if (curSlot !== -1 && curSlot >= state.ranking.length - 2) {
+          candidate = h.id;
+          break;
+        }
+      }
+    }
+    // If the fuckoff includes a specific handId, lower that hand strongly.
+    // Otherwise lower all of the teammate's hands slightly.
+    if (sig.handId) {
+      boosts.set(sig.handId, (boosts.get(sig.handId) ?? 0) - 0.25);
+    } else {
+      for (const h of theirHands) {
+        boosts.set(h.id, (boosts.get(h.id) ?? 0) - 0.10);
+      }
     }
   }
 
@@ -109,7 +154,8 @@ export function processSocialSignals(
 }
 
 /**
- * Should this bot send a ding? True for premium hands or fresh improvements.
+ * Should this bot send a ding? Returns the handId of the premium hand to ding,
+ * or null if no ding should be sent.
  */
 export function shouldSemanticDing(
   state: GameState,
@@ -117,41 +163,42 @@ export function shouldSemanticDing(
   estimates: Map<string, number>,
   mem: SocialMemory,
   traits: { extraversion: number; conscientiousness: number; dingTendency?: number }
-): boolean {
+): string | null {
   const myHands = state.hands.filter((h) => h.playerId === myPlayerId);
-  if (myHands.length === 0) return false;
+  if (myHands.length === 0) return null;
 
-  if (mem.phaseTick > 6) return false;
+  if (mem.phaseTick > 6) return null;
   const alreadyDinged = state.dingLog.some(
     (s) => s.playerId === myPlayerId && s.phase === state.phase
   );
-  if (alreadyDinged) return false;
+  if (alreadyDinged) return null;
 
   const tendency = traits.dingTendency ?? 1.0;
 
   for (const h of myHands) {
     const est = estimates.get(h.id) ?? 0.5;
     // Premium hand on current phase.
-    if (est > 0.75) {
+    if (est > 0.65) {
       const threshold = 0.55 - traits.extraversion * 0.15 + traits.conscientiousness * 0.1;
       // Higher dingTendency → easier to clear the random gate.
-      if (Math.random() > threshold * (2 - tendency)) return true;
+      if (Math.random() > threshold * (2 - tendency)) return h.id;
     }
   }
 
-  return false;
+  return null;
 }
 
 /**
- * Should this bot send a fuckoff? True for hard-reject scenarios.
+ * Should this bot send a fuckoff? Returns the handId of the garbage hand to
+ * fuckoff, or null if no fuckoff should be sent.
  */
 export function shouldSemanticFuckoff(
   state: GameState,
   myPlayerId: string,
   memo: { myRejectedKeys: Set<string> },
   mem: SocialMemory,
-  traits: { agreeableness: number; neuroticism: number; fuckoffTendency?: number }
-): { targetPlayerId?: string; reason: "reject" | "repeat" | "defense" } | null {
+  traits: { agreeableness: number; neuroticism: number; fuckoffTendency?: number },
+): { handId: string; targetPlayerId?: string; reason: "reject" | "repeat" | "defense" } | null {
   if (mem.phaseTick <= 1) return null;
   const alreadyFuckedOff = state.fuckoffLog.some(
     (s) => s.playerId === myPlayerId && s.phase === state.phase
@@ -167,7 +214,7 @@ export function shouldSemanticFuckoff(
     const key = r.initiatorHandId + "|" + r.recipientHandId;
     if (memo.myRejectedKeys.has(key)) {
       if (Math.random() < (0.4 + traits.neuroticism * 0.2) * tendency) {
-        return { targetPlayerId: r.initiatorId, reason: "repeat" };
+        return { handId: rh.id, targetPlayerId: r.initiatorId, reason: "repeat" };
       }
     }
   }
@@ -180,7 +227,7 @@ export function shouldSemanticFuckoff(
     if (slot !== -1 && slot <= 1) {
       const p = ((1 - traits.agreeableness) * 0.20 + traits.neuroticism * 0.08) * tendency;
       if (Math.random() < p) {
-        return { targetPlayerId: r.initiatorId, reason: "defense" };
+        return { handId: rh.id, targetPlayerId: r.initiatorId, reason: "defense" };
       }
     }
   }
@@ -192,7 +239,7 @@ export function shouldSemanticFuckoff(
       for (const r of state.acquireRequests) {
         const rh = state.hands.find((h) => h.id === r.recipientHandId);
         if (rh && rh.playerId === myPlayerId) {
-          return { targetPlayerId: r.initiatorId, reason: "reject" };
+          return { handId: rh.id, targetPlayerId: r.initiatorId, reason: "reject" };
         }
       }
     }

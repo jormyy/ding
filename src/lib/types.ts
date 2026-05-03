@@ -158,6 +158,8 @@ export type SocialSignal = {
   phase: Phase;
   /** Unix timestamp in milliseconds. */
   ts: number;
+  /** Optional handId when the signal refers to a specific hand. */
+  handId?: string;
 };
 
 /**
@@ -180,8 +182,8 @@ export type ClientMessage =
   | { type: "unclaim"; handId: string }
   | { type: "playAgain" }
   | { type: "endGame" }
-  | { type: "ding" }
-  | { type: "fuckoff" }
+  | { type: "ding"; handId?: string }
+  | { type: "fuckoff"; handId?: string }
   | { type: "chat"; text: string }
   | { type: "customOutput"; text: string; rate: number; pitch: number; voiceURI?: string }
   | { type: "kick"; playerId: string }

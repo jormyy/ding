@@ -7,6 +7,7 @@ import {
   decayRange,
   pruneByExclusions,
   buildPercentileMap,
+  buildAbsoluteStrengthMap,
   type RangeBelief,
   type PercentileMap,
 } from "./range";
@@ -77,6 +78,8 @@ export type BeliefState = {
   percentiles: PercentileMap | null;
   /** Phase + board signature used to invalidate stale percentile caches. */
   percentilesPhaseSig: string;
+  /** Average absolute strength of all possible 2-card combos on current board. */
+  boardPrior: number;
 };
 
 /** Create a fresh empty belief state. */
@@ -88,6 +91,7 @@ export function newBeliefState(): BeliefState {
     ranges: new Map(),
     percentiles: null,
     percentilesPhaseSig: "",
+    boardPrior: 0.5,
   };
 }
 
@@ -98,20 +102,7 @@ function freshHabits(): TeammateHabits {
   };
 }
 
-/**
- * Deterministic tiny offset in roughly [-0.02, 0.02] derived from a hand id.
- * Used to break ties between unknown hands so they don't all collapse to 0.5.
- */
-function handJitter(handId: string): number {
-  let h = 0;
-  for (let i = 0; i < handId.length; i++) {
-    h = (h * 31 + handId.charCodeAt(i)) | 0;
-  }
-  // Map to roughly [-0.02, 0.02].
-  return ((h & 0xff) / 255 - 0.5) * 0.04;
-}
-
-function getOrInitTeammate(b: BeliefState, pid: string, skillPrior = 0.5): TeammateBelief {
+function getOrInitTeammate(b: BeliefState, pid: string, skillPrior = 0.7): TeammateBelief {
   let t = b.perTeammate.get(pid);
   if (!t) {
     t = { hands: new Map(), churnRate: 0, skillPrior, habits: freshHabits() };
@@ -129,11 +120,11 @@ function getOrInitTeammate(b: BeliefState, pid: string, skillPrior = 0.5): Teamm
  */
 export function phaseTrust(phase: string): number {
   switch (phase) {
-    case "preflop": return 0.25;
-    case "flop":    return 0.6;
-    case "turn":    return 0.85;
+    case "preflop": return 0.4;
+    case "flop":    return 1.0;
+    case "turn":    return 1.5;
     case "river":
-    case "reveal":  return 1.0;
+    case "reveal":  return 2.0;
     default:        return 0.5;
   }
 }
@@ -161,8 +152,11 @@ export function updateFromPlacement(
   const impliedStrength = totalHands <= 1 ? 0.5 : 1 - slot / (totalHands - 1);
   let hb = t.hands.get(handId);
   if (!hb) {
-    // Tiny per-hand prior jitter prevents unknown hands from clustering at 0.5.
-    hb = { mean: 0.5 + handJitter(handId), concentration: 1, lastSlot: null, slotStableFor: 0, phaseSlots: [] as number[] };
+    // Use board-aware prior instead of flat 0.5. On wet boards the average
+    // strength is higher; on dry boards it's lower. This gives bots a much
+    // better starting point for unknown hands.
+    const prior = b.boardPrior;
+    hb = { mean: prior, concentration: 1, lastSlot: null, slotStableFor: 0, phaseSlots: [] as number[] };
     t.hands.set(handId, hb);
   }
 
@@ -177,25 +171,29 @@ export function updateFromPlacement(
   // phases, the teammate has been consistently placing it the same way — that's
   // stronger evidence than a single-phase read. phaseSlots tracks closing slots
   // from prior phases (most recent last). Reward matches; penalize jumps.
+  //
+  // Scaled by skillPrior and capped: a low-skill teammate consistently
+  // misplacing a hand should not stack into a confident wrong belief.
   let crossPhaseBonus = 0;
   for (const ps of hb.phaseSlots) {
     if (ps === slot) {
-      crossPhaseBonus += 0.15; // same slot across phases → stronger belief
+      crossPhaseBonus += 0.5;
     } else if (Math.abs(ps - slot) <= 1 && totalHands <= 4) {
-      crossPhaseBonus += 0.05; // near-neighbor on small tables
+      crossPhaseBonus += 0.15;
     }
   }
-  crossPhaseBonus = Math.min(0.3, crossPhaseBonus);
+  crossPhaseBonus = Math.min(0.8, crossPhaseBonus * skillPrior);
 
   // Update weight grows with teammate skill, slot stability, and cross-phase
   // consistency, scaled by how informative this phase's placement is.
-  // Base weight: 0.2–0.5 depending on skill; doubled for very high-skill
-  // teammates so the professor/anchors lead the table effectively.
-  const skillWeight = skillPrior < 0.65 ? 0.2 : skillPrior;
-  const w = (0.3 + 0.5 * skillWeight + 0.3 * Math.min(5, hb.slotStableFor) + crossPhaseBonus) * phaseTrustWeight;
+  // Higher base weights so beliefs converge faster within 4 phases.
+  // Skill-weighted update — low-skill teammates' placements are weaker evidence.
+  // Keep a tiny floor so the update doesn't go to zero for skill ~ 0.
+  const skillWeight = Math.max(0.1, skillPrior);
+  const w = (1.0 + 1.0 * skillWeight + 0.5 * Math.min(5, hb.slotStableFor) + crossPhaseBonus) * phaseTrustWeight;
   const total = hb.concentration + w;
   hb.mean = (hb.mean * hb.concentration + impliedStrength * w) / total;
-  hb.concentration = Math.min(20, total);
+  hb.concentration = Math.min(25, total);
 
   b.handStrength.set(handId, hb.mean);
   b.handConfidence.set(handId, Math.min(1, hb.concentration / 10));
@@ -226,12 +224,18 @@ function findHandBelief(b: BeliefState, handId: string): HandBelief | null {
  * Decay confidence in a hand when its owner moves it to a different slot.
  * Called once per observed relocation during `perceiveState()`.
  */
-export function decayOnChurn(b: BeliefState, teammateId: string, handId: string): void {
+export function decayOnChurn(b: BeliefState, teammateId: string, handId: string, slotDelta?: number, totalHands?: number): void {
   const t = b.perTeammate.get(teammateId);
   if (!t) return;
   const hb = t.hands.get(handId);
   if (!hb) return;
-  hb.concentration = Math.max(1, hb.concentration * 0.6);
+  // Larger slot jumps → more decay (old belief is less relevant).
+  let decay = 0.6;
+  if (slotDelta !== undefined && totalHands !== undefined && totalHands > 1) {
+    const propChange = slotDelta / (totalHands - 1);
+    decay = Math.max(0.15, 1.0 - propChange * 0.9);
+  }
+  hb.concentration = Math.max(1, hb.concentration * decay);
   hb.slotStableFor = 0;
   t.churnRate = Math.min(1, t.churnRate * 0.9 + 0.15);
   b.handConfidence.set(handId, Math.min(1, hb.concentration / 10));
@@ -328,6 +332,7 @@ export function onPhaseBoundary(b: BeliefState): void {
   }
   b.percentiles = null;
   b.percentilesPhaseSig = "";
+  b.boardPrior = 0.5;
 }
 
 // Build the set of cards that are NOT available to be in a teammate's hand:
@@ -391,7 +396,8 @@ export function perceiveState(
     for (const [hid, hb] of t.hands) {
       const cur = currentSlot.has(hid) ? currentSlot.get(hid)! : null;
       if (hb.lastSlot !== null && cur !== hb.lastSlot) {
-        decayOnChurn(b, pid, hid);
+        const slotDelta = cur !== null ? Math.abs(cur - hb.lastSlot) : totalHands - 1;
+        decayOnChurn(b, pid, hid, slotDelta, totalHands);
       }
     }
   }
@@ -444,12 +450,15 @@ export function perceiveState(
     }
     // Blend range-derived strength with scalar belief. Range is sharper
     // postflop where the percentile lookup carries real card-strength info;
-    // preflop both are noisy so weight scalar more.
+    // preflop placements aren't folded into the range (too noisy), so the
+    // range posterior stays uniform and any preflop blend would just pull
+    // every teammate belief toward 0.5 with no signal. Skip the blend entirely
+    // preflop and let scalar belief from observed placements dominate.
     const phaseRangeWeight =
       state.phase === "river" ? 0.65 :
       state.phase === "turn" ? 0.55 :
       state.phase === "flop" ? 0.40 :
-      0.18; // preflop: Chen heuristic nudge
+      0;
     for (const [hid, r] of b.ranges) {
       const m = rangeMeanStrength(r, b.percentiles);
       const scalar = b.handStrength.get(hid) ?? 0.5;
@@ -477,6 +486,14 @@ function refreshRangePercentiles(
   if (!phases.includes(state.phase)) return;
   void (createDeck as (...args: unknown[]) => Card[]); // keep import alive
   b.percentiles = buildPercentileMap(excl, state.communityCards);
+  // Compute board-aware prior: average absolute strength of all possible hands.
+  const absMap = buildAbsoluteStrengthMap(excl, state.communityCards);
+  let total = 0, count = 0;
+  for (const s of absMap.values()) {
+    total += s;
+    count++;
+  }
+  b.boardPrior = count > 0 ? total / count : 0.5;
   b.percentilesPhaseSig = sig;
 }
 
