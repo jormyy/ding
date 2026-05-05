@@ -155,24 +155,52 @@ describe("bot strategy guide contract", () => {
   it("does not ready while a strong own anchor is stranded in the middle", () => {
     const memo = newBotMemo();
     memo.ticksSinceProgress = 10;
+    const offline = player("p2");
+    offline.connected = false;
 
     const msg = decideAction(
       state({
         phase: "preflop",
-        players: [player("me"), player("p1", true)],
+        players: [player("me"), player("p1", true), offline],
         hands: [
           hand("me-aa", "me", [c("A", "H"), c("A", "D")]),
           hand("p1-a", "p1"),
           hand("p1-b", "p1"),
+          hand("p2-a", "p2"),
         ],
         communityCards: [],
-        ranking: ["p1-a", "p1-b", "me-aa"],
+        ranking: ["p1-a", null, "me-aa", "p1-b"],
       }),
       "me",
       traits(),
       memo,
     );
 
-    expect(msg?.type).not.toBe("ready");
+    expect(msg).toEqual({ type: "move", handId: "me-aa", toIndex: 1 });
+  });
+
+  it("can ready when an extreme own anchor is stranded but no empty legal anchor slot exists", () => {
+    const memo = newBotMemo();
+    memo.ticksSinceProgress = 10;
+
+    const msg = decideAction(
+      state({
+        phase: "preflop",
+        players: [player("me"), player("p1", true)],
+        hands: [
+          hand("me-23", "me", [c("2", "C"), c("3", "S")]),
+          hand("p1-a", "p1"),
+          hand("p1-b", "p1"),
+          hand("p1-c", "p1"),
+        ],
+        communityCards: [],
+        ranking: ["p1-a", "me-23", "p1-b", "p1-c"],
+      }),
+      "me",
+      traits({ decisiveness: 1 }),
+      memo,
+    );
+
+    expect(msg).toEqual({ type: "ready", ready: true });
   });
 });

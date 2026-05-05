@@ -545,8 +545,13 @@ export function decideAction(
     const slot = state.ranking.indexOf(h.id);
     if (slot === -1 || state.ranking.length <= 2) return false;
     const s = memo.estimates.get(h.id) ?? 0.5;
-    if (s >= 0.85) return slot > 1;
-    if (s <= 0.15) return slot < state.ranking.length - 2;
+    if (s >= 0.85) {
+      return slot > 1 && state.ranking.some((id, idx) => id === null && idx <= 1);
+    }
+    if (s <= 0.15) {
+      return slot < state.ranking.length - 2 &&
+        state.ranking.some((id, idx) => id === null && idx >= state.ranking.length - 2);
+    }
     return false;
   });
 
