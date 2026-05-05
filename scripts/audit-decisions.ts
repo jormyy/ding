@@ -122,6 +122,7 @@ function expectedInversionsTrue(
 
 type Issue = {
   check: string;
+  category?: "hard" | "oracle";
   severity: number; // higher = worse, used to rank examples
   context: Record<string, unknown>;
   archetype: string;
@@ -133,14 +134,33 @@ type CheckFn = (
 ) => Issue[];
 
 const checks: Array<{ name: string; fn: CheckFn }> = [];
+const checkCategories = new Map<string, "hard" | "oracle">();
 
-function addCheck(name: string, fn: CheckFn): void {
+function addCheck(name: string, category: "hard" | "oracle", fn: CheckFn): void {
   checks.push({ name, fn });
+  checkCategories.set(name, category);
+}
+
+function legalMoveSlots(d: DecisionEvent, handId: string): number[] {
+  const slots: number[] = [];
+  const from = d.ranking.indexOf(handId);
+  for (let i = 0; i < d.ranking.length; i++) {
+    if (d.ranking[i] === null || i === from) slots.push(i);
+  }
+  return slots.filter((slot) => slot !== from);
+}
+
+function isRespondingToProposal(d: DecisionEvent): boolean {
+  if (d.picked.type !== "acceptChipMove" && d.picked.type !== "rejectChipMove") return false;
+  const p = d.picked as { initiatorHandId?: string; recipientHandId?: string };
+  return d.acquireRequests.some((r) =>
+    r.initiatorHandId === p.initiatorHandId && r.recipientHandId === p.recipientHandId
+  );
 }
 
 // 1. Own-hand misplacement: bot owns a hand whose final placed slot is far
 // from where its current strength would suggest. Targets AA at slot 5/6.
-addCheck("ownHandMisplacement", (d, truth) => {
+addCheck("ownHandMisplacement", "hard", (d, truth) => {
   if (d.picked.type !== "move") return [];
   const meta = d.pickedMeta as { handId?: string; slot?: number; ownStrength?: number } | undefined;
   if (!meta?.handId || meta.slot === undefined || meta.ownStrength === undefined) return [];
@@ -148,7 +168,15 @@ addCheck("ownHandMisplacement", (d, truth) => {
   if (N <= 1) return [];
   const idealSlot = (1 - meta.ownStrength) * (N - 1);
   const delta = Math.abs(meta.slot - idealSlot) / (N - 1);
-  if (delta > 0.20) {
+  const legalSlots = legalMoveSlots(d, meta.handId);
+  const bestDelta = legalSlots.length === 0
+    ? delta
+    : Math.min(...legalSlots.map((slot) => Math.abs(slot - idealSlot) / (N - 1)));
+  const extremeOwnHand = meta.ownStrength >= 0.75 || meta.ownStrength <= 0.25;
+  // Hard-fail only when the bot had a materially better legal empty slot for
+  // an obvious own-hand strength extreme. Medium-strength placement is often
+  // a legal team-coordination tradeoff, not a strategy-contract breach.
+  if (extremeOwnHand && delta > 0.20 && delta > bestDelta + 0.25) {
     return [{
       check: "ownHandMisplacement",
       severity: delta,
@@ -157,6 +185,8 @@ addCheck("ownHandMisplacement", (d, truth) => {
         gameId: d.gameId, tick: d.tick, phase: d.phase, myPlayerId: d.myPlayerId,
         handId: meta.handId, slot: meta.slot, ownStrength: meta.ownStrength,
         idealSlot: Math.round(idealSlot * 100) / 100, deltaFraction: Math.round(delta * 100) / 100,
+        bestLegalDeltaFraction: Math.round(bestDelta * 100) / 100,
+        legalSlots,
         reason: d.reason, truthAvailable: !!truth,
       },
     }];
@@ -167,7 +197,7 @@ addCheck("ownHandMisplacement", (d, truth) => {
 // 2. First-chip-of-phase looks weird: bot's first own-hand placement of a
 // phase puts a weak hand into a top slot, or a strong hand into a bottom slot,
 // when other slots were available. Targets the "weird first chip" smell.
-addCheck("firstChipWeird", (d) => {
+addCheck("firstChipWeird", "hard", (d) => {
   if (d.picked.type !== "move") return [];
   const meta = d.pickedMeta as { handId?: string; slot?: number; ownStrength?: number; isUnrankedPlacement?: boolean } | undefined;
   if (!meta?.handId || meta.slot === undefined || meta.ownStrength === undefined) return [];
@@ -198,7 +228,7 @@ addCheck("firstChipWeird", (d) => {
 });
 
 // 3. EV-bad accept: the picked accept strictly worsens true inversions.
-addCheck("evBadAccept", (d, truth) => {
+addCheck("evBadAccept", "oracle", (d, truth) => {
   if (!truth || d.picked.type !== "acceptChipMove") return [];
   const truePos = new Map<string, number>();
   truth.trueRanking.forEach((id, i) => truePos.set(id, i));
@@ -224,7 +254,7 @@ addCheck("evBadAccept", (d, truth) => {
 
 // 4. EV-bad reject: bot rejected a proposal that would have reduced true
 // inversions, when its own confidence > 0.5.
-addCheck("evBadReject", (d, truth) => {
+addCheck("evBadReject", "oracle", (d, truth) => {
   if (!truth || d.picked.type !== "rejectChipMove") return [];
   const meta = d.pickedMeta as { initiatorHandId?: string; recipientHandId?: string; kind?: string; confidence?: number } | undefined;
   if (!meta?.initiatorHandId || !meta.recipientHandId || !meta.kind) return [];
@@ -251,7 +281,7 @@ addCheck("evBadReject", (d, truth) => {
 
 // 5. Cooperative-override-driven accept: blendedDelta < 0 but acceptBoost
 // pushed the accept utility positive. Targets fix #1 directly.
-addCheck("coopOverrideAccept", (d) => {
+addCheck("coopOverrideAccept", "hard", (d) => {
   if (d.picked.type !== "acceptChipMove") return [];
   const meta = d.pickedMeta as { blendedDelta?: number; acceptBoost?: number } | undefined;
   if (meta?.blendedDelta === undefined || meta.acceptBoost === undefined) return [];
@@ -276,7 +306,7 @@ addCheck("coopOverrideAccept", (d) => {
 
 // 7. Premature ready: bot ready'd while ranking still has ≥1 inversion vs
 // truth AND decisionCount < 30 AND resignation > 0.7.
-addCheck("prematureReady", (d, truth) => {
+addCheck("prematureReady", "oracle", (d, truth) => {
   if (d.picked.type !== "ready") return [];
   if (!truth) return [];
   if (d.decisionCount >= 30) return [];
@@ -300,7 +330,7 @@ addCheck("prematureReady", (d, truth) => {
 
 // 8. Strategic table-talk: bots should not use Ding/Fuckoff as strategic
 // actions. They are UI table-talk only per the strategy guide.
-addCheck("strategicTableTalk", (d) => {
+addCheck("strategicTableTalk", "hard", (d) => {
   if (d.picked.type !== "ding" && d.picked.type !== "fuckoff") return [];
   return [{
     check: "strategicTableTalk",
@@ -316,7 +346,7 @@ addCheck("strategicTableTalk", (d) => {
 
 // 9. Wasted proposal: bot proposes a chip move whose post-move true inversions
 // are worse than current.
-addCheck("wastedProposal", (d, truth) => {
+addCheck("wastedProposal", "oracle", (d, truth) => {
   if (d.picked.type !== "proposeChipMove") return [];
   if (!truth) return [];
   const truePos = new Map<string, number>();
@@ -356,11 +386,10 @@ addCheck("wastedProposal", (d, truth) => {
   return [];
 });
 
-// 10. Anchor missed: bot holds a hand with strength ≥0.85 and the top slot
-// is empty/wrongly filled, yet bot does nothing for ≥2 ticks. We approximate
-// by flagging any decision where top slot is empty AND bot's own hand has
-// strength ≥0.85 AND picked != move-to-slot-0.
-addCheck("anchorMissed", (d) => {
+// 10. Anchor missed: bot holds a hand with strength ≥0.85 and a top-two slot
+// is legally open, yet the picked action does not anchor that hand high.
+addCheck("anchorMissed", "hard", (d) => {
+  if (isRespondingToProposal(d)) return [];
   // Only trigger when the bot HAS an own hand >=0.85 and slot 0 is empty/wrong.
   let strongHand: { id: string; strength: number; slot: number } | null = null;
   for (const h of d.myHands) {
@@ -372,16 +401,15 @@ addCheck("anchorMissed", (d) => {
   }
   if (!strongHand) return [];
   if (strongHand.slot !== -1 && strongHand.slot <= 1) return [];
-  // If picked is moving the strong hand to slot 0 — fine.
+  const legalSlots = legalMoveSlots(d, strongHand.id);
+  const bestAnchorSlot = legalSlots.filter((slot) => slot <= 1).sort((a, b) => a - b)[0];
+  // Occupied top slots are not unilateral legal move targets. Treat that as
+  // a hidden-truth/coordination diagnostic elsewhere, not a hard contract failure.
+  if (bestAnchorSlot === undefined) return [];
+  // If picked is moving the strong hand into the top anchor band — fine.
   if (d.picked.type === "move") {
     const m = d.picked as { handId?: string; toIndex?: number };
     if (m.handId === strongHand.id && m.toIndex !== undefined && m.toIndex <= 1) return [];
-  }
-  // If picked is proposing/swapping the strong hand to slot 0 — fine.
-  if (d.picked.type === "proposeChipMove") {
-    const m = d.picked as { initiatorHandId?: string; recipientHandId?: string };
-    const top = d.ranking[0];
-    if (m.initiatorHandId === strongHand.id && top === m.recipientHandId) return [];
   }
   return [{
     check: "anchorMissed",
@@ -390,14 +418,14 @@ addCheck("anchorMissed", (d) => {
     context: {
       gameId: d.gameId, tick: d.tick, phase: d.phase, myPlayerId: d.myPlayerId,
       strongHandId: strongHand.id, strongStrength: strongHand.strength,
-      curSlot: strongHand.slot, top0: d.ranking[0], picked: d.picked,
+      curSlot: strongHand.slot, top0: d.ranking[0], bestAnchorSlot, legalSlots, picked: d.picked,
     },
   }];
 });
 
 // 11. Ready despite a better measured candidate: ready should not beat a
 // meaningful EV-improving action in the candidate list.
-addCheck("readyWithBetterCandidate", (d) => {
+addCheck("readyWithBetterCandidate", "hard", (d) => {
   if (d.picked.type !== "ready") return [];
   const readyCandidate = d.candidates.find((c) => c.msgType === "ready");
   const readyUtility = readyCandidate?.utility ?? 0;
@@ -458,6 +486,7 @@ function postPassFinalState(events: Event[]): Issue[] {
       if (delta > 0.30) {
         issues.push({
           check: "finalStatePlacement",
+          category: "oracle",
           severity: delta,
           archetype: d.archetype ?? "?",
           context: {
@@ -497,6 +526,7 @@ function postPassBeliefDrift(events: Event[]): Issue[] {
       if (delta > 0.30) {
         issues.push({
           check: "beliefDrift",
+          category: "oracle",
           severity: delta,
           archetype: e.archetype ?? "?",
           context: {
@@ -543,25 +573,49 @@ function main(): void {
     const truth = truthByGamePhase.get(d.gameId + "|" + d.phase);
     for (const c of checks) {
       const out = c.fn(d, truth);
-      if (out.length > 0) incCheck(c.name).push(...out);
+      if (out.length > 0) {
+        const category = checkCategories.get(c.name);
+        incCheck(c.name).push(...out.map((i) => ({ ...i, category })));
+      }
     }
   }
   // Post-pass checks.
   const fin = postPassFinalState(events);
+  checkCategories.set("finalStatePlacement", "oracle");
   if (fin.length > 0) issuesByCheck.set("finalStatePlacement", fin);
   const drift = postPassBeliefDrift(events);
+  checkCategories.set("beliefDrift", "oracle");
   if (drift.length > 0) issuesByCheck.set("beliefDrift", drift);
+
+  const allCheckNames = Array.from(new Set([
+    ...checks.map((c) => c.name),
+    "finalStatePlacement",
+    "beliefDrift",
+  ])).sort();
+  const hardTotal = allCheckNames
+    .filter((name) => checkCategories.get(name) === "hard")
+    .reduce((sum, name) => sum + (issuesByCheck.get(name)?.length ?? 0), 0);
+  const oracleTotal = allCheckNames
+    .filter((name) => checkCategories.get(name) === "oracle")
+    .reduce((sum, name) => sum + (issuesByCheck.get(name)?.length ?? 0), 0);
 
   // Counts table.
   // eslint-disable-next-line no-console
+  console.log(`\n=== audit gate summary ===`);
+  // eslint-disable-next-line no-console
+  console.log(`hard strategy-contract failures     ${hardTotal}`);
+  // eslint-disable-next-line no-console
+  console.log(`hidden-truth/oracle diagnostics     ${oracleTotal}`);
+  // eslint-disable-next-line no-console
   console.log(`\n=== check counts ===`);
   // eslint-disable-next-line no-console
-  console.log(`${pad("check", 28)} ${pad("count", 8)}`);
-  const checkNames = Array.from(issuesByCheck.keys()).sort();
+  console.log(`${pad("check", 28)} ${pad("category", 10)} ${pad("count", 8)}`);
+  const checkNames = allCheckNames;
   for (const name of checkNames) {
     const arr = issuesByCheck.get(name) ?? [];
+    const category = checkCategories.get(name) ?? "?";
     // eslint-disable-next-line no-console
-    console.log(`${pad(name, 28)} ${padNum(arr.length, 8)}`);
+    console.log(`${pad(name, 28)} ${pad(category, 10)} ${padNum(arr.length, 8)}`);
   }
 
   // Per-archetype counts.
@@ -591,6 +645,8 @@ function main(): void {
       console.log(`  [sev ${i.severity.toFixed(3)}] arch=${i.archetype}  ${JSON.stringify(i.context)}`);
     }
   }
+
+  process.exit(hardTotal > 0 ? 1 : 0);
 }
 
 main();

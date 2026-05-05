@@ -257,9 +257,16 @@ function anchorBonus(
   // wet boards.
   const topThresh = Math.max(0.65, Math.min(0.85, boardPrior + 0.25));
   const bottomThresh = Math.min(0.30, Math.max(0.10, boardPrior - 0.25));
-  if (ownStrength >= topThresh && targetSlot === 0) return 0.20 * lead;
+  if (ownStrength >= topThresh && targetSlot === 0) return 0.45 * lead;
+  if (ownStrength >= topThresh && targetSlot === 1) return 0.38 * lead;
   if (ownStrength <= bottomThresh && targetSlot === totalSlots - 1) return 0.20 * lead;
   return 0;
+}
+
+function isAnchorMoveCandidate(c: Candidate): boolean {
+  if (c.msg.type !== "move") return false;
+  const meta = c.meta as { anchor?: number } | undefined;
+  return (meta?.anchor ?? 0) > 0;
 }
 
 /**
@@ -766,12 +773,12 @@ export function decideAction(
         const after = rankingAfterMove(state.ranking, h.id, slot);
         if (after === null) continue;
         const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
-        if (score.teamInversionDelta > 0.08) {
-          const est = memo.estimates.get(h.id) ?? 0.5;
-          const idealSlot = (1 - est) * (state.ranking.length - 1);
-          const slotAlign = 1 - Math.abs(slot - idealSlot) / Math.max(1, state.ranking.length - 1);
-          const posBonus = slotAlign * 0.15 * traits.skill;
-          const anchor = anchorBonusForOwn(h.id, slot, state.ranking.length);
+        const est = memo.estimates.get(h.id) ?? 0.5;
+        const idealSlot = (1 - est) * (state.ranking.length - 1);
+        const slotAlign = 1 - Math.abs(slot - idealSlot) / Math.max(1, state.ranking.length - 1);
+        const posBonus = slotAlign * 0.15 * traits.skill;
+        const anchor = anchorBonusForOwn(h.id, slot, state.ranking.length);
+        if (score.teamInversionDelta > 0.08 || anchor > 0) {
           candidates.push({
             msg: { type: "move", handId: h.id, toIndex: slot },
             score,
@@ -921,13 +928,16 @@ export function decideAction(
   const haveEmpty = state.ranking.some((s) => s === null);
   const mustRespond = proposalsToMe.length > 0;
   let pool = candidates;
+  const anchorMoves = !mustRespond ? candidates.filter(isAnchorMoveCandidate) : [];
   const stalePropToMe = mustRespond && memo.prevAcquireRequests.some((p) => {
     const rh = state.hands.find((h) => h.id === p.recipientHandId);
     return rh && rh.playerId === myPlayerId && state.acquireRequests.some(
       (cur) => cur.initiatorHandId === p.initiatorHandId && cur.recipientHandId === p.recipientHandId
     );
   });
-  if (stalePropToMe) {
+  if (anchorMoves.length > 0) {
+    pool = anchorMoves;
+  } else if (stalePropToMe) {
     const responses = candidates.filter(
       (c) => c.msg.type === "acceptChipMove" || c.msg.type === "rejectChipMove"
     );
