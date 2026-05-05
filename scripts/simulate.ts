@@ -24,7 +24,6 @@ function argOr(name: string, fallback: number): number {
 const NUM_GAMES = argOr("games", 10);
 const NUM_BOTS = argOr("bots", 4);        // bots added via addBot
 const HANDS = argOr("hands", 2);
-const NSIMS = argOr("nSims", 20);          // lower = faster sim
 
 // ---- fake partykit stubs ----
 class FakeConn {
@@ -172,9 +171,7 @@ async function runOneGame(gameIdx: number): Promise<{
 
     // Drive control bot
     const masked = buildClientState(s, "ctl-pid-" + gameIdx);
-    const msg = decideAction(masked, "ctl-pid-" + gameIdx, ctlTraits, ctlMemo, {
-      nSims: NSIMS,
-    });
+    const msg = decideAction(masked, "ctl-pid-" + gameIdx, ctlTraits, ctlMemo);
     if (msg) {
       bump(stats, msg.type);
       pushTrace("ctl", msg.type, s.ranking);
@@ -217,7 +214,7 @@ function mean(xs: number[]): number {
 async function main() {
   // eslint-disable-next-line no-console
   console.log(
-    `Running ${NUM_GAMES} games: ${NUM_BOTS} bots + 1 ctrl, ${HANDS} hands/player, nSims=${NSIMS}`
+    `Running ${NUM_GAMES} games: ${NUM_BOTS} bots + 1 ctrl, ${HANDS} hands/player`
   );
 
   const inversions: number[] = [];

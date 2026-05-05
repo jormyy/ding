@@ -28,28 +28,26 @@ describe('pickUnusedArchetype', () => {
 })
 
 describe('archetypeFlavor', () => {
-  it('every archetype has a non-empty name pool and tendency multipliers', () => {
+  it('every archetype has a non-empty name pool and description', () => {
     for (const a of allArchetypes()) {
       const f = archetypeFlavor(a)
       expect(f.namePool.length).toBeGreaterThan(0)
-      expect(f.dingTendency).toBeGreaterThan(0)
-      expect(f.fuckoffTendency).toBeGreaterThan(0)
+      expect(f.description.length).toBeGreaterThan(0)
     }
   })
 
-  it('extreme archetypes differ in ding tendency', () => {
-    const gut = archetypeFlavor('gut')
-    const quiet = archetypeFlavor('quiet')
-    expect(gut.dingTendency).toBeGreaterThan(quiet.dingTendency)
+  it('strategy archetypes expose distinct quirks where needed', () => {
+    const anchor = archetypeFlavor('anchor')
+    const skeptic = archetypeFlavor('skeptic')
+    expect(anchor.quirks.leadsConsensus).toBeGreaterThan(0)
+    expect(skeptic.quirks.suspectsTop).toBeGreaterThan(0)
   })
 })
 
 describe('randomTraits exposes flavor', () => {
-  it('returned traits include dingTendency, fuckoffTendency, and quirks', () => {
+  it('returned traits include strategic quirks', () => {
     const { traits, archetype } = randomTraits('skeptic')
     expect(archetype).toBe('skeptic')
-    expect(traits.dingTendency).toBeGreaterThan(0)
-    expect(traits.fuckoffTendency).toBeGreaterThan(0)
     expect(traits.quirks).toBeDefined()
     // Skeptic specifically suspects top-slot proposals.
     expect(traits.quirks.suspectsTop).toBeGreaterThan(0)

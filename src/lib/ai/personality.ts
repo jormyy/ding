@@ -27,9 +27,7 @@ export type Traits = {
   thinkPerDifficultyMs: number;
   hesitationProb: number;
 
-  // Archetype flavor (read by strategy + socialMemory).
-  dingTendency: number;
-  fuckoffTendency: number;
+  // Archetype-specific strategy modifiers.
   quirks: ArchetypeQuirks;
 };
 
@@ -59,8 +57,6 @@ function defaultTraits(): Traits {
     thinkPerDifficultyMs: 6000,
     hesitationProb: 0.08,
 
-    dingTendency: 1.0,
-    fuckoffTendency: 1.0,
     quirks: {},
   };
 }
@@ -84,8 +80,6 @@ export function randomTraits(archetype?: Archetype): { traits: Traits; archetype
     hesitationProb: jitter(merged.hesitationProb, 0.04),
     baseThinkMs: Math.round(merged.baseThinkMs * rand(0.85, 1.15)),
     thinkPerDifficultyMs: Math.round(merged.thinkPerDifficultyMs * rand(0.85, 1.15)),
-    dingTendency: flavor.dingTendency,
-    fuckoffTendency: flavor.fuckoffTendency,
     quirks: flavor.quirks,
   };
   return { traits: jittered, archetype: a };

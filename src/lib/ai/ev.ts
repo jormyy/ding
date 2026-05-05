@@ -67,7 +67,7 @@ export type ActionScore = {
 
 /**
  * Build a strength lookup function that resolves handId → estimated strength.
- * Priority: own Monte Carlo estimate > belief posterior > default 0.5.
+ * Priority: own current-hand estimate > belief posterior > default 0.5.
  */
 function buildStrengthFn(
   state: GameState,
@@ -180,4 +180,3 @@ export function rankingAfterChipMove(
 ): (string | null)[] {
   return applyChipMoveToRanking(ranking, kind, initiatorHandId, recipientHandId);
 }
-

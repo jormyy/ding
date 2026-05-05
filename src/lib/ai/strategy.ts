@@ -6,11 +6,11 @@
  *   3. Selection  → softmax over top actions, modulated by Traits.
  *
  * This is the main entry point for bot decision-making. Called once per bot
- * tick (either timer-driven in production, or synchronously in fast-sim mode).
+ * tick (either timer-driven in production, or synchronously in fast simulation mode).
  */
 
 import type { AcquireRequest, ClientMessage, GameState, Hand } from "../types";
-import { currentHandStrength, estimateStrength } from "./handStrength";
+import { currentHandStrength } from "./handStrength";
 import { classifyHand, type ClassifiedHand } from "./handClassifier";
 import type { Traits } from "./personality";
 import {
@@ -28,14 +28,6 @@ import {
   rankingAfterChipMove,
   type ActionScore,
 } from "./ev";
-import {
-  newSocialMemory,
-  processSocialSignals,
-  shouldSemanticDing,
-  shouldSemanticFuckoff,
-  socialOnPhaseBoundary,
-  type SocialMemory,
-} from "./socialMemory";
 import type { TraceSink, TraceCandidate } from "./trace";
 
 /**
@@ -54,16 +46,10 @@ export type BotMemo = {
   recentlyRejected: Set<string>;
   /** Belief state tracking teammate hand strengths. */
   belief: BeliefState;
-  /** Signature of ranking at last tick, used to detect teammate churn. */
-  lastRankingSig: string;
   /** Proposal keys we had pending last tick (used to detect rejections). */
   prevMyProposals: Set<string>;
   /** Our own proposals that were rejected this phase (don't re-propose). */
   myRejectedKeys: Set<string>;
-  /** handId → slot index from the previous tick. */
-  prevHandSlots: Map<string, number>;
-  /** Ticks where board is full but someone isn't ready. */
-  stallTicks: number;
   /** Ticks since last state-changing action. */
   ticksSinceProgress: number;
   /** Count of proposals initiated in current phase. */
@@ -78,8 +64,6 @@ export type BotMemo = {
   classifiedHands: Map<string, ClassifiedHand>;
   /** Phase string for which classifications are valid. */
   handClassifiedPhase: string;
-  /** Social signal memory: tracking dings/fuckoffs from other players. */
-  socialMemory: SocialMemory;
 };
 
 /** Create a fresh bot memo with empty caches and counters. */
@@ -91,11 +75,8 @@ export function newBotMemo(): BotMemo {
     decisionCount: 0,
     recentlyRejected: new Set(),
     belief: newBeliefState(),
-    lastRankingSig: "",
     prevMyProposals: new Set(),
     myRejectedKeys: new Set(),
-    prevHandSlots: new Map(),
-    stallTicks: 0,
     ticksSinceProgress: 0,
     myProposalsThisPhase: 0,
     prevAcquireRequests: [],
@@ -103,7 +84,6 @@ export function newBotMemo(): BotMemo {
     phaseDeferTicks: 0,
     classifiedHands: new Map(),
     handClassifiedPhase: "",
-    socialMemory: newSocialMemory(),
   };
 }
 
@@ -132,9 +112,7 @@ type Candidate = {
 };
 
 function reqKey(a: string, b: string): string { return a + "|" + b; }
-function rankingSig(r: (string | null)[]): string { return r.map((x) => x ?? "_").join(","); }
-
-// ── Inlined teammate-signal helpers (formerly signals.ts) ──
+// ── Teammate placement helpers ──
 
 /**
  * How "defer-worthy" a teammate hand placement looks: a blend of belief
@@ -169,9 +147,9 @@ function canPropose(
 ): boolean {
   if (overDecisionCap) return false;
   if (resignation >= 0.85) return false;
-  const cap = Math.max(4, Math.ceil(tableSize * 0.8));
+  const cap = Math.max(2, Math.ceil(tableSize * 0.4));
   if (memo.myProposalsThisPhase >= cap) return false;
-  const proposeBar = 0.3 + resignation * 1.0 + stubbornness * 0.25;
+  const proposeBar = Math.max(0.75, 0.45 + resignation * 1.2 + stubbornness * 0.3);
   const effectiveDelta = teamInversionDelta * confidence;
   return effectiveDelta > proposeBar;
 }
@@ -198,8 +176,6 @@ function getEstimate(
   return score;
 }
 
-void estimateStrength; // keep import alive — used by belief/range.
-
 function reasonFor(c: Candidate): string {
   switch (c.msg.type) {
     case "move": {
@@ -214,10 +190,8 @@ function reasonFor(c: Candidate): string {
       const meta = c.meta as { blendedDelta?: number; acceptBoost?: number } | undefined;
       const bd = meta?.blendedDelta ?? 0;
       if (bd > 0.5) return "acceptHighEV";
-      if (bd > 0) return "accept";
-      const ab = meta?.acceptBoost ?? 0;
-      if (Math.abs(bd) < ab) return "acceptCoopOverride";
-      return "accept";
+      if (bd >= 0.05) return "accept";
+      return "acceptNeutral";
     }
     case "rejectChipMove": {
       const meta = c.meta as { confidence?: number } | undefined;
@@ -226,8 +200,7 @@ function reasonFor(c: Candidate): string {
     case "proposeChipMove": return "propose";
     case "cancelChipMove": return "cancel";
     case "ready": {
-      const meta = c.meta as { resignation?: number } | undefined;
-      return (meta?.resignation ?? 0) >= 0.85 ? "gaveUpResigned" : "readyAllSet";
+      return "readyAllSet";
     }
     case "ding": return "ding";
     case "fuckoff": return "fuckoff";
@@ -313,9 +286,8 @@ export function decideAction(
   myPlayerId: string,
   traits: Traits,
   memo: BotMemo,
-  opts?: { nSims?: number; trace?: TraceSink }
+  opts?: { trace?: TraceSink }
 ): ClientMessage | null {
-  void opts;
   const trace = opts?.trace;
 
   if (memo.estimatesPhase !== state.phase) {
@@ -349,7 +321,6 @@ export function decideAction(
     memo.classifiedHands.clear();
     memo.handClassifiedPhase = "";
     beliefOnPhaseBoundary(memo.belief);
-    socialOnPhaseBoundary(memo.socialMemory, state);
   }
 
   if (state.phase === "reveal") {
@@ -508,16 +479,6 @@ export function decideAction(
   memo.prevAcquireRequests = state.acquireRequests.map((r) => ({ ...r }));
   perceiveState(memo.belief, state, myPlayerId);
 
-  // === 1a. SOCIAL SIGNALS ===
-  const socialAdj = processSocialSignals(memo.socialMemory, state, myPlayerId);
-  for (const [hid, boost] of socialAdj.strengthBoosts) {
-    const cur = memo.belief.handStrength.get(hid) ?? 0.5;
-    memo.belief.handStrength.set(hid, Math.max(0, Math.min(1, cur + boost)));
-  }
-
-  const sig = rankingSig(state.ranking);
-  memo.lastRankingSig = sig;
-
   const me = state.players.find((p) => p.id === myPlayerId);
 
   // Resignation rises with rejected/vanished proposals and idle ticks.
@@ -566,119 +527,35 @@ export function decideAction(
   });
   const outgoingProposal = state.acquireRequests.some((r) => r.initiatorId === myPlayerId);
 
-  const readyDelay = state.phase === "river" ? 8 : state.phase === "turn" ? 5 : 3;
-  if (effectiveAllRanked && !alreadyReady && !incomingProposal && !outgoingProposal &&
-      memo.ticksSinceProgress >= readyDelay) {
-    memo.ticksSinceProgress = 0;
-    const msg: ClientMessage = { type: "ready", ready: true };
-    emitDecision(msg, "readyAllSet", 0, { resignation, ticksSinceProgress: memo.ticksSinceProgress, decisionCount: memo.decisionCount });
-    return msg;
-  }
   const myHandsPlaced = myHands.every((h) => state.ranking.indexOf(h.id) !== -1);
   const othersAllReady = state.players
     .filter((p) => p.id !== myPlayerId && p.connected)
     .every((p) => p.ready);
-  if (!alreadyReady && !incomingProposal && !outgoingProposal && myHandsPlaced && othersAllReady && effectiveAllRanked && memo.ticksSinceProgress >= 1) {
-    memo.ticksSinceProgress = 0;
-    const msg: ClientMessage = { type: "ready", ready: true };
-    emitDecision(msg, "readyOthersReady", 0, { decisionCount: memo.decisionCount });
-    return msg;
-  }
+  const readyDelay = state.phase === "river" ? 8 : state.phase === "turn" ? 5 : 3;
+  const readyDelayMet = memo.ticksSinceProgress >= readyDelay;
+  const teammatesWaiting = myHandsPlaced && othersAllReady && memo.ticksSinceProgress >= 1;
+  const ownAnchorUnsettled = myHands.some((h) => {
+    const slot = state.ranking.indexOf(h.id);
+    if (slot === -1 || state.ranking.length <= 2) return false;
+    const s = memo.estimates.get(h.id) ?? 0.5;
+    if (s >= 0.85) return slot > 1;
+    if (s <= 0.15) return slot < state.ranking.length - 2;
+    return false;
+  });
 
-  // === 1b. EXPRESSIVE EVENTS — ding / fuckoff before the normal pipeline ===
+  // Track vanished proposals so the bot can stop re-proposing the same pair.
   const currentMyProposalKeys = new Set<string>();
   for (const r of state.acquireRequests) {
     if (r.initiatorId === myPlayerId) {
       currentMyProposalKeys.add(reqKey(r.initiatorHandId, r.recipientHandId));
     }
   }
-  let myProposalVanished = false;
   for (const k of memo.prevMyProposals) {
     if (!currentMyProposalKeys.has(k)) {
-      myProposalVanished = true;
       memo.myRejectedKeys.add(k);
     }
   }
   memo.prevMyProposals = currentMyProposalKeys;
-
-  let confidentChurn = false;
-  for (const h of state.hands) {
-    if (h.playerId === myPlayerId) continue;
-    const prevSlot = memo.prevHandSlots.get(h.id);
-    const curSlot = state.ranking.indexOf(h.id);
-    if (prevSlot !== undefined && prevSlot !== -1 && curSlot !== -1 && prevSlot !== curSlot) {
-      const conf = memo.belief.handConfidence.get(h.id) ?? 0;
-      if (conf > 0.5) confidentChurn = true;
-    }
-  }
-  memo.prevHandSlots.clear();
-  for (let i = 0; i < state.ranking.length; i++) {
-    const hid = state.ranking[i];
-    if (hid) memo.prevHandSlots.set(hid, i);
-  }
-
-  const allRankedNow = state.ranking.every((s) => s !== null);
-  const someoneNotReady = state.players.some((p) => p.connected && !p.ready);
-  if (allRankedNow && someoneNotReady) memo.stallTicks++;
-  else memo.stallTicks = 0;
-
-  const alreadyDingedThisPhase = state.dingLog.some(
-    (s) => s.playerId === myPlayerId && s.phase === state.phase
-  );
-  const alreadyFuckedOffThisPhase = state.fuckoffLog.some(
-    (s) => s.playerId === myPlayerId && s.phase === state.phase
-  );
-
-  const dingHandId = (myHandsPlaced && !alreadyDingedThisPhase)
-    ? shouldSemanticDing(state, myPlayerId, memo.estimates, memo.socialMemory, traits)
-    : null;
-  if (dingHandId) {
-    memo.idleTicks = 0;
-    const dingMsg: ClientMessage = { type: "ding", handId: dingHandId };
-    const dingStrength = memo.estimates.get(dingHandId) ?? 0.5;
-    emitDecision(dingMsg, "semanticDing", 0, { handId: dingHandId, ownStrength: dingStrength });
-    return dingMsg;
-  }
-
-  const semanticFuckoff = (!alreadyFuckedOffThisPhase && myHandsPlaced)
-    ? shouldSemanticFuckoff(state, myPlayerId, memo, memo.socialMemory, traits)
-    : null;
-  if (semanticFuckoff) {
-    memo.idleTicks = 0;
-    const foMsg: ClientMessage = { type: "fuckoff", handId: semanticFuckoff.handId };
-    const foStrength = memo.estimates.get(semanticFuckoff.handId) ?? 0.5;
-    emitDecision(foMsg, "semanticFuckoff:" + semanticFuckoff.reason, 0, {
-      handId: semanticFuckoff.handId,
-      ownStrength: foStrength,
-      reason: semanticFuckoff.reason,
-    });
-    return foMsg;
-  }
-
-  // Legacy expressive fallbacks — small probability noise for personality flavor.
-  const fuckoffTendency = traits.fuckoffTendency ?? 1.0;
-  const dingTendency = traits.dingTendency ?? 1.0;
-  if (myHandsPlaced && !alreadyFuckedOffThisPhase && myProposalVanished) {
-    const frustration = ((1 - traits.agreeableness) * 0.14 + traits.neuroticism * 0.08) * fuckoffTendency;
-    if (Math.random() < frustration) {
-      memo.idleTicks = 0;
-      return { type: "fuckoff" };
-    }
-  }
-  if (myHandsPlaced && !alreadyDingedThisPhase && confidentChurn) {
-    const complaint = (traits.extraversion * 0.10 + traits.helpfulness * 0.06) * dingTendency;
-    if (Math.random() < complaint) {
-      memo.idleTicks = 0;
-      return { type: "ding" };
-    }
-  }
-  if (myHandsPlaced && !alreadyDingedThisPhase && memo.stallTicks >= 3) {
-    const nudge = (traits.extraversion * 0.06 + (1 - traits.conscientiousness) * 0.03) * dingTendency;
-    if (Math.random() < nudge) {
-      memo.idleTicks = 0;
-      return { type: "ding" };
-    }
-  }
 
   // === 2. EVALUATION ===
   const candidates: Candidate[] = [];
@@ -747,7 +624,7 @@ export function decideAction(
     // of the candidate-pool path so a low-stubbornness bot doesn't accept
     // zero-EV proposals just because acceptBoost > |blendedDelta|.
     const confidentRejectGate = blendedDelta * acceptScore.confidence < -0.2;
-    if (blendedDelta > -0.1 && !confidentRejectGate) {
+    if (blendedDelta > 0.05 && !confidentRejectGate) {
       candidates.push({
         msg: { type: "acceptChipMove", initiatorHandId: p.initiatorHandId, recipientHandId: p.recipientHandId },
         score: acceptScore,
@@ -841,7 +718,10 @@ export function decideAction(
   const myUnrankedEsts = myUnranked.map((h) => memo.estimates.get(h.id) ?? 0.5);
   const minEst = myUnrankedEsts.length > 0 ? Math.min(...myUnrankedEsts) : 0.5;
   const maxEst = myUnrankedEsts.length > 0 ? Math.max(...myUnrankedEsts) : 0.5;
-  for (const h of myUnranked) {
+  const ownPlacementPool = myUnranked.length > 1
+    ? myUnranked.filter((h) => (memo.estimates.get(h.id) ?? 0.5) === maxEst)
+    : myUnranked;
+  for (const h of ownPlacementPool) {
     for (const slot of emptySlots) {
       const after = rankingAfterMove(state.ranking, h.id, slot);
       if (after === null) continue;
@@ -854,11 +734,9 @@ export function decideAction(
       const spread = spreadPenalty(myPlacements, slot, est);
       // Place strongest first per the strategy guide: "Anchor your own premium
       // hands. Place them high with confidence and build the rest of the board
-      // around it." Previously this bias was inverted (weakest first), which
-      // produced the user-reported "weird first chip" smell.
-      //
-      // The bonus is small enough that score-driven slot choice still dominates;
-      // it only breaks ties between which-hand-to-place-first.
+      // around it." While multiple own hands are unranked, candidates are
+      // restricted to the strongest tier; this bonus breaks slot ties inside
+      // that pool.
       const isWeakest = est === minEst && myUnranked.length > 1;
       const isStrongest = est === maxEst && myUnranked.length > 1;
       const priorityBonus = isStrongest ? 0.4 : 0;
@@ -1004,28 +882,35 @@ export function decideAction(
     }
   }
 
-  if (effectiveAllRanked && !alreadyReady && !outgoingProposal && !incomingProposal) {
+  if (
+    effectiveAllRanked &&
+    !alreadyReady &&
+    !outgoingProposal &&
+    !incomingProposal &&
+    !ownAnchorUnsettled &&
+    (readyDelayMet || teammatesWaiting)
+  ) {
     const readyU = -0.15 + 0.3 * traits.decisiveness
-      + resignation * 1.0
-      - speculativeAdjustment * 0.6;
+      - speculativeAdjustment * 0.6
+      + (teammatesWaiting ? 0.2 : 0);
     candidates.push({
       msg: { type: "ready", ready: true },
       score: { teamInversionDelta: 0.05, confidence: 0.5 },
       utility: readyU,
-      meta: { resignation, decisionCount: memo.decisionCount, effectiveAllRanked: true },
+      meta: {
+        resignation,
+        decisionCount: memo.decisionCount,
+        effectiveAllRanked: true,
+        readyDelayMet,
+        teammatesWaiting,
+        ownAnchorUnsettled,
+      },
     });
   }
 
   // === 3. SELECTION ===
   traceCandidatesRef = candidates;
   if (candidates.length === 0) {
-    const dingP = alreadyDingedThisPhase
-      ? 0
-      : ((1 - traits.conscientiousness) * 0.03 + traits.extraversion * 0.05) * dingTendency;
-    if (Math.random() < dingP) {
-      memo.idleTicks++;
-      return { type: "ding" };
-    }
     memo.idleTicks++;
     return null;
   }

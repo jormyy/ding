@@ -120,11 +120,11 @@ function getOrInitTeammate(b: BeliefState, pid: string, skillPrior = 0.7): Teamm
  */
 export function phaseTrust(phase: string): number {
   switch (phase) {
-    case "preflop": return 0.4;
-    case "flop":    return 1.0;
-    case "turn":    return 1.5;
+    case "preflop": return 0.25;
+    case "flop":    return 0.6;
+    case "turn":    return 0.85;
     case "river":
-    case "reveal":  return 2.0;
+    case "reveal":  return 1.0;
     default:        return 0.5;
   }
 }
@@ -409,6 +409,11 @@ export function perceiveState(
     const h = state.hands.find((x) => x.id === hid);
     if (!h) continue;
     const t = getOrInitTeammate(b, h.playerId);
+    const existing = t.hands.get(hid);
+    if (existing && existing.lastSlot === slot) {
+      existing.slotStableFor += 1;
+      continue;
+    }
     updateFromPlacement(b, h.playerId, hid, slot, totalHands, t.skillPrior, trust);
   }
 
@@ -423,6 +428,7 @@ export function perceiveState(
   if (b.percentiles && b.percentiles.size > 0) {
     const sigma = rangeSigmaForPhase(state.phase);
     const exclusions = buildExclusions(state, myPlayerId);
+    let rangeChanged = false;
     for (const [hid, slot] of currentSlot) {
       const h = state.hands.find((x) => x.id === hid);
       if (!h || h.flipped) continue;
@@ -446,6 +452,7 @@ export function perceiveState(
       const hb = tb?.hands.get(hid);
       if (hb && hb.slotStableFor === 0 && state.phase !== "preflop") {
         applyPlacement(r, b.percentiles, slot, totalHands, sigma);
+        rangeChanged = true;
       }
     }
     // Blend range-derived strength with scalar belief. Range is sharper
@@ -454,20 +461,22 @@ export function perceiveState(
     // range posterior stays uniform and any preflop blend would just pull
     // every teammate belief toward 0.5 with no signal. Skip the blend entirely
     // preflop and let scalar belief from observed placements dominate.
-    const phaseRangeWeight =
-      state.phase === "river" ? 0.65 :
-      state.phase === "turn" ? 0.55 :
-      state.phase === "flop" ? 0.40 :
-      0;
-    for (const [hid, r] of b.ranges) {
-      const m = rangeMeanStrength(r, b.percentiles);
-      const scalar = b.handStrength.get(hid) ?? 0.5;
-      const blended = (1 - phaseRangeWeight) * scalar + phaseRangeWeight * m;
-      b.handStrength.set(hid, blended);
-      // Confidence stays scalar-derived. The range posterior can look "tight"
-      // after a single Gaussian update without actually being decisive
-      // evidence — overriding scalar confidence with range confidence makes
-      // bots too sure of borderline placements and they stop trading.
+    if (rangeChanged) {
+      const phaseRangeWeight =
+        state.phase === "river" ? 0.65 :
+        state.phase === "turn" ? 0.55 :
+        state.phase === "flop" ? 0.40 :
+        0;
+      for (const [hid, r] of b.ranges) {
+        const m = rangeMeanStrength(r, b.percentiles);
+        const scalar = b.handStrength.get(hid) ?? 0.5;
+        const blended = (1 - phaseRangeWeight) * scalar + phaseRangeWeight * m;
+        b.handStrength.set(hid, blended);
+        // Confidence stays scalar-derived. The range posterior can look "tight"
+        // after a single Gaussian update without actually being decisive
+        // evidence — overriding scalar confidence with range confidence makes
+        // bots too sure of borderline placements and they stop trading.
+      }
     }
     void rangeConfidence; // available for future, not used here
   }

@@ -298,26 +298,20 @@ addCheck("prematureReady", (d, truth) => {
   return [];
 });
 
-// 8. False ding: bot semantic-dings on a hand with truth percentile <0.5.
-addCheck("falseDing", (d, truth) => {
-  if (d.picked.type !== "ding") return [];
-  if (!truth) return [];
-  const handId = (d.picked as { handId?: string }).handId;
-  if (!handId) return [];
-  const pct = truth.truePercentile[handId];
-  if (pct === undefined) return [];
-  if (pct < 0.5) {
-    return [{
-      check: "falseDing",
-      severity: 0.5 - pct,
-      archetype: d.archetype ?? "?",
-      context: {
-        gameId: d.gameId, tick: d.tick, phase: d.phase, myPlayerId: d.myPlayerId,
-        handId, truePercentile: pct,
-      },
-    }];
-  }
-  return [];
+// 8. Strategic table-talk: bots should not use Ding/Fuckoff as strategic
+// actions. They are UI table-talk only per the strategy guide.
+addCheck("strategicTableTalk", (d) => {
+  if (d.picked.type !== "ding" && d.picked.type !== "fuckoff") return [];
+  return [{
+    check: "strategicTableTalk",
+    severity: 1,
+    archetype: d.archetype ?? "?",
+    context: {
+      gameId: d.gameId, tick: d.tick, phase: d.phase, myPlayerId: d.myPlayerId,
+      picked: d.picked,
+      reason: d.reason,
+    },
+  }];
 });
 
 // 9. Wasted proposal: bot proposes a chip move whose post-move true inversions
@@ -377,11 +371,11 @@ addCheck("anchorMissed", (d) => {
     }
   }
   if (!strongHand) return [];
-  if (strongHand.slot === 0) return [];
+  if (strongHand.slot !== -1 && strongHand.slot <= 1) return [];
   // If picked is moving the strong hand to slot 0 — fine.
   if (d.picked.type === "move") {
     const m = d.picked as { handId?: string; toIndex?: number };
-    if (m.handId === strongHand.id && m.toIndex === 0) return [];
+    if (m.handId === strongHand.id && m.toIndex !== undefined && m.toIndex <= 1) return [];
   }
   // If picked is proposing/swapping the strong hand to slot 0 — fine.
   if (d.picked.type === "proposeChipMove") {
@@ -397,6 +391,31 @@ addCheck("anchorMissed", (d) => {
       gameId: d.gameId, tick: d.tick, phase: d.phase, myPlayerId: d.myPlayerId,
       strongHandId: strongHand.id, strongStrength: strongHand.strength,
       curSlot: strongHand.slot, top0: d.ranking[0], picked: d.picked,
+    },
+  }];
+});
+
+// 11. Ready despite a better measured candidate: ready should not beat a
+// meaningful EV-improving action in the candidate list.
+addCheck("readyWithBetterCandidate", (d) => {
+  if (d.picked.type !== "ready") return [];
+  const readyCandidate = d.candidates.find((c) => c.msgType === "ready");
+  const readyUtility = readyCandidate?.utility ?? 0;
+  const better = d.candidates.find((c) =>
+    c.msgType !== "ready" &&
+    c.teamInversionDelta * c.confidence > 0.15 &&
+    c.utility > readyUtility
+  );
+  if (!better) return [];
+  return [{
+    check: "readyWithBetterCandidate",
+    severity: better.teamInversionDelta * better.confidence,
+    archetype: d.archetype ?? "?",
+    context: {
+      gameId: d.gameId, tick: d.tick, phase: d.phase, myPlayerId: d.myPlayerId,
+      readyUtility,
+      betterCandidate: better,
+      pickedMeta: d.pickedMeta,
     },
   }];
 });
@@ -455,7 +474,7 @@ function postPassFinalState(events: Event[]): Issue[] {
   return issues;
 }
 
-// 11. Belief-vs-truth drift: at phaseBoundary, bot's belief mean for a
+// 12. Belief-vs-truth drift: at phaseBoundary, bot's belief mean for a
 // teammate hand is >0.30 from that hand's true percentile despite having
 // (implicitly) seen prior placements. We approximate by requiring this is
 // not the preflop boundary.

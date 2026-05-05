@@ -74,10 +74,10 @@ describe("Stubborn bots and decideAction integration", () => {
     traits.stubbornness = 0.95;
     const memo = newBotMemo();
     memo.prevAcquireRequests = [...state.acquireRequests];
-    const msg = decideAction(state, "me", traits, memo, { nSims: 20 });
+    const msg = decideAction(state, "me", traits, memo);
     // Bot must produce SOME message — accept, reject, propose, or ready.
     expect(msg).not.toBeNull();
-    expect(["acceptChipMove", "rejectChipMove", "proposeChipMove", "ready", "ding", "fuckoff"])
+    expect(["acceptChipMove", "rejectChipMove", "proposeChipMove", "ready"])
       .toContain(msg!.type);
   });
 });

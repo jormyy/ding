@@ -68,6 +68,46 @@ describe("perceiveState with phase trust", () => {
     expect(meanRiv).toBeGreaterThan(meanPre);
     expect(concRiv).toBeGreaterThan(concPre);
   });
+
+  it("does not collapse teammate ranges from preflop placements", () => {
+    const handA = makeHand("a", "p1");
+    const handB = makeHand("b", "p2");
+    const baseState = makeState({
+      phase: "preflop",
+      hands: [handA, handB],
+      ranking: ["a", "b"],
+    });
+
+    const belief = newBeliefState();
+    perceiveState(belief, baseState, "me");
+
+    expect(belief.handConfidence.get("a")).toBeLessThan(0.4);
+    expect(belief.ranges.get("a")?.observations ?? 0).toBe(0);
+  });
+
+  it("does not recount an unchanged placement as new evidence every tick", () => {
+    const handA = makeHand("a", "p1");
+    const handB = makeHand("b", "p2");
+    const baseState = makeState({
+      phase: "river",
+      hands: [handA, handB],
+      ranking: ["a", "b"],
+    });
+
+    const belief = newBeliefState();
+    perceiveState(belief, baseState, "me");
+    const firstMean = belief.handStrength.get("a");
+    const firstConfidence = belief.handConfidence.get("a");
+    const firstConcentration = belief.perTeammate.get("p1")?.hands.get("a")?.concentration;
+
+    perceiveState(belief, baseState, "me");
+    perceiveState(belief, baseState, "me");
+
+    expect(belief.handStrength.get("a")).toBe(firstMean);
+    expect(belief.handConfidence.get("a")).toBe(firstConfidence);
+    expect(belief.perTeammate.get("p1")?.hands.get("a")?.concentration).toBe(firstConcentration);
+    expect(belief.perTeammate.get("p1")?.hands.get("a")?.slotStableFor).toBeGreaterThan(0);
+  });
 });
 
 describe("reconcileTrades — accepted swap", () => {

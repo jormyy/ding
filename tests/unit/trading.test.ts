@@ -914,9 +914,9 @@ describe('Chip Trading Logic', () => {
     })
   })
 
-  describe('TC-084: Bot skill level affects Monte Carlo simulation count', () => {
-    it('should support skill level configuration in bot controller', () => {
-      // This test verifies the bot controller options support skill level
+  describe('TC-084: Bot skill level affects decision traits', () => {
+    it('should support bot trait configuration in bot controller', () => {
+      // This test verifies the bot controller exposes bot management.
       const botController = server['botController']
       expect(botController).toBeDefined()
 

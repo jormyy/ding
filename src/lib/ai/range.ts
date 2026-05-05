@@ -8,8 +8,8 @@
  * by Gaussian likelihood of that implied percentile, given the current board.
  *
  * Also maintains a cached `PercentileMap`: for each combo, its absolute
- * strength on the current board (computed via pokersolver postflop, or a
- * Chen heuristic preflop).
+ * strength on the current board (computed via pokersolver postflop, or the
+ * strategy-guide tier score preflop).
  */
 
 import type { Card } from "../types";
@@ -70,7 +70,7 @@ export function initRange(
  * Map from combo key to its percentile strength on the current board.
  *
  * For postflop boards, percentiles are derived from pokersolver ranks.
- * For empty boards (preflop), a Chen-style heuristic provides the score.
+ * For empty boards (preflop), the strategy-guide tier score provides the score.
  */
 export type PercentileMap = Map<ComboKey, number>;
 

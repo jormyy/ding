@@ -10,10 +10,10 @@ import DingServer from '../../party/index'
 import { advancePhaseIfAllReady } from '../../party/handlers/lifecycle'
 import { createInitialState } from '../../party/state'
 import { FakeRoom, FakeConn, makeFakeRoom, makeFakeConn, asPartyRoom, asPartyConnection, simulateClientMessage } from '../shared/mocks'
-import type { Card, Player } from '../../src/lib/types'
+import type { Card, Player, Rank, Suit } from '../../src/lib/types'
 
-function makeCard(rank: string, suit: string): Card {
-  return { rank, suit, numericRank: parseInt(rank) || 14 }
+function makeCard(rank: Rank, suit: Suit): Card {
+  return { rank, suit }
 }
 
 describe('advancePhaseIfAllReady', () => {
@@ -27,8 +27,8 @@ describe('advancePhaseIfAllReady', () => {
     ]
     state.ranking = ['p1-0', 'p2-0']
     state.hands = [
-      { id: 'p1-0', playerId: 'p1', cards: [makeCard('A', 's'), makeCard('K', 's')], flipped: false },
-      { id: 'p2-0', playerId: 'p2', cards: [makeCard('2', 'h'), makeCard('3', 'd')], flipped: false },
+      { id: 'p1-0', playerId: 'p1', cards: [makeCard('A', 'S'), makeCard('K', 'S')], flipped: false },
+      { id: 'p2-0', playerId: 'p2', cards: [makeCard('2', 'H'), makeCard('3', 'D')], flipped: false },
     ]
 
     const advanced = advancePhaseIfAllReady(state)
@@ -47,8 +47,8 @@ describe('advancePhaseIfAllReady', () => {
     ]
     state.ranking = ['p1-0', 'p2-0']
     state.hands = [
-      { id: 'p1-0', playerId: 'p1', cards: [makeCard('A', 's'), makeCard('K', 's')], flipped: false },
-      { id: 'p2-0', playerId: 'p2', cards: [makeCard('2', 'h'), makeCard('3', 'd')], flipped: false },
+      { id: 'p1-0', playerId: 'p1', cards: [makeCard('A', 'S'), makeCard('K', 'S')], flipped: false },
+      { id: 'p2-0', playerId: 'p2', cards: [makeCard('2', 'H'), makeCard('3', 'D')], flipped: false },
     ]
 
     const advanced = advancePhaseIfAllReady(state)
@@ -72,8 +72,8 @@ describe('advancePhaseIfAllReady', () => {
     ]
     state.ranking = ['p1-0', 'p2-0']
     state.hands = [
-      { id: 'p1-0', playerId: 'p1', cards: [makeCard('A', 's'), makeCard('K', 's')], flipped: false },
-      { id: 'p2-0', playerId: 'p2', cards: [makeCard('2', 'h'), makeCard('3', 'd')], flipped: false },
+      { id: 'p1-0', playerId: 'p1', cards: [makeCard('A', 'S'), makeCard('K', 'S')], flipped: false },
+      { id: 'p2-0', playerId: 'p2', cards: [makeCard('2', 'H'), makeCard('3', 'D')], flipped: false },
     ]
 
     const advanced = advancePhaseIfAllReady(state)
@@ -161,15 +161,20 @@ describe('Round timer server-side enforcement', () => {
     // First, place the human's hand.
     simulateClientMessage(conn, srv, { type: 'move', handId: 'p1-0', toIndex: 0 })
 
-    // Advance fake timers far enough for the bot to place its hand
-    // (~12 seconds max first-action delay).
-    for (let tick = 0; tick < 15; tick++) {
-      vi.advanceTimersByTime(1000)
-      state = getBroadcastState(conn)
-      if (state.ranking.filter((s: any) => s !== null).length >= 2) break
-    }
+    // Place the bot hand through the same server handler path. This test is
+    // about timer enforcement, not the bot strategy scheduler.
+    state = getBroadcastState(conn)
+    const bot = state.players.find((p: any) => p.isBot)
+    expect(bot).toBeDefined()
+    const botHand = state.hands.find((h: any) => h.playerId === bot.id)
+    expect(botHand).toBeDefined()
+    ;(srv as unknown as { dispatchBotAction: (pid: string, msg: any) => void })
+      .dispatchBotAction(bot.id, { type: 'move', handId: botHand.id, toIndex: 1 })
+    state = getBroadcastState(conn)
 
     // Both hands should now be placed.  The round timer (5s) is expired.
+    expect(state.ranking.filter((s: any) => s !== null).length).toBeGreaterThanOrEqual(2)
+    vi.advanceTimersByTime(6000)
     // Fire the DO alarm directly — in production the PartyKit framework
     // wakes the worker at the scheduled time; under fake timers we trigger
     // it manually since no framework is running.

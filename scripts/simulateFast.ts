@@ -6,7 +6,7 @@
 // instantiates DingServer + BotController identically but the BotController's
 // timer-based scheduling is bypassed: we round-robin tick each bot ourselves.
 //
-// Usage: npx tsx scripts/simulateFast.ts --games 100 --bots 4 --hands 2 --nSims 80
+// Usage: npx tsx scripts/simulateFast.ts --games 100 --bots 4 --hands 2
 
 import DingServer, { buildClientState } from "../party/index";
 import type { ServerGameState } from "../party/state";
@@ -38,9 +38,7 @@ function argStr(name: string): string | null {
 const NUM_GAMES = argOr("games", 50);
 const NUM_BOTS = argOr("bots", 4); // bots added via addBot
 const HANDS = argOr("hands", 2);
-const NSIMS = argOr("nSims", 80);
 const VERBOSE = argFlag("verbose");
-const SEED_BASE = argOr("seed", 0);
 const ORACLE = argFlag("oracle");
 const TRACE_PATH = argStr("trace");
 const COOLDOWN_MS = argOr("cooldown", 0); // sleep between games to limit thermal load
@@ -104,11 +102,6 @@ function bump(s: Stats, type: ClientMessage["type"]): void {
     case "fuckoff": s.fuckoffs++; break;
   }
 }
-
-// Minimal seeded shuffle override would require touching deckUtils. Skip —
-// each game uses a fresh DingServer instance, so the deck is freshly shuffled
-// (Math.random) each time.
-void SEED_BASE;
 
 type SimResult = {
   inversions: number | null;
@@ -308,7 +301,7 @@ async function runOneGame(gameIdx: number, traceWriter: TraceWriter): Promise<Si
       const player = s.players.find((p) => p.id === pid);
       if (!player) continue;
       const masked = buildClientState(s, pid);
-      const msg = decideAction(masked, pid, rec.traits, rec.memo, { nSims: NSIMS, trace: rec.sink });
+      const msg = decideAction(masked, pid, rec.traits, rec.memo, { trace: rec.sink });
       if (!msg) continue;
       // Skip purely-expressive actions for benchmark speed (still counted).
       if (rec.isCtl) {
@@ -419,7 +412,7 @@ function mean(xs: number[]): number {
 
 async function main() {
   // eslint-disable-next-line no-console
-  console.log(`Running ${NUM_GAMES} games (FAST): ${NUM_BOTS} bots + 1 ctrl, ${HANDS} hands/player, nSims=${NSIMS}`);
+  console.log(`Running ${NUM_GAMES} games (FAST): ${NUM_BOTS} bots + 1 ctrl, ${HANDS} hands/player`);
   let traceFh: number | null = null;
   let traceWriter: TraceWriter = null;
   if (TRACE_PATH) {

@@ -277,15 +277,14 @@ ding/
 │   │   ├── chipColors.ts      # Rank chip color utilities
 │   │   └── ai/                # Bot AI system
 │       │   ├── strategy.ts      # Main decision pipeline (perception → EV → selection)
-│       │   ├── handStrength.ts  # Monte Carlo hand strength estimation
+│       │   ├── handStrength.ts  # Current made-hand + preflop tier scoring
 │       │   ├── handClassifier.ts# Hand texture classification (draws, made hands)
 │       │   ├── belief.ts        # Belief state: teammate hand strength inference
 │       │   ├── range.ts         # Range belief: weighted hole-card combo distributions
 │       │   ├── ev.ts            # Expected-value scoring (inversion reduction)
 │       │   ├── personality.ts   # Trait generation + pacing
 │       │   ├── archetypes.ts    # Personality archetype presets
-│       │   ├── mood.ts          # Emotional state modeling
-│       │   └── signals.ts       # Social signal extraction from teammate behavior
+│       │   └── trace.ts         # Bot decision trace event types
 │   │
 │   └── types/
 │       └── pokersolver.d.ts   # Type declarations for pokersolver
@@ -302,9 +301,8 @@ ding/
 │   └── shared/                # Test utilities
 │
 └── scripts/                   # Simulation & benchmarking
-    ├── simulate.ts            # Full N-game bot simulation
-    ├── fast-sim.ts            # Fast simulation variant
-    ├── simulateFast.ts
+    ├── simulate.ts            # Timer-driven N-game bot simulation
+    ├── simulateFast.ts        # Fast simulation + trace harness
     ├── playAgainst.ts         # Human-vs-bot simulation
     ├── beliefAccuracy.ts      # Belief system accuracy benchmark
     └── debugOne.ts            # Single-game debug output
@@ -323,15 +321,15 @@ Every bot tick follows a three-stage pipeline:
 ```
 1. Perception  → Update BeliefState from public placements + trades
 2. Evaluation  → Score candidate actions by team-EV (inversion reduction)
-3. Selection   → Softmax over top actions, modulated by Traits + Mood
+3. Selection   → Softmax over top actions, modulated by Traits
 ```
 
 ### Subsystems
 
 **Hand Strength Estimation** (`handStrength.ts`):
-- Preflop: Chen-style heuristic fast path
-- Postflop: Monte Carlo rollout against random opponent hands
-- Sim count scales with bot `skill` trait (20–80 sims)
+- Preflop: strategy-guide tier scoring where every pair beats every non-pair, `23` is bottom, and suits/connectors are ignored
+- Postflop: current made-hand scoring, not future-card draw equity
+- Monte Carlo `estimateStrength()` remains available for standalone analysis, but the bot's own hand estimates use `currentHandStrength()`
 
 **Hand Classification** (`handClassifier.ts`):
 - Detects made hands, draws (flush, straight, gutshot), overcards
@@ -343,7 +341,7 @@ Every bot tick follows a three-stage pipeline:
 - Updates from observed slot placements, weighted by phase reliability
 - Tracks slot stability, cross-phase consistency, and churn rate
 - Calibrates teammate `skillPrior` at reveal based on placement accuracy
-- Includes habit tracking (acceptance rates, overvaluation bias, placement latency)
+- Includes habit tracking for overvaluation bias
 
 **Range Belief** (`range.ts`):
 - Maintains weighted distributions over plausible 2-card hole combos
@@ -357,17 +355,9 @@ Every bot tick follows a three-stage pipeline:
 - Trust-blended scoring for evaluating incoming proposals
 
 **Personality** (`personality.ts` + `archetypes.ts`):
-- 10 archetypes: anchor, professor, deliberator, gut, diplomat, skeptic, optimist, pessimist, leader, follower
+- 10 archetypes: anchor, deliberator, helper, quiet, professor, gut, newbie, worrier, optimist, skeptic
 - Traits: Big-Five (openness, conscientiousness, extraversion, agreeableness, neuroticism) + Ding-specific (skill, decisiveness, trust, helpfulness, stubbornness) + pacing (think time, hesitation probability)
-
-**Mood** (`mood.ts`):
-- Dynamic emotional state: focus, confidence, concern
-- Updated by teammate churn (concern ↑) and team convergence (focus ↑)
-- Modulates traits: worried bots become slower and more stubborn; confident bots act faster
-
-**Social Signals** (`signals.ts`):
-- Extracts confidence/uncertainty/churn per teammate from public state
-- Used for skill-weighted deferral (lower-skill bots wait for higher-skill teammates to place first)
+- Archetype quirks alter strategy thresholds; Ding/Fuckoff remain table-talk and are not bot strategy signals
 
 ### Bot Controller
 
@@ -420,7 +410,7 @@ Test configuration is in `vitest.config.ts`. Tests run in a Node environment wit
 ### Test Coverage Areas
 
 - `scoring.test.ts` — True ranking, tie handling, inversion counting
-- `handStrength.test.ts` — Preflop heuristics, postflop Monte Carlo, edge cases
+- `handStrength.test.ts` — Preflop guide tiers, current made-hand scoring, Monte Carlo helper edge cases
 - `deckUtils.test.ts` — Deck creation, shuffle randomness, dealing correctness
 - `handClassifier.test.ts` — Draw detection, made hand classification
 - `beliefTracking.test.ts` — Belief state updates, skill calibration
@@ -438,7 +428,7 @@ Headless harnesses drive N-game batches through the same server/bot plumbing:
 npx tsx scripts/simulate.ts --games 50 --bots 5 --hands 4
 
 # Fast simulation (no timers, synchronous bot ticks)
-npx tsx scripts/fast-sim.ts --games 100 --bots 4 --hands 3
+npx tsx scripts/simulateFast.ts --games 100 --bots 4 --hands 3
 
 # Belief accuracy benchmark
 npx tsx scripts/beliefAccuracy.ts
@@ -483,8 +473,8 @@ Bots live entirely on the server as `Player` records with synthetic connection I
 ### Why optimistic client state?
 Drag-and-drop feels instant even with network latency. The server validates and corrects, but the UI never blocks on the network for visual feedback.
 
-### Why preflop heuristics instead of Monte Carlo?
-Monte Carlo against random opponents on an empty board produces poor differentiation (any two cards look similar). Chen-style heuristics better capture preflop hand quality.
+### Why guide-tier preflop scoring instead of Monte Carlo?
+Monte Carlo against random opponents on an empty board produces poor coordination signals. The strategy guide uses explicit tiers: pairs above non-pairs, then high-card tiers, with suits/connectors ignored.
 
 ### Why inversion count instead of rank correlation?
 Inversions count pairwise mistakes, which is intuitive and locally explainable ("these two hands are swapped"). Rank correlation would obscure which specific hands caused the error.
@@ -492,5 +482,5 @@ Inversions count pairwise mistakes, which is intuitive and locally explainable (
 ### Why three chip move kinds?
 Acquire/offer/swap emerged from playtesting as the minimal set covering all useful inter-player chip transfers without arbitrary "move any chip anywhere" complexity. The server auto-classifies proposals so players just tap two hands.
 
-### Why mood + personality instead of just skill?
-A pure-skill bot would be deterministic and boring. Mood creates emergent drama: a bot that's been rejected three times becomes frustrated, sends a "fuckoff", then stubbornly defends its slots. Personality archetypes give each bot a recognizable play style.
+### Why personality instead of just skill?
+A pure-skill bot would be deterministic and homogeneous. Personality archetypes vary pacing, trust, stubbornness, and a few strategy quirks while keeping decisions grounded in the same measurable EV model.

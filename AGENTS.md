@@ -135,15 +135,10 @@ Archetype patches override base traits. See `personality.ts` for the base defaul
 
 Key levers in `src/lib/ai/strategy.ts`:
 
-- `canPropose()` — trade proposal thresholds. `proposeBar` default is `0.3 + resignation * 1.0 + stubbornness * 0.25`.
+- `canPropose()` — trade proposal thresholds. `proposeBar` has a 0.75 floor and rises with resignation/stubbornness.
 - `resignation` curve — controls when bots give up and just ready. Faster resignation = less trading, faster phases.
 - `overDecisionCap` (60 decisions) — soft cap on voluntary churn per phase.
-- `nSims` in `decideAction()` — `20 + 60 * skill`. Higher = better hand estimates but slower ticks.
-
-Key levers in `src/lib/ai/mood.ts`:
-
-- `onTeammateChurn()` concern bump — controls how much bot distress increases when teammates reorder hands.
-- `moodAdjustedTraits()` — concern slows bots down and raises stubbornness.
+- `currentHandStrength()` — own-hand scoring follows the strategy guide: preflop tiers, then current made hand only.
 
 ### Belief System Internals
 
@@ -165,7 +160,7 @@ Key levers in `src/lib/ai/mood.ts`:
 - River: 0.65
 - Turn: 0.55
 - Flop: 0.40
-- Preflop: 0.18 (heuristic nudge only)
+- Preflop: 0 (preflop placements do not constrain teammate ranges)
 
 ### Running Simulations
 
@@ -176,7 +171,7 @@ Use the simulation scripts to validate AI changes:
 npx tsx scripts/simulate.ts --games 50 --bots 5 --hands 4
 
 # Quick smoke test
-npx tsx scripts/fast-sim.ts --games 10 --bots 3 --hands 2
+npx tsx scripts/simulateFast.ts --games 10 --bots 3 --hands 2
 ```
 
 Watch for:
@@ -215,7 +210,7 @@ Edit `dealCards()` in `src/lib/deckUtils.ts`. Currently:
 - 2 cards per hand, dealt player-by-player
 - 1 burn + 3 flop + 1 burn + 1 turn + 1 burn + 1 river
 
-Changing this will affect `handStrength.ts` Monte Carlo (assumes 2 hole cards) and `handClassifier.ts` (assumes 5-card evaluation).
+Changing this will affect `currentHandStrength()` / `estimateStrength()` in `handStrength.ts` (assume 2 hole cards) and `handClassifier.ts` (assumes 5-card evaluation).
 
 ## Testing Guidelines
 
@@ -287,7 +282,7 @@ Check `BotController` — if `connections.size === 0`, the controller is dispose
 `assertRankingInvariant()` fires when duplicates exist or length mismatches. Usually caused by a handler mutating `ranking` without clearing old slots.
 
 **Preflop estimates look wrong:**
-`preflopStrength()` in `handStrength.ts` uses Chen-style heuristics. Check the gap/suited/pair logic if AA doesn't score near 1.0.
+`preflopTierStrength()` in `handStrength.ts` uses the strategy-guide tiers: pairs above non-pairs, high-card tiers below that, suits/connectors ignored, and 23 bottom.
 
 **Memory growth in long-running rooms:**
 Chat is capped at 100 messages. `rankHistory` grows by one array per phase per hand — for 22 hands × 4 phases = 88 numbers max. State is otherwise bounded.

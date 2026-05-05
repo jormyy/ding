@@ -92,93 +92,58 @@ export type ArchetypeQuirks = {
 export type ArchetypeFlavor = {
   description: string;
   namePool: string[];
-  /** Multiplier on ding-emission probability. */
-  dingTendency: number;
-  /** Multiplier on fuckoff-emission probability. */
-  fuckoffTendency: number;
-  catchphrases: { ding?: string[]; fuckoff?: string[]; readyEarly?: string[] };
   quirks: ArchetypeQuirks;
 };
 
 const FLAVORS: Record<Archetype, ArchetypeFlavor> = {
   anchor: {
-    description: "Confident rock; claims top slots fast, dings on premium only.",
+    description: "Confident rock; claims top slots fast and defends anchors.",
     namePool: ["Atlas", "Pillar", "Granite", "Keel", "Mast"],
-    dingTendency: 0.9,
-    fuckoffTendency: 0.4,
-    catchphrases: { ding: ["Got it.", "Locked."], fuckoff: ["No."] },
     quirks: { leadsConsensus: 0.5 },
   },
   deliberator: {
-    description: "Slow methodical; rarely dings, never first to ready.",
+    description: "Slow methodical; rarely first to ready.",
     namePool: ["Sage", "Owl", "Thorne", "Vance"],
-    dingTendency: 0.5,
-    fuckoffTendency: 0.5,
-    catchphrases: { ding: ["Hmm."], fuckoff: ["I think not."] },
     quirks: {},
   },
   helper: {
-    description: "Agreeable, accepts trades, frequent encouraging dings.",
+    description: "Agreeable, accepts strategically sound trades.",
     namePool: ["Sunny", "Rosa", "Jolie", "Pip"],
-    dingTendency: 1.4,
-    fuckoffTendency: 0.4,
-    catchphrases: { ding: ["Nice!", "Yes!"], fuckoff: ["Hmm, no."] },
     quirks: { cedesEasily: 0.4 },
   },
   quiet: {
-    description: "Minimal expression, observes; almost never dings/fuckoffs.",
+    description: "Minimal expression, observes before acting.",
     namePool: ["Mira", "Wren", "Sable", "Vesper"],
-    dingTendency: 0.3,
-    fuckoffTendency: 0.3,
-    catchphrases: { ding: ["."], fuckoff: ["..."] },
     quirks: {},
   },
   professor: {
-    description: "Top skill; dings only on real premium; precise small swaps.",
+    description: "Top skill; precise small swaps and high-confidence anchors.",
     namePool: ["Doc", "Kepler", "Curie", "Turing", "Newton"],
-    dingTendency: 0.7,
-    fuckoffTendency: 0.5,
-    catchphrases: { ding: ["Indeed.", "Precisely."], fuckoff: ["Incorrect."] },
     quirks: { leadsConsensus: 0.6 },
   },
   gut: {
-    description: "Fast and loud; impulsive dings and fuckoffs both.",
+    description: "Fast and impulsive; acts on close EV calls quickly.",
     namePool: ["Blaze", "Riot", "Maverick", "Zephyr"],
-    dingTendency: 1.5,
-    fuckoffTendency: 1.6,
-    catchphrases: { ding: ["YES!", "Boom."], fuckoff: ["NO!", "Get out."] },
     quirks: {},
   },
   newbie: {
-    description: "Over-ranks own pairs; eager dings on top-pair-no-kicker.",
+    description: "Over-ranks own pairs and cedes more often.",
     namePool: ["Sprout", "Lark", "Penny", "Junior"],
-    dingTendency: 1.3,
-    fuckoffTendency: 0.5,
-    catchphrases: { ding: ["Pair!", "Look at this!"], fuckoff: ["Hey…"] },
     quirks: { overrankOwnPairs: 0.05 },
   },
   worrier: {
-    description: "Frequent hesitation, rare dings, anxious small fuckoffs.",
+    description: "Frequent hesitation and conservative moves.",
     namePool: ["Misha", "Pim", "Wisp", "Wilow"],
-    dingTendency: 0.4,
-    fuckoffTendency: 1.2,
-    catchphrases: { ding: ["Maybe?"], fuckoff: ["Wait, no!"] },
     quirks: {},
   },
   optimist: {
-    description: "Cheerful; dings often, assumes teammates are right.",
+    description: "Trusts teammates and cedes on borderline proposals.",
     namePool: ["Sunbeam", "Beam", "Rainy", "Halcyon", "Cosmo"],
-    dingTendency: 1.5,
-    fuckoffTendency: 0.3,
-    catchphrases: { ding: ["Great!", "Love it."], fuckoff: ["Mm, nope."] },
     quirks: { cedesEasily: 0.3 },
   },
   skeptic: {
-    description: "Rejects more proposals into top slots; dings on the nuts only.",
+    description: "Rejects more proposals into top slots.",
     namePool: ["Sly", "Ravi", "Quill", "Stoic"],
-    dingTendency: 0.6,
-    fuckoffTendency: 1.5,
-    catchphrases: { ding: ["Confirmed."], fuckoff: ["No way.", "Absolutely not."] },
     quirks: { suspectsTop: 0.5 },
   },
 };
