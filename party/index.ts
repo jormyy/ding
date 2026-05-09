@@ -1,6 +1,6 @@
 import type * as Party from "partykit/server";
-import type { ClientMessage, Player, ServerMessage } from "../src/lib/types";
-import { LOBBY_GRACE_MS, MAX_PLAYERS } from "../src/lib/constants";
+import type { BotActionLogEntry, ClientMessage, Player, ServerMessage } from "../src/lib/types";
+import { COMMUNITY_CARDS_FOR_PHASE, LOBBY_GRACE_MS, MAX_PLAYERS } from "../src/lib/constants";
 import { BotController, type BotMeta } from "./bots";
 import {
   type ServerGameState,
@@ -12,6 +12,7 @@ import {
 import { handlerMap } from "./handlers/index";
 import type { HandlerCtx } from "./handlers/types";
 import { advancePhaseIfAllReady } from "./handlers/lifecycle";
+import { auditBotActionLog } from "./botAudit";
 
 export { buildClientState } from "./state";
 export type { ServerGameState } from "./state";
@@ -177,6 +178,9 @@ export default class DingServer implements Party.Server {
    * in-flight promises until they resolve.
    */
   private broadcast(): void {
+    if (this.state.score !== null && this.state.botActionLog.some((entry) => !entry.audit)) {
+      auditBotActionLog(this.state);
+    }
     assertRankingInvariant(this.state);
     // Enforce the round timer server-side on every state change so bots
     // get auto-readied without waiting for the alarm to fire.
@@ -251,7 +255,44 @@ export default class DingServer implements Party.Server {
   private dispatchBotAction(playerId: string, msg: ClientMessage): void {
     const player = this.state.players.find((p) => p.id === playerId);
     if (!player) return;
-    this.handlePlayerAction(player, msg);
+    const beforeFingerprint = this.actionFingerprint();
+    const entry = this.createBotActionLogEntry(player, msg);
+    this.handlePlayerAction(player, msg, undefined, entry, beforeFingerprint);
+  }
+
+  private actionFingerprint(): string {
+    return JSON.stringify({
+      phase: this.state.phase,
+      ranking: this.state.ranking,
+      ready: this.state.players.map((p) => [p.id, p.ready]),
+      revealIndex: this.state.revealIndex,
+      score: this.state.score,
+      acquireRequests: this.state.acquireRequests,
+    });
+  }
+
+  private createBotActionLogEntry(player: Player, msg: ClientMessage): BotActionLogEntry {
+    const count = COMMUNITY_CARDS_FOR_PHASE[this.state.phase];
+    const actorHoleCards: Record<string, BotActionLogEntry["actorHoleCards"][string]> = {};
+    for (const hand of this.state.hands.filter((h) => h.playerId === player.id)) {
+      actorHoleCards[hand.id] = hand.cards.map((card) => ({ ...card }));
+    }
+    return {
+      id: `${Date.now()}-${this.state.botActionLog.length}`,
+      ts: Date.now(),
+      phaseElapsedMs: this.state.phaseStartedAt === null ? null : Date.now() - this.state.phaseStartedAt,
+      phase: this.state.phase,
+      playerId: player.id,
+      playerName: player.name,
+      action: msg,
+      applied: false,
+      communityCards: this.state.allCommunityCards.slice(0, count),
+      actorHoleCards,
+      rankingBefore: this.state.ranking.slice(),
+      rankingAfter: this.state.ranking.slice(),
+      acquireRequestsBefore: this.state.acquireRequests.map((request) => ({ ...request })),
+      acquireRequestsAfter: this.state.acquireRequests.map((request) => ({ ...request })),
+    };
   }
 
   /** Track a new WebSocket connection. */
@@ -385,7 +426,9 @@ export default class DingServer implements Party.Server {
   private handlePlayerAction(
     player: Player,
     msg: ClientMessage,
-    sender?: Party.Connection
+    sender?: Party.Connection,
+    botLogEntry?: BotActionLogEntry,
+    botBeforeFingerprint?: string
   ): void {
     const ctx: HandlerCtx = {
       lastChatAt: this.lastChatAt,
@@ -397,7 +440,20 @@ export default class DingServer implements Party.Server {
       resetState: (newState) => { this.state = newState; },
     };
     const result = handlerMap[msg.type](this.state, player, msg, ctx);
+    const loggedBotAction = !!botLogEntry;
+    if (botLogEntry && botBeforeFingerprint !== undefined) {
+      botLogEntry.applied = botBeforeFingerprint !== this.actionFingerprint();
+      botLogEntry.rankingAfter = this.state.ranking.slice();
+      botLogEntry.acquireRequestsAfter = this.state.acquireRequests.map((request) => ({ ...request }));
+      this.state.botActionLog.push(botLogEntry);
+      if (this.state.botActionLog.length > 500) {
+        this.state.botActionLog = this.state.botActionLog.slice(-500);
+      }
+    }
     switch (result.kind) {
+      case "ignore":
+        if (loggedBotAction) this.broadcast();
+        break;
       case "broadcast":
         this.broadcast();
         break;

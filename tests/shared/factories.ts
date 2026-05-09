@@ -119,6 +119,7 @@ export function createGameState(overrides: Partial<GameState> = {}): GameState {
     chatMessages: [],
     dingLog: [],
     fuckoffLog: [],
+    botActionLog: [],
   }
   return { ...defaults, ...overrides }
 }

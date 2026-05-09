@@ -65,6 +65,7 @@ export const start: Handler = (state, player) => {
   state.trueRanking = null;
   state.trueRanks = null;
   state.score = null;
+  state.botActionLog = [];
   state.gameStartedAt = now;
   state.phaseStartedAt = now;
 

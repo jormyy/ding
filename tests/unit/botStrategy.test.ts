@@ -56,6 +56,7 @@ function state(opts: Partial<GameState>): GameState {
     chatMessages: [],
     dingLog: [],
     fuckoffLog: [],
+    botActionLog: [],
     ...opts,
   };
 }
@@ -67,13 +68,16 @@ describe("bot strategy guide contract", () => {
     const trash = hand("me-23", "me", [c("2", "C"), c("3", "S")]);
     const oppA = hand("p1-a", "p1");
     const oppB = hand("p1-b", "p1");
+    const gameState = state({
+      hands: [aa, trash, oppA, oppB],
+      ranking: [null, null, null, null],
+    });
+
+    expect(decideAction(gameState, "me", traits({ quirks: { leadsConsensus: 0.6 } }), memo)).toBeNull();
 
     const random = vi.spyOn(Math, "random").mockReturnValue(0);
     const msg = decideAction(
-      state({
-        hands: [aa, trash, oppA, oppB],
-        ranking: [null, null, null, null],
-      }),
+      gameState,
       "me",
       traits({ quirks: { leadsConsensus: 0.6 } }),
       memo,
@@ -106,18 +110,20 @@ describe("bot strategy guide contract", () => {
 
   it("does not treat ding or fuckoff logs as hand-strength evidence", () => {
     const memo = newBotMemo();
+    const gameState = state({
+      phase: "flop",
+      hands: [
+        hand("me-a", "me", [c("K", "H"), c("9", "D")]),
+        hand("p1-a", "p1"),
+      ],
+      communityCards: [c("2", "C"), c("7", "D"), c("Q", "S")],
+      ranking: [null, null],
+      dingLog: [{ playerId: "p1", playerName: "p1", phase: "flop", ts: 1, handId: "p1-a" }],
+      fuckoffLog: [{ playerId: "p1", playerName: "p1", phase: "flop", ts: 2, handId: "p1-a" }],
+    });
+    expect(decideAction(gameState, "me", traits(), memo)).toBeNull();
     const msg = decideAction(
-      state({
-        phase: "flop",
-        hands: [
-          hand("me-a", "me", [c("K", "H"), c("9", "D")]),
-          hand("p1-a", "p1"),
-        ],
-        communityCards: [c("2", "C"), c("7", "D"), c("Q", "S")],
-        ranking: [null, null],
-        dingLog: [{ playerId: "p1", playerName: "p1", phase: "flop", ts: 1, handId: "p1-a" }],
-        fuckoffLog: [{ playerId: "p1", playerName: "p1", phase: "flop", ts: 2, handId: "p1-a" }],
-      }),
+      gameState,
       "me",
       traits(),
       memo,
@@ -126,6 +132,25 @@ describe("bot strategy guide contract", () => {
     expect(msg?.type).toBe("move");
     expect(memo.belief.handStrength.has("p1-a")).toBe(false);
     expect(memo.belief.handConfidence.has("p1-a")).toBe(false);
+  });
+
+  it("waits one tick at phase start before placing into an empty board", () => {
+    const memo = newBotMemo();
+    const msg = decideAction(
+      state({
+        hands: [
+          hand("me-a", "me", [c("A", "H"), c("K", "D")]),
+          hand("p1-a", "p1"),
+        ],
+        ranking: [null, null],
+      }),
+      "me",
+      traits(),
+      memo,
+    );
+
+    expect(msg).toBeNull();
+    expect(memo.phaseDeferTicks).toBe(1);
   });
 
   it("chooses a meaningful own-hand improvement over ready", () => {
@@ -177,6 +202,29 @@ describe("bot strategy guide contract", () => {
     );
 
     expect(msg).toEqual({ type: "move", handId: "me-aa", toIndex: 1 });
+  });
+
+  it("does not churn a strong placed anchor downward into another empty high slot", () => {
+    const memo = newBotMemo();
+    memo.ticksSinceProgress = 10;
+
+    const msg = decideAction(
+      state({
+        phase: "preflop",
+        players: [player("me"), player("p1")],
+        hands: [
+          hand("me-aa", "me", [c("A", "H"), c("A", "D")]),
+          hand("p1-a", "p1"),
+          hand("p1-b", "p1"),
+        ],
+        ranking: ["me-aa", null, "p1-a"],
+      }),
+      "me",
+      traits(),
+      memo,
+    );
+
+    expect(msg).toBeNull();
   });
 
   it("can ready when an extreme own anchor is stranded but no empty legal anchor slot exists", () => {

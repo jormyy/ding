@@ -209,19 +209,6 @@ function reasonFor(c: Candidate): string {
   }
 }
 
-function softmaxPick<T>(items: T[], scores: number[], temperature: number): T {
-  const t = Math.max(0.05, temperature);
-  const maxS = Math.max(...scores);
-  const exps = scores.map((s) => Math.exp((s - maxS) / t));
-  const sum = exps.reduce((a, b) => a + b, 0);
-  let r = Math.random() * sum;
-  for (let i = 0; i < items.length; i++) {
-    r -= exps[i];
-    if (r <= 0) return items[i];
-  }
-  return items[items.length - 1];
-}
-
 function utilityFor(
   score: ActionScore,
   traits: Traits,
@@ -286,6 +273,50 @@ function spreadPenalty(
     }
   }
   return 0;
+}
+
+function orderPreservationBonus(
+  state: GameState,
+  handId: string,
+  candidateSlot: number,
+  currentStrength: number,
+): number {
+  if (state.phase === "preflop") return 0;
+  const history = state.rankHistory[handId] ?? [];
+  const previousRank = history[history.length - 1];
+  if (previousRank === null || previousRank === undefined) return 0;
+
+  const isClearlyImproved = currentStrength >= 0.62;
+  const isClearlyWeak = currentStrength <= 0.25;
+  if (isClearlyImproved || isClearlyWeak) return 0;
+
+  const previousSlot = previousRank - 1;
+  const distance = Math.abs(candidateSlot - previousSlot);
+  const normalized = 1 - distance / Math.max(1, state.ranking.length - 1);
+  return Math.max(0, normalized) * 0.22;
+}
+
+function isProportionateProposal(
+  state: GameState,
+  initiatorHandId: string,
+  recipientHandId: string,
+  after: (string | null)[],
+  score: ActionScore,
+): boolean {
+  const beforeInitiator = state.ranking.indexOf(initiatorHandId);
+  const beforeRecipient = state.ranking.indexOf(recipientHandId);
+  const afterInitiator = after.indexOf(initiatorHandId);
+  const afterRecipient = after.indexOf(recipientHandId);
+  const n = Math.max(1, state.ranking.length - 1);
+  const beforeGap = beforeInitiator === -1 || beforeRecipient === -1
+    ? 0
+    : Math.abs(beforeInitiator - beforeRecipient) / n;
+  const afterGap = afterInitiator === -1 || afterRecipient === -1
+    ? 0
+    : Math.abs(afterInitiator - afterRecipient) / n;
+  const lopsided = Math.max(beforeGap, afterGap) > 0.45;
+  if (lopsided && score.teamInversionDelta * score.confidence < 1.2) return false;
+  return score.teamInversionDelta > 0.25 && score.confidence >= 0.45;
 }
 
 export function decideAction(
@@ -410,23 +441,21 @@ export function decideAction(
     });
   };
 
-  // Skill-weighted deferral: at phase start, lower-skill bots wait briefly
-  // so higher-skill teammates place first.
+  // Strategy guide: wait-and-watch at the start of each ranking phase so
+  // teammate chip movement can reveal who improved on the new board.
   const myHandsForDefer = state.hands.filter((h) => h.playerId === myPlayerId);
   const haveAnyPlaced = state.ranking.some((s) => s !== null);
   const myAnyPlaced = myHandsForDefer.some((h) => state.ranking.indexOf(h.id) !== -1);
-  if (!myAnyPlaced && !haveAnyPlaced && memo.phaseDeferTicks < 3) {
-    let highestTeammateSkill = 0;
-    for (const p of state.players) {
-      if (p.id === myPlayerId || !p.connected) continue;
-      const tb = memo.belief.perTeammate.get(p.id);
-      const sp = tb?.skillPrior ?? 0.5;
-      if (sp > highestTeammateSkill) highestTeammateSkill = sp;
-    }
-    if (highestTeammateSkill > traits.skill + 0.1) {
-      memo.phaseDeferTicks++;
-      return null;
-    }
+  if (!myAnyPlaced && !haveAnyPlaced && memo.phaseDeferTicks < 1) {
+    memo.phaseDeferTicks++;
+    return null;
+  }
+  const highSlotsEmpty = state.ranking
+    .slice(0, Math.max(1, Math.ceil(state.ranking.length * 0.25)))
+    .every((slot) => slot === null);
+  if (!myAnyPlaced && haveAnyPlaced && highSlotsEmpty && memo.phaseDeferTicks < 2) {
+    memo.phaseDeferTicks++;
+    return null;
   }
 
   memo.ticksSinceProgress++;
@@ -458,18 +487,6 @@ export function decideAction(
   const board = state.communityCards;
 
   for (const h of myHands) getEstimate(memo, h, board);
-
-  // Newbie quirk: small overrank bias on own pocket pairs (top-pair-no-kicker
-  // looks better than it is). Applied to the cached estimate.
-  const overrank = traits.quirks?.overrankOwnPairs ?? 0;
-  if (overrank > 0) {
-    for (const h of myHands) {
-      if (h.cards.length === 2 && h.cards[0].rank === h.cards[1].rank) {
-        const cur = memo.estimates.get(h.id) ?? 0.5;
-        memo.estimates.set(h.id, Math.min(1, cur + overrank));
-      }
-    }
-  }
 
   if (memo.handClassifiedPhase !== state.phase || memo.classifiedHands.size === 0) {
     memo.classifiedHands.clear();
@@ -539,7 +556,12 @@ export function decideAction(
     .filter((p) => p.id !== myPlayerId && p.connected)
     .every((p) => p.ready);
   const readyDelay = state.phase === "river" ? 8 : state.phase === "turn" ? 5 : 3;
-  const readyDelayMet = memo.ticksSinceProgress >= readyDelay;
+  const elapsedMs = state.phaseStartedAt === null ? 0 : Date.now() - state.phaseStartedAt;
+  const readyDelayMs =
+    state.phase === "river" ? 6500 :
+    state.phase === "turn" ? 5000 :
+    3200;
+  const readyDelayMet = memo.ticksSinceProgress >= readyDelay || elapsedMs >= readyDelayMs;
   const teammatesWaiting = myHandsPlaced && othersAllReady && memo.ticksSinceProgress >= 1;
   const ownAnchorUnsettled = myHands.some((h) => {
     const slot = state.ranking.indexOf(h.id);
@@ -595,6 +617,13 @@ export function decideAction(
     }
     const trustedScore = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates, overrides);
     const blendedDelta = (1 - trust) * myScore.teamInversionDelta + trust * trustedScore.teamInversionDelta;
+    const proportionate = isProportionateProposal(
+      state,
+      p.initiatorHandId,
+      p.recipientHandId,
+      after,
+      { teamInversionDelta: blendedDelta, confidence: trustedScore.confidence }
+    );
 
     let cfPenalty = 0;
     if (proposerHand && totalHands > 1 && initIdxAfter !== -1) {
@@ -636,7 +665,7 @@ export function decideAction(
     // of the candidate-pool path so a low-stubbornness bot doesn't accept
     // zero-EV proposals just because acceptBoost > |blendedDelta|.
     const confidentRejectGate = blendedDelta * acceptScore.confidence < -0.2;
-    if (blendedDelta > 0.05 && !confidentRejectGate) {
+    if (blendedDelta > 0.05 && !confidentRejectGate && proportionate) {
       candidates.push({
         msg: { type: "acceptChipMove", initiatorHandId: p.initiatorHandId, recipientHandId: p.recipientHandId },
         score: acceptScore,
@@ -650,6 +679,7 @@ export function decideAction(
           myInversionDelta: myScore.teamInversionDelta,
           trustedInversionDelta: trustedScore.teamInversionDelta,
           trust,
+          proportionate,
           initiatorHandId: p.initiatorHandId,
           recipientHandId: p.recipientHandId,
           kind: p.kind,
@@ -744,6 +774,7 @@ export function decideAction(
       const posBonus = slotAlign * 0.3 * traits.skill;
       const anchor = anchorBonusForOwn(h.id, slot, state.ranking.length);
       const spread = spreadPenalty(myPlacements, slot, est);
+      const preserve = orderPreservationBonus(state, h.id, slot, est);
       // Place strongest first per the strategy guide: "Anchor your own premium
       // hands. Place them high with confidence and build the rest of the board
       // around it." While multiple own hands are unranked, candidates are
@@ -755,7 +786,7 @@ export function decideAction(
       candidates.push({
         msg: { type: "move", handId: h.id, toIndex: slot },
         score,
-        utility: utilityFor(score, traits) + posBonus + anchor - spread + priorityBonus,
+        utility: utilityFor(score, traits) + posBonus + anchor + preserve - spread + priorityBonus,
         meta: {
           handId: h.id,
           slot,
@@ -764,6 +795,7 @@ export function decideAction(
           isWeakest,
           isStrongest,
           anchor,
+          preserve,
           priorityBonus,
         },
       });
@@ -775,25 +807,29 @@ export function decideAction(
       const from = state.ranking.indexOf(h.id);
       if (from === -1) continue;
       for (const slot of emptySlots) {
+        const est = memo.estimates.get(h.id) ?? 0.5;
+        if (est >= 0.65 && slot > from) continue;
+        if (est <= 0.30 && slot < from) continue;
         const after = rankingAfterMove(state.ranking, h.id, slot);
         if (after === null) continue;
         const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
-        const est = memo.estimates.get(h.id) ?? 0.5;
         const idealSlot = (1 - est) * (state.ranking.length - 1);
         const slotAlign = 1 - Math.abs(slot - idealSlot) / Math.max(1, state.ranking.length - 1);
         const posBonus = slotAlign * 0.15 * traits.skill;
         const anchor = anchorBonusForOwn(h.id, slot, state.ranking.length);
-        if (score.teamInversionDelta > 0.08 || anchor > 0) {
+        const preserve = orderPreservationBonus(state, h.id, slot, est);
+        if (score.teamInversionDelta > 0.08 || (anchor > 0 && slot < from)) {
           candidates.push({
             msg: { type: "move", handId: h.id, toIndex: slot },
             score,
-            utility: utilityFor(score, traits) + posBonus + anchor,
+            utility: utilityFor(score, traits) + posBonus + anchor + preserve,
             meta: {
               handId: h.id,
               slot,
               ownStrength: est,
               isUnrankedPlacement: false,
               anchor,
+              preserve,
             },
           });
         }
@@ -851,11 +887,19 @@ export function decideAction(
       const util = utilityFor(score, traits, { teamOnlyBenefit: score.teamInversionDelta })
         - deferPenalty + extraversionBonus;
 
-      if (score.teamInversionDelta * score.confidence > 1.0 || canPropose(memo, resignation, overDecisionCap, score.teamInversionDelta, state.hands.length, effectiveStubbornness, score.confidence)) {
+      const proportionate = isProportionateProposal(state, h.id, otherId, after, score);
+      if (proportionate && (score.teamInversionDelta * score.confidence > 1.0 || canPropose(memo, resignation, overDecisionCap, score.teamInversionDelta, state.hands.length, effectiveStubbornness, score.confidence))) {
         candidates.push({
           msg: { type: "proposeChipMove", initiatorHandId: h.id, recipientHandId: otherId },
           score,
           utility: util + (score.teamInversionDelta * score.confidence > 1.0 ? 0.5 : 0),
+          meta: {
+            initiatorHandId: h.id,
+            recipientHandId: otherId,
+            proportionate,
+            teamInversionDelta: score.teamInversionDelta,
+            confidence: score.confidence,
+          },
         });
       }
     }
@@ -884,11 +928,19 @@ export function decideAction(
       const extraversionBonus = (traits.extraversion - 0.5) * 0.2;
       const util = utilityFor(score, traits, { teamOnlyBenefit: score.teamInversionDelta })
         - deferPenalty + extraversionBonus;
-      if (score.teamInversionDelta * score.confidence > 1.0 || canPropose(memo, resignation, overDecisionCap, score.teamInversionDelta, state.hands.length, effectiveStubbornness, score.confidence)) {
+      const proportionate = isProportionateProposal(state, myH.id, theirH.id, after, score);
+      if (proportionate && (score.teamInversionDelta * score.confidence > 1.0 || canPropose(memo, resignation, overDecisionCap, score.teamInversionDelta, state.hands.length, effectiveStubbornness, score.confidence))) {
         candidates.push({
           msg: { type: "proposeChipMove", initiatorHandId: myH.id, recipientHandId: theirH.id },
           score,
           utility: util + (score.teamInversionDelta * score.confidence > 1.0 ? 0.5 : 0),
+          meta: {
+            initiatorHandId: myH.id,
+            recipientHandId: theirH.id,
+            proportionate,
+            teamInversionDelta: score.teamInversionDelta,
+            confidence: score.confidence,
+          },
         });
       }
     }
@@ -957,6 +1009,11 @@ export function decideAction(
     });
     if (placeOnly.length > 0) pool = placeOnly;
   }
+  if (!mustRespond && effectiveAllRanked && !outgoingProposal && !incomingProposal) {
+    const readyCandidate = candidates.find((c) => c.msg.type === "ready");
+    const usefulNonReady = pool.some((c) => c.msg.type !== "ready" && c.utility > 0);
+    if (readyCandidate && !usefulNonReady) pool = [readyCandidate];
+  }
   const top = pool.slice(0, 3);
 
   if (!mustRespond && !(haveUnranked && haveEmpty) && top[0].utility <= 0 && top[0].msg.type !== "ready") {
@@ -964,28 +1021,7 @@ export function decideAction(
     return null;
   }
 
-  const gap = top[0].utility - (top[1]?.utility ?? top[0].utility);
-  const difficulty = Math.min(1, gap < 0.1 ? 1 : gap < 0.5 ? 0.6 : gap < 1.5 ? 0.3 : 0.1);
-
-  // Honest misread: bot picks the second-best action when the gap to first is
-  // small. Humans don't randomly pick suboptimally regardless of context — so
-  // we restrict to genuine ties and scale the probability by (1 - skill) so
-  // higher-skill bots almost never misread tight calls.
-  const honestMisreadGate = top.length >= 2 && gap < 0.15;
-  const honestMisread = honestMisreadGate &&
-    Math.random() < Math.min(0.04, (1 - traits.skill) * 0.06);
-  if (honestMisread) {
-    memo.decisionCount++;
-    memo.idleTicks = 0;
-    commitAction(memo, top[1].msg);
-    emitDecision(top[1].msg, "honestMisread", 1, top[1].meta);
-    return top[1].msg;
-  }
-
-  const tempBase = (1 - traits.skill) * 0.4;
-  const temperature = tempBase * difficulty + 0.05;
-  const scores = top.map((c) => c.utility);
-  const pick = softmaxPick(top, scores, temperature);
+  const pick = top[0];
 
   memo.decisionCount++;
   memo.idleTicks = 0;

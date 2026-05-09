@@ -122,6 +122,8 @@ export type GameState = {
   dingLog: SocialSignal[];
   /** Recent fuckoff events, newest last. Capped server-side at ~20. */
   fuckoffLog: SocialSignal[];
+  /** Ordered bot action log. Opponent hole cards are masked until reveal. */
+  botActionLog: BotActionLogEntry[];
 };
 
 /** The three kinds of chip moves between players. */
@@ -160,6 +162,29 @@ export type SocialSignal = {
   ts: number;
   /** Optional handId when the signal refers to a specific hand. */
   handId?: string;
+};
+
+export type BotActionAudit = {
+  verdict: "plausible" | "deviation";
+  explanation: string;
+};
+
+export type BotActionLogEntry = {
+  id: string;
+  ts: number;
+  phaseElapsedMs: number | null;
+  phase: Phase;
+  playerId: string;
+  playerName: string;
+  action: ClientMessage;
+  applied: boolean;
+  communityCards: Card[];
+  actorHoleCards: Record<string, Card[]>;
+  rankingBefore: (string | null)[];
+  rankingAfter: (string | null)[];
+  acquireRequestsBefore: AcquireRequest[];
+  acquireRequestsAfter: AcquireRequest[];
+  audit?: BotActionAudit;
 };
 
 /**

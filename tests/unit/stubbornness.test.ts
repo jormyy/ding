@@ -37,6 +37,7 @@ function baseState(opts: Partial<GameState>): GameState {
     chatMessages: [],
     dingLog: [],
     fuckoffLog: [],
+    botActionLog: [],
     ...opts,
   };
 }

@@ -1,5 +1,6 @@
 import type * as Party from "partykit/server";
 import type {
+  BotActionLogEntry,
   Card,
   GameState,
   Hand,
@@ -43,6 +44,7 @@ export function createInitialState(): ServerGameState {
     chatMessages: [],
     dingLog: [],
     fuckoffLog: [],
+    botActionLog: [],
   };
 }
 
@@ -55,6 +57,22 @@ function maskHandsForPlayer(
     if (hand.playerId === playerId) return hand;
     if (hand.flipped && phase === "reveal") return hand;
     return { ...hand, cards: [] };
+  });
+}
+
+function maskBotActionLogForPlayer(
+  entries: BotActionLogEntry[],
+  playerId: string,
+  phase: Phase
+): BotActionLogEntry[] {
+  const showAllHoleCards = phase === "reveal";
+  return entries.map((entry) => {
+    if (showAllHoleCards || entry.playerId === playerId) return entry;
+    const actorHoleCards: Record<string, Card[]> = {};
+    for (const handId of Object.keys(entry.actorHoleCards)) {
+      actorHoleCards[handId] = [];
+    }
+    return { ...entry, actorHoleCards };
   });
 }
 
@@ -89,6 +107,7 @@ export function buildClientState(state: ServerGameState, playerId: string): Game
     chatMessages: state.chatMessages,
     dingLog: state.dingLog,
     fuckoffLog: state.fuckoffLog,
+    botActionLog: maskBotActionLogForPlayer(state.botActionLog, playerId, state.phase),
   };
 }
 
