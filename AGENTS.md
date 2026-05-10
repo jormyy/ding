@@ -20,34 +20,53 @@ npm run test:run     # One-shot (for CI)
 
 - **Next.js 14 App Router**. All pages are Server Components by default. Any client-side interactivity must use `"use client"`.
 - **PartyKit server** runs on a separate port. The client connects via `PartySocket` using `NEXT_PUBLIC_PARTYKIT_HOST`.
-- **No database**. All game state lives in-memory on the PartyKit server. Chat history is kept in `ServerGameState.chatMessages` (capped at 100).
-- **TypeScript strict**. Use explicit types on exports, especially in `src/lib/types.ts` and `party/handlers/`.
+- **No database**. All game state lives in-memory on the PartyKit server, persisted via `room.storage` for hibernation. Chat history is capped at 100 messages; the bot action log is capped at 100 entries.
+- **TypeScript strict + noUnusedLocals + noUnusedParameters + noImplicitReturns**. Tests are excluded from typecheck via `tsconfig.json`'s `exclude`.
 
 ## Project Conventions
 
 ### File Organization
 
 - `src/app/` — Next.js pages only. No business logic.
-- `src/components/` — React components. Sub-folders group by feature (`game/`, `reveal/`).
+- `src/components/` — Mode-agnostic React components (chrome, shells, dispatch).
+- `src/contexts/` — React contexts (e.g. `GameSession.tsx` for socket lifecycle + identity).
 - `src/hooks/` — Custom hooks that compose state + side effects.
-- `src/lib/` — Pure functions, types, constants, and AI logic. No React imports.
+- `src/lib/` — Pure functions, types, constants, AI, and the `gameMode` contract. No React imports.
+- `src/modes/<id>/` — Per-mode implementation: phases, reducers, evaluator, scaler, reveal helpers, view registration. Adding a second mode lands here.
+- `src/modes/registry.ts` — Client-side mode registry consulted by `GameModeRouter`.
 - `party/` — Server-only code. Must not import React or browser APIs.
-- `tests/unit/` — Co-located by feature area. Import paths use `../../src/...` or `../../party/...`.
-- `scripts/` — Standalone Node scripts using `tsx`. Import paths use relative or `../../src/`.
+- `party/pipeline/dispatch.ts` — The single funnel for state mutations.
+- `party/server/` — Extracted server modules (ConnectionManager, RoomStorage, AlarmScheduler, LobbySweeper).
+- `party/state/` — Invariants + state migration (`STATE_VERSION`, `migrateState`).
+- `tests/unit/` — Co-located by feature area. Excluded from production typecheck.
+- `scripts/` — Standalone Node scripts using `tsx`. Shared harness in `scripts/lib/harness.ts`.
 
 ### Naming
 
 - React components: `PascalCase.tsx`
 - Hooks: `camelCase.ts`, exported as `useXxx`
-- Server handlers: `camelCase.ts` in `party/handlers/`, exported as handler functions
+- Reducers: `camelCase.ts` in `src/modes/ding/reducers/`, exported as `reduce<MessageType>` (e.g. `reduceMove`); registered in `dingReducers` table
+- Server modules: `camelCase.ts` in `party/server/` exporting a class or named functions
 - AI modules: domain-named (`belief.ts`, `ev.ts`, `range.ts`)
-- Types: PascalCase, exported from `src/lib/types.ts` or co-located if module-internal
+- Types: PascalCase, exported from `src/lib/types.ts` (cross-wire types) or `party/types.ts` (server-only)
 
 ### State Mutation Rules
 
-**Server (`party/`):** Mutate `ServerGameState` in place. Handlers return `{ kind: "broadcast" | "broadcast-raw" | "broadcast-close-self" | "ignore" }`. Never create deep copies unless masking for clients.
+**Server (`party/`):** Reducers mutate `ServerGameState` in place and return one of:
 
-**Client (`src/hooks/`):** Optimistic updates are fine — `useRankingActions` clones arrays with spread. Server state is the source of truth; `useEffect` syncs `localRanking` from `gameState.ranking`.
+```ts
+{ kind: "ignore" }
+{ kind: "broadcast" }
+{ kind: "broadcast-raw"; payload: string }
+{ kind: "broadcast-raw-and-state"; payload: string }
+{ kind: "broadcast-close-self" }
+```
+
+The dispatcher (`party/pipeline/dispatch.ts`) routes through `dingReducers`, bumps `state.gen` on every non-`ignore` result, appends a bot-action log entry for bot-originated actions (capped at `BOT_ACTION_LOG_CAP = 100`), and runs invariants on every applied action.
+
+Never deep-clone `ServerGameState` outside masking (`buildClientState` clones what it needs to strip).
+
+**Client (`src/hooks/useRankingActions.ts`):** Optimistic updates clone arrays with spread. Server state is the source of truth; `useEffect` syncs `localRanking` from `gameState.ranking` on every server broadcast.
 
 ### WebSocket Message Flow
 
@@ -55,14 +74,22 @@ npm run test:run     # One-shot (for CI)
 Client action
   → PartySocket.send(JSON.stringify(msg))
   → DingServer.onMessage()
-  → handlerMap[msg.type](state, player, msg, ctx)
-  → state mutated
-  → broadcastStateTo() → buildClientState() per connection
-  → conn.send(JSON.stringify({ type: "state", state: maskedState }))
-  → Client setGameState()
+  → handlePlayerAction(player, msg, sender, isBot=false)
+  → dispatchAction({state, player, msg, handlerCtx, sender, isBot})
+        ├─ dingReducers[msg.type](state, player, msg, ctx)   // mutates state in place
+        ├─ if changed: state.gen++
+        ├─ if isBot:   append BotActionLogEntry (cap 100)
+        └─ if changed: runInvariants(state)
+  → broadcast()
+        ├─ auditBotActionLog(state)        // when score is computed
+        ├─ applyRoundTimerIfExpired()      // server-side timer enforcement
+        ├─ MaskBroadcaster.broadcast()     // per-player JSON byte-compare
+        ├─ botController.notifyStateChanged()
+        ├─ persistState() (fire-and-forget)
+        └─ alarmScheduler.schedule()       // dirty-bit gated
 ```
 
-Bots bypass the socket: `BotController.dispatch()` calls `DingServer.handlePlayerAction()` directly.
+Bots bypass the socket: `BotController.dispatch` calls `DingServer.handlePlayerAction(player, msg, undefined, true)` directly, which routes through the same dispatcher with `isBot=true`.
 
 ## Architecture Deep Dive
 
@@ -75,29 +102,39 @@ Bots bypass the socket: `BotController.dispatch()` calls `DingServer.handlePlaye
 
 Every phase (preflop → flop → turn → river) resets the ranking to all `null`s. The reveal phase preserves the final ranking.
 
-**Invariant:** At most one copy of each `handId` may appear in `ranking`. Duplicate detection is in `assertRankingInvariant()`.
+**Invariants** (run after every applied action by `dispatchAction` via `runInvariants` in `party/state/invariants.ts`):
+- `noDuplicateRanking` — at most one copy of each `handId` in `ranking`; `ranking.length === hands.length` once any hands exist
+- `noOrphanAcquireRequests` — every `acquireRequest` references hands that still exist
+- `uniquePlayerIds` — no duplicate `Player.id`
+
+Violations are logged to console; transactional rollback is a future addition.
 
 ### Hand IDs
 
-Hand IDs follow `${playerId}-${handIndex}` (e.g. `"abc-0"`, `"abc-1"`). This is stable for the lifetime of a game.
+Hand IDs follow `${playerId}-${handIndex}` (e.g. `"abc-0"`, `"abc-1"`). Stable for the lifetime of a game.
+
+### State Versioning
+
+`party/state/migrate.ts` defines `STATE_VERSION` and `migrateState(raw)`. The server tags every persisted blob with `__version` via `tagVersion(state)`. On load, `RoomStorage.loadState` calls `migrateState`, which forward-migrates older shapes (currently version 0 → 1 is a stamp-only upgrade since the shape was identical). Future shape changes bump `STATE_VERSION` and chain into the migration switch.
 
 ### Connection Lifecycle
 
 1. **Join**: Client opens `PartySocket` → sends `join` with `pid` (from `sessionStorage`) + `name`
 2. **Reconnect**: If `pid` exists in `state.players`, update `connId` and mark `connected = true`
-3. **Disconnect**: `onClose` marks `connected = false`; in lobby, creator may transfer; in-game, `ready = false`
+3. **Disconnect**: `onClose` calls `forgetPlayerInBroadcaster(pid)` and marks `connected = false`; in lobby, creator may transfer; in-game, `ready = false`
 4. **Kick**: `kickedPids` blocks rejoin; bot removal calls `botController.removeBot()`
+5. **Lobby ghost sweep**: `LobbySweeper.sweepLobbyGhosts` evicts players past `LOBBY_GRACE_MS = 30s`, fires from both action boundaries (opportunistic) and the DO alarm (idle backstop)
 
 ### Phase Transitions
 
-`party/handlers/lifecycle.ts` → `ready` handler:
+`party/handlers/lifecycle.ts` → `ready` handler (registered as `reduceReady`):
 
 1. Validates all hands are ranked (or only offline players are unranked)
 2. Sets `player.ready = msg.ready`
-3. If all connected players ready:
+3. If all connected players ready → `advancePhaseIfAllReady`:
    - Snapshots current ranks into `rankHistory[handId]`
    - Clears `acquireRequests`
-   - Computes `trueRanking`/`trueRanks` if entering reveal
+   - If entering reveal: solves all hands via `dingEvaluator`, populates `madeHandName`, computes `trueRanking`/`trueRanks`, resets `revealIndex`
    - Otherwise resets `ranking` to all `null`
    - Advances `phase`
    - Clears all `ready` flags
@@ -111,7 +148,7 @@ const currentRevealIdx = state.ranking.length - 1 - state.revealIndex;
 const handToFlipId = state.ranking[currentRevealIdx];
 ```
 
-This means we flip **worst-ranked first** (last slot → first slot). Ties in `trueRanking` are handled by `computeTrueRanks` — tied hands share a rank number but still occupy sequential slots in `trueRanking`.
+Flip flow goes **worst-ranked first** (last slot → first slot). Owner flips their own hand by default; if the owner is disconnected, any other connected player can flip on their behalf so reveal doesn't stall. Ties in `trueRanking` are handled by `dingEvaluator.trueRanks` — tied hands share a rank number but still occupy sequential slots.
 
 ### Bot Action Validation
 
@@ -121,7 +158,44 @@ This means we flip **worst-ranked first** (last slot → first slot). Ties in `t
 - `propose/accept/reject/cancel`: request still exists (or doesn't, for propose)
 - `ready`/`flip`/`ding`/`fuckoff`: always valid
 
+## GameMode Contract
+
+`src/lib/gameMode/types.ts` defines `GameMode<S, A>`:
+
+```ts
+interface GameMode<S extends BaseGameState, A extends BaseAction> {
+  readonly id: string;
+  readonly version: number;
+  readonly phases: ReadonlyArray<PhaseSpec<S, A>>;
+  initialState(): S;
+  migrate?(raw: unknown, fromVersion: number): S;
+  validateAction(s, actor, a): ValidationResult;
+  applyAction(draft, actor, a, ctx): ApplyResult<S>;
+  canAdvancePhase(s): boolean;
+  advancePhase(draft): { from: string; to: string } | null;
+  scoreFinalState(s): { score: number; trueRanking: string[]; trueRanks: Record<string, number> };
+  readonly invariants: ReadonlyArray<(s) => InvariantViolation | null>;
+  readonly maskingRules: ReadonlyArray<MaskingRule<S>>;
+  readonly voluntaryActions: ReadonlySet<A["type"]>;
+  evaluator?: HandEvaluator;        // poker-style modes
+  strengthScaler?: StrengthScaler;  // poker-style modes
+}
+```
+
+Today the contract is partially wired: the engine consumes `dingReducers` (per-action reducers in `src/modes/ding/reducers/`) and the mode-side `dingEvaluator` / `dingScaler`. `validateAction`/`applyAction`/`scoreFinalState` migration is incremental — moving each action's logic from `party/handlers/` into a per-action `validate + apply` pair under `src/modes/ding/reducers/<type>.ts` lands one type at a time without breaking the dispatcher signature.
+
 ## AI Subsystem Guide
+
+### Decision Pipeline Layout
+
+- `src/lib/ai/strategy.ts` — `decideAction` orchestrator. Allocates a `PerTickCaches` at the top, threads it through every `scoreAction` call.
+- `src/lib/ai/context.ts` — `PerTickCaches { strengthByHand: Map<string, number> }`, reused across one tick.
+- `src/lib/ai/evaluation/modifiers/index.ts` — `utilityFor`, `anchorBonus`, `isAnchorMoveCandidate`, `spreadPenalty`, `orderPreservationBonus`, `isProportionateProposal`.
+- `src/lib/ai/evaluation/strengthFallback.ts` — `getEstimate` (cached own-hand strength via `currentHandStrength`).
+- `src/lib/ai/selection/readyGate.ts` — `canPropose` gate (proposeBar floor, table-size cap, resignation cutoff).
+- `src/lib/ai/belief.ts` — `perceiveState`, scalar belief over teammate hand strength; routes percentile/abs-strength builds through `dingScaler` for memoization.
+- `src/lib/ai/range.ts` — Combo-level range belief; consumed by belief.ts.
+- `src/lib/ai/ev.ts` — `expectedInversions`, `scoreAction` (with optional `caches`), ranking previews.
 
 ### Adding a New Bot Archetype
 
@@ -133,21 +207,22 @@ Archetype patches override base traits. See `personality.ts` for the base defaul
 
 ### Tuning Bot Behavior
 
-Key levers in `src/lib/ai/strategy.ts`:
+Key levers:
 
-- `canPropose()` — trade proposal thresholds. `proposeBar` has a 0.75 floor and rises with resignation/stubbornness.
-- `resignation` curve — controls when bots give up and just ready. Faster resignation = less trading, faster phases.
+- `canPropose()` in `src/lib/ai/selection/readyGate.ts` — trade proposal thresholds. `proposeBar` has a 0.75 floor and rises with resignation/stubbornness.
+- `resignation` curve in `decideAction` — when bots give up and just ready. Faster resignation = less trading, faster phases.
 - `overDecisionCap` (60 decisions) — soft cap on voluntary churn per phase.
-- `currentHandStrength()` — own-hand scoring follows the strategy guide: preflop tiers, then current made hand only.
+- `currentHandStrength()` in `src/lib/ai/handStrength.ts` — own-hand scoring follows the strategy guide: preflop tiers, then current made hand only.
+- Anchor / spread / order-preservation modifiers in `src/lib/ai/evaluation/modifiers/index.ts`.
 
 ### Belief System Internals
 
-`perceiveState()` in `belief.ts` is the core update loop. It:
+`perceiveState()` in `belief.ts` is the core update loop:
 
 1. Builds `currentSlot` map from `state.ranking`
 2. Detects churn (slot changes) and decays confidence
 3. Folds current placements into posterior means via `updateFromPlacement()`
-4. Refreshes range percentiles against current board
+4. Refreshes range percentiles against current board (via `dingScaler.buildPercentileMap`, which memoizes by `(excludedSet, boardSig)`)
 5. Blends scalar belief with range-derived strength
 
 **Phase trust weights** (`phaseTrust()`):
@@ -164,45 +239,60 @@ Key levers in `src/lib/ai/strategy.ts`:
 
 ### Running Simulations
 
-Use the simulation scripts to validate AI changes:
-
 ```bash
 # Benchmark 50 games, 5 bots, 4 hands each
 npx tsx scripts/simulate.ts --games 50 --bots 5 --hands 4
 
 # Quick smoke test
 npx tsx scripts/simulateFast.ts --games 10 --bots 3 --hands 2
+
+# Capture / compare AI baseline (gate around AI refactors)
+npx tsx scripts/aiParity.ts --capture --out tmp/ai-baseline.json --games 100
+npx tsx scripts/aiParity.ts --compare --in  tmp/ai-baseline.json --games 100
 ```
 
-Watch for:
+`aiParity` compares aggregate metrics (win rate, median inversions, accept rate, per-archetype win rate) within tolerance. Tolerances are loose today (5pp on rates, ±2 on median inversions) because the harness is unseeded; tighten by seeding `randomTraits()` and the deck shuffler.
+
+Watch for in any sim:
 - Average inversion count (lower is better)
 - Average phase duration (too fast = bots aren't trading enough)
 - Bot-to-bot trade acceptance rate
 
 ## Common Tasks
 
+### Adding a New GameMode
+
+1. Create `src/modes/<id>/index.ts` exporting the mode's public surface (evaluator, scaler, phases, reducers)
+2. Implement `GameMode<S, A>` from `src/lib/gameMode/types.ts`
+3. Register the client-side view: `src/modes/<id>/view.ts` calls `registerMode({ id, phases, … })`
+4. Side-effect import the view from `src/components/GameModeRouter.tsx` so it's available at startup
+5. The server stamps `state.modeId = "<id>"` in `createInitialState`; clients route via `getMode(state.modeId)`
+
 ### Adding a New Game Phase
 
 1. Add phase to `Phase` union in `src/lib/types.ts`
 2. Add to `PHASE_ORDER` and `COMMUNITY_CARDS_FOR_PHASE` in `src/lib/constants.ts`
-3. Add label to `PHASE_STEP_LABELS` if it needs UI display
-4. Update `inGamePhase()` in `party/handlers/types.ts`
-5. Update `ready` handler in `party/handlers/lifecycle.ts` for phase transition logic
-6. Update `decideAction()` in `src/lib/ai/strategy.ts` if bots need phase-specific behavior
+3. Add entry to `PHASES_META` (the `PHASE_LABELS`/`PHASE_STEP_LABELS`/etc. arrays derive from it)
+4. Add a `PhaseSpec` entry to `dingPhases` in `src/modes/ding/phases.ts`
+5. Update `inGamePhase()` in `party/handlers/types.ts` if the new phase accepts in-game messages
+6. Update `advancePhaseIfAllReady` in `party/handlers/lifecycle.ts` for transition logic
+7. Update `decideAction()` in `src/lib/ai/strategy.ts` if bots need phase-specific behavior
 
 ### Adding a New Client Message Type
 
 1. Add union variant to `ClientMessage` in `src/lib/types.ts`
-2. Add handler in `party/handlers/` (or extend existing)
-3. Register in `handlerMap` in `party/handlers/index.ts`
-4. Add UI trigger in components/hooks
-5. Add tests in `tests/unit/` if logic is non-trivial
+2. Add a handler in `party/handlers/<area>.ts`
+3. Create `src/modes/ding/reducers/<type>.ts` re-exporting the handler as `reduce<Type>`
+4. Register the reducer in `dingReducers` (`src/modes/ding/reducers/index.ts`)
+5. Optional: add a typed factory in `src/lib/clientMsg.ts`
+6. Add UI trigger in components/hooks
+7. Add tests in `tests/unit/` if logic is non-trivial
 
 ### Adding a New Server Message Type
 
 1. Add union variant to `ServerMessage` in `src/lib/types.ts`
-2. Send from server handler (usually `{ kind: "broadcast-raw", payload: JSON.stringify(msg) }`)
-3. Handle in client `RoomPage` message listener
+2. Send from server handler (usually `{ kind: "broadcast-raw", payload: JSON.stringify(msg) }` or `broadcast-raw-and-state`)
+3. Handle in client `GameSessionProvider` message listener (`src/contexts/GameSession.tsx`)
 
 ### Changing Card Dealing Rules
 
@@ -211,6 +301,14 @@ Edit `dealCards()` in `src/lib/deckUtils.ts`. Currently:
 - 1 burn + 3 flop + 1 burn + 1 turn + 1 burn + 1 river
 
 Changing this will affect `currentHandStrength()` / `estimateStrength()` in `handStrength.ts` (assume 2 hole cards) and `handClassifier.ts` (assumes 5-card evaluation).
+
+### Bumping STATE_VERSION
+
+When the persisted state shape changes incompatibly:
+
+1. Bump `STATE_VERSION` in `party/state/migrate.ts`
+2. Add a case to `migrateState` that converts the previous version to the new shape
+3. Older blobs forward-migrate on load; rooms persisted with a future version refuse to load (start fresh)
 
 ## Testing Guidelines
 
@@ -221,11 +319,11 @@ import { describe, it, expect } from 'vitest'
 import { myFunction } from '../../src/lib/myModule'
 
 describe('myFunction', () => {
-  it('should handle the happy path', () => {
+  it('handles the happy path', () => {
     expect(myFunction(input)).toBe(expected)
   })
 
-  it('should handle edge case', () => {
+  it('handles edge case', () => {
     expect(myFunction(edgeCase)).toBe(something)
   })
 })
@@ -247,16 +345,18 @@ const action = decideAction(state, 'bot-1', traits, memo)
 
 Use `fastTickAll()` in `BotController` for integration-style bot tests without timers.
 
-### Handler Test Patterns
+### Reducer / Handler Test Patterns
 
-Import handler functions directly and pass a minimal `ServerGameState`:
+Import the reducer (or underlying handler) and pass a minimal `ServerGameState`:
 
 ```ts
+import { reduceMove } from '../../src/modes/ding/reducers/move'
+// or directly:
 import { move } from '../../party/handlers/ranking'
 
 const state = createInitialState()
 // ...set up hands, ranking, players...
-const result = move(state, player, { type: 'move', handId: 'p1-0', toIndex: 0 })
+const result = reduceMove(state, player, { type: 'move', handId: 'p1-0', toIndex: 0 }, ctx)
 expect(result.kind).toBe('broadcast')
 ```
 
@@ -264,10 +364,11 @@ expect(result.kind).toBe('broadcast')
 
 Before deploying:
 
-- [ ] `npm run build` passes (Next.js static generation)
+- [ ] `npm run build` passes
 - [ ] `npm run test:run` passes
-- [ ] `npm run lint` passes
-- [ ] PartyKit host is configured in production environment
+- [ ] `npx tsc --noEmit` passes (catches strictness regressions)
+- [ ] simulateFast canary green: `npx tsx scripts/simulateFast.ts --games 50 --bots 4 --hands 2` (zero integrity failures)
+- [ ] PartyKit host is configured in production environment (`NEXT_PUBLIC_PARTYKIT_HOST`)
 - [ ] `partykit.json` `name` field is correct for production
 
 ## Troubleshooting
@@ -276,13 +377,20 @@ Before deploying:
 The room is not in `lobby` phase. Only lobby joins are allowed for new players. Use `endGame` or `playAgain` to return to lobby.
 
 **Bots not acting:**
-Check `BotController` — if `connections.size === 0`, the controller is disposed and recreated. Ensure at least one human is connected, or use `fastTickAll()` in scripts.
+Check `BotController` — if `connections.size === 0`, the controller is disposed and recreated on the next human reconnect. Ensure at least one human is connected, or use `fastTickAll()` in scripts.
 
 **Ranking invariant errors in console:**
-`assertRankingInvariant()` fires when duplicates exist or length mismatches. Usually caused by a handler mutating `ranking` without clearing old slots.
+`runInvariants()` logs `[ding][invariant] <rule>: <message>` when ranking has duplicates, length mismatches, orphan acquire requests, or duplicate player ids. Usually caused by a reducer mutating `ranking` without clearing old slots.
 
 **Preflop estimates look wrong:**
-`preflopTierStrength()` in `handStrength.ts` uses the strategy-guide tiers: pairs above non-pairs, high-card tiers below that, suits/connectors ignored, and 23 bottom.
+`preflopTierStrength()` in `handStrength.ts` uses the strategy-guide tiers: pairs above non-pairs, high-card tiers below that, suits/connectors ignored, and `23` bottom.
 
 **Memory growth in long-running rooms:**
-Chat is capped at 100 messages. `rankHistory` grows by one array per phase per hand — for 22 hands × 4 phases = 88 numbers max. State is otherwise bounded.
+- Chat is capped at 100 messages
+- Bot action log is capped at 100 entries (`BOT_ACTION_LOG_CAP` in `dispatch.ts`)
+- `MaskBroadcaster.lastJsonByPlayer` shrinks on disconnect via `forgetPlayerInBroadcaster`
+- `rankHistory` grows by one array per phase per hand — for 22 hands × 4 phases = 88 numbers max
+- Scaler caches (`percentileCache`, `absStrengthCache`) are bounded by `MAX_CACHE_ENTRIES = 256` with FIFO eviction
+
+**Lobby overflow / scroll appears:**
+The lobby is height-bounded (`h-[100dvh]`) and designed to fit 720px viewports. If you add a new settings group, prefer the `SettingRow` + `PillToggle` helpers inside `Lobby.tsx` and keep the per-row footprint near 50px.
