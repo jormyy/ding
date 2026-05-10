@@ -9,8 +9,7 @@
  * tick (either timer-driven in production, or synchronously in fast simulation mode).
  */
 
-import type { AcquireRequest, ClientMessage, GameState, Hand } from "../types";
-import { currentHandStrength } from "./handStrength";
+import type { AcquireRequest, ClientMessage, GameState } from "../types";
 import { classifyHand, type ClassifiedHand } from "./handClassifier";
 import type { Traits } from "./personality";
 import {
@@ -29,6 +28,19 @@ import {
   type ActionScore,
 } from "./ev";
 import type { TraceSink, TraceCandidate } from "./trace";
+import { newPerTickCaches } from "./context";
+// Modifiers / gates / strength helpers live in their decomposed homes; the
+// strategy orchestrator is thin and pulls them in via these imports.
+import {
+  utilityFor,
+  anchorBonus,
+  isAnchorMoveCandidate,
+  spreadPenalty,
+  orderPreservationBonus,
+  isProportionateProposal,
+} from "./evaluation/modifiers";
+import { getEstimate } from "./evaluation/strengthFallback";
+import { canPropose } from "./selection/readyGate";
 
 /**
  * Per-bot persistent memory across ticks.
@@ -104,7 +116,7 @@ function commitAction(memo: BotMemo, msg: ClientMessage): void {
   }
 }
 
-type Candidate = {
+export type Candidate = {
   msg: ClientMessage;
   score: ActionScore;
   utility: number;
@@ -136,45 +148,6 @@ function deferralWeight(belief: BeliefState, handId: string): number {
   return Math.min(1, conf * 0.6 + teammateConf * 0.4);
 }
 
-function canPropose(
-  memo: BotMemo,
-  resignation: number,
-  overDecisionCap: boolean,
-  teamInversionDelta: number,
-  tableSize: number,
-  stubbornness: number,
-  confidence: number
-): boolean {
-  if (overDecisionCap) return false;
-  if (resignation >= 0.85) return false;
-  const cap = Math.max(2, Math.ceil(tableSize * 0.4));
-  if (memo.myProposalsThisPhase >= cap) return false;
-  const proposeBar = Math.max(0.75, 0.45 + resignation * 1.2 + stubbornness * 0.3);
-  const effectiveDelta = teamInversionDelta * confidence;
-  return effectiveDelta > proposeBar;
-}
-
-/**
- * Get a cached strength estimate for a hand, computing if necessary.
- *
- * For hands the bot OWNS, we use `currentHandStrength` — strict "rank what
- * you have right now." MC win-rate would credit future-card draw equity
- * which the strategy guide explicitly forbids.
- *
- * For unknown teammate hands the cache is keyed by hand and reused; callers
- * route those through belief, not this function.
- */
-function getEstimate(
-  memo: BotMemo,
-  hand: Hand,
-  board: GameState["communityCards"],
-): number {
-  const cached = memo.estimates.get(hand.id);
-  if (cached !== undefined) return cached;
-  const score = currentHandStrength(hand.cards, board);
-  memo.estimates.set(hand.id, score);
-  return score;
-}
 
 function reasonFor(c: Candidate): string {
   switch (c.msg.type) {
@@ -209,115 +182,6 @@ function reasonFor(c: Candidate): string {
   }
 }
 
-function utilityFor(
-  score: ActionScore,
-  traits: Traits,
-  bonuses: { selfBenefit?: number; teamOnlyBenefit?: number } = {}
-): number {
-  const base = score.teamInversionDelta * (0.4 + 0.6 * score.confidence);
-  const helper = (bonuses.teamOnlyBenefit ?? 0) * traits.helpfulness * 0.3;
-  const self = (bonuses.selfBenefit ?? 0) * 0.1;
-  return base + helper + self;
-}
-
-/**
- * Anchor bonus: when our own hand is at the strength extremes, give a
- * placement bump for the matching slot. Top-1 and bottom slot are high-value
- * commitments per the strategy guide.
- *
- * Thresholds scale with the board prior: on a wet board where the average
- * hand is strong we need a higher absolute strength to anchor top, and vice
- * versa. We also relax the gate compared to the old hard 0.85/0.15 cutoffs,
- * which missed top pairs and high cards on small tables.
- */
-function anchorBonus(
-  ownStrength: number,
-  targetSlot: number,
-  totalSlots: number,
-  leadsConsensus: number,
-  boardPrior: number,
-): number {
-  if (totalSlots <= 1) return 0;
-  const lead = 1 + leadsConsensus * 0.4;
-  // Top anchor: strong hand relative to the board's average. Min floor of 0.65
-  // so noise around boardPrior doesn't over-trigger; max cap of 0.85 for very
-  // wet boards.
-  const topThresh = Math.max(0.65, Math.min(0.85, boardPrior + 0.25));
-  const bottomThresh = Math.min(0.30, Math.max(0.10, boardPrior - 0.25));
-  if (ownStrength >= topThresh && targetSlot === 0) return 0.45 * lead;
-  if (ownStrength >= topThresh && targetSlot === 1) return 0.38 * lead;
-  if (ownStrength <= bottomThresh && targetSlot === totalSlots - 1) return 0.20 * lead;
-  return 0;
-}
-
-function isAnchorMoveCandidate(c: Candidate): boolean {
-  if (c.msg.type !== "move") return false;
-  const meta = c.meta as { anchor?: number } | undefined;
-  return (meta?.anchor ?? 0) > 0;
-}
-
-/**
- * Spread penalty: discourage placing two of our own hands in adjacent slots
- * when we believe their strengths are nearly equal. Pure tie-breaker —
- * dominated by any real signal in the score.
- */
-function spreadPenalty(
-  ownPlacements: Array<{ slot: number; strength: number }>,
-  candidateSlot: number,
-  candidateStrength: number,
-): number {
-  for (const p of ownPlacements) {
-    if (Math.abs(p.slot - candidateSlot) === 1 &&
-        Math.abs(p.strength - candidateStrength) < 0.02) {
-      return 0.05;
-    }
-  }
-  return 0;
-}
-
-function orderPreservationBonus(
-  state: GameState,
-  handId: string,
-  candidateSlot: number,
-  currentStrength: number,
-): number {
-  if (state.phase === "preflop") return 0;
-  const history = state.rankHistory[handId] ?? [];
-  const previousRank = history[history.length - 1];
-  if (previousRank === null || previousRank === undefined) return 0;
-
-  const isClearlyImproved = currentStrength >= 0.62;
-  const isClearlyWeak = currentStrength <= 0.25;
-  if (isClearlyImproved || isClearlyWeak) return 0;
-
-  const previousSlot = previousRank - 1;
-  const distance = Math.abs(candidateSlot - previousSlot);
-  const normalized = 1 - distance / Math.max(1, state.ranking.length - 1);
-  return Math.max(0, normalized) * 0.22;
-}
-
-function isProportionateProposal(
-  state: GameState,
-  initiatorHandId: string,
-  recipientHandId: string,
-  after: (string | null)[],
-  score: ActionScore,
-): boolean {
-  const beforeInitiator = state.ranking.indexOf(initiatorHandId);
-  const beforeRecipient = state.ranking.indexOf(recipientHandId);
-  const afterInitiator = after.indexOf(initiatorHandId);
-  const afterRecipient = after.indexOf(recipientHandId);
-  const n = Math.max(1, state.ranking.length - 1);
-  const beforeGap = beforeInitiator === -1 || beforeRecipient === -1
-    ? 0
-    : Math.abs(beforeInitiator - beforeRecipient) / n;
-  const afterGap = afterInitiator === -1 || afterRecipient === -1
-    ? 0
-    : Math.abs(afterInitiator - afterRecipient) / n;
-  const lopsided = Math.max(beforeGap, afterGap) > 0.45;
-  if (lopsided && score.teamInversionDelta * score.confidence < 1.2) return false;
-  return score.teamInversionDelta > 0.25 && score.confidence >= 0.45;
-}
 
 export function decideAction(
   state: GameState,
@@ -327,6 +191,10 @@ export function decideAction(
   opts?: { trace?: TraceSink }
 ): ClientMessage | null {
   const trace = opts?.trace;
+  // Per-tick cache: reused across every scoreAction call within this
+  // decideAction so the same handId→strength lookup isn't recomputed N times.
+  // Bypassed automatically inside scoreAction when trustOverrides apply.
+  const tickCaches = newPerTickCaches();
 
   if (memo.estimatesPhase !== state.phase) {
     if (state.phase === "reveal" && state.trueRanking) {
@@ -601,7 +469,7 @@ export function decideAction(
 
   for (const p of proposalsToMe) {
     const after = rankingAfterChipMove(state.ranking, p.initiatorHandId, p.recipientHandId, p.kind);
-    const myScore = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+    const myScore = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates, undefined, tickCaches);
     const totalHands = state.hands.length;
     const initIdxAfter = after.indexOf(p.initiatorHandId);
     const baseTrust = traits.trustInTeammates;
@@ -615,7 +483,7 @@ export function decideAction(
       const myView = memo.belief.handStrength.get(p.initiatorHandId) ?? 0.5;
       overrides.set(p.initiatorHandId, (1 - trust) * myView + trust * proposerImplied);
     }
-    const trustedScore = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates, overrides);
+    const trustedScore = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates, overrides, tickCaches);
     const blendedDelta = (1 - trust) * myScore.teamInversionDelta + trust * trustedScore.teamInversionDelta;
     const proportionate = isProportionateProposal(
       state,
@@ -730,7 +598,7 @@ export function decideAction(
     memo.proposalAges.set(k, (memo.proposalAges.get(k) ?? 0) + 1);
 
     const after = rankingAfterChipMove(state.ranking, p.initiatorHandId, p.recipientHandId, p.kind);
-    const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+    const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates, undefined, tickCaches);
     const age = memo.proposalAges.get(k) ?? 0;
     const stale = age >= 5;
     if (score.teamInversionDelta <= 0.05 || stale) {
@@ -767,7 +635,7 @@ export function decideAction(
     for (const slot of emptySlots) {
       const after = rankingAfterMove(state.ranking, h.id, slot);
       if (after === null) continue;
-      const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+      const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates, undefined, tickCaches);
       const est = memo.estimates.get(h.id) ?? 0.5;
       const idealSlot = (1 - est) * (state.ranking.length - 1);
       const slotAlign = 1 - Math.abs(slot - idealSlot) / Math.max(1, state.ranking.length - 1);
@@ -812,7 +680,7 @@ export function decideAction(
         if (est <= 0.30 && slot < from) continue;
         const after = rankingAfterMove(state.ranking, h.id, slot);
         if (after === null) continue;
-        const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+        const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates, undefined, tickCaches);
         const idealSlot = (1 - est) * (state.ranking.length - 1);
         const slotAlign = 1 - Math.abs(slot - idealSlot) / Math.max(1, state.ranking.length - 1);
         const posBonus = slotAlign * 0.15 * traits.skill;
@@ -845,7 +713,7 @@ export function decideAction(
       for (let j = i + 1; j < myRanked.length; j++) {
         const a = myRanked[i], b = myRanked[j];
         const after = rankingAfterSwap(state.ranking, a.h.id, b.h.id);
-        const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+        const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates, undefined, tickCaches);
         if (score.teamInversionDelta > 0.08) {
           candidates.push({
             msg: { type: "swap", handIdA: a.h.id, handIdB: b.h.id },
@@ -878,7 +746,7 @@ export function decideAction(
       if (taken) continue;
 
       const after = rankingAfterChipMove(state.ranking, h.id, otherId, kind);
-      const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+      const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates, undefined, tickCaches);
 
       const defer = deferralWeight(memo.belief, otherId);
       const deferPenalty = defer * 0.5 * traits.trustInTeammates;
@@ -922,7 +790,7 @@ export function decideAction(
       );
       if (taken) continue;
       const after = rankingAfterChipMove(state.ranking, myH.id, theirH.id, "offer");
-      const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates);
+      const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates, undefined, tickCaches);
       const defer = deferralWeight(memo.belief, theirH.id);
       const deferPenalty = defer * 0.5 * traits.trustInTeammates;
       const extraversionBonus = (traits.extraversion - 0.5) * 0.2;

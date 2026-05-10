@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { chipClassNames } from "@/lib/chipColors";
 
 interface RankChipProps {
@@ -14,7 +15,7 @@ interface RankChipProps {
   tiny?: boolean; // for history chips
 }
 
-export default function RankChip({
+function RankChipImpl({
   rank,
   total,
   isOwn,
@@ -37,9 +38,12 @@ export default function RankChip({
 
   return (
     <button
+      type="button"
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       disabled={!isClickable}
+      aria-label={`Rank ${rank} of ${total}${isOwn ? ", yours" : ""}${isSelected ? ", selected" : ""}`}
+      aria-pressed={isSelected}
       className={[
         "rounded-full font-black flex items-center justify-center border-2 select-none transition-all duration-150",
         sizeClass,
@@ -61,13 +65,20 @@ export default function RankChip({
   );
 }
 
+/**
+ * Memoized rank chip — re-renders only when its props change shallowly.
+ * Stable parent callbacks keep the chip from re-rendering on every game tick.
+ */
+const RankChip = memo(RankChipImpl);
+export default RankChip;
+
 interface HistoryChipProps {
   rank: number | null;
   total: number;
   phaseLabel: string;
 }
 
-export function HistoryChip({ rank, total, phaseLabel }: HistoryChipProps) {
+function HistoryChipImpl({ rank, total, phaseLabel }: HistoryChipProps) {
   const isFirst = rank === 1;
   const isLast = rank === total;
 
@@ -92,3 +103,5 @@ export function HistoryChip({ rank, total, phaseLabel }: HistoryChipProps) {
     </div>
   );
 }
+
+export const HistoryChip = memo(HistoryChipImpl);

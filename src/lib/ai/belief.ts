@@ -6,12 +6,21 @@ import {
   rangeConfidence,
   decayRange,
   pruneByExclusions,
-  buildPercentileMap,
-  buildAbsoluteStrengthMap,
   type RangeBelief,
   type PercentileMap,
 } from "./range";
 import { createDeck } from "../deckUtils";
+import { dingScaler } from "../../modes/ding/scaler";
+
+// Hot-path indirection: belief perception runs on every bot tick, and rebuilding
+// percentile / absolute-strength maps is the costliest single operation in the
+// pipeline (1,225 pokersolver evals each). The mode's scaler memoizes by
+// (excluded-set, board signature) so within a phase, this collapses to one
+// build per unique exclusion set.
+const buildPercentileMap = (excl: Set<string>, board: Card[]): PercentileMap =>
+  dingScaler.buildPercentileMap(excl, board);
+const buildAbsoluteStrengthMap = (excl: Set<string>, board: Card[]): Map<string, number> =>
+  dingScaler.buildAbsoluteStrengthMap(excl, board);
 
 /**
  * Belief system: probabilistic inference over teammate hand strengths.

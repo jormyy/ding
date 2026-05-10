@@ -16,7 +16,7 @@ export default function TableFelt({
   phase,
   communityCards,
   isMobile,
-  isLandscape,
+  isLandscape: _isLandscape,
   feltInset,
   children,
 }: TableFeltProps) {

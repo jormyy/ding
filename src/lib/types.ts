@@ -76,6 +76,13 @@ export type Phase =
  * The server sends a masked version per-player (opponent hole cards hidden).
  */
 export type GameState = {
+  /**
+   * Stable identifier for the active gamemode. The client routes through
+   * `getMode(state.modeId)` to find the right view; today only "ding" is
+   * registered. Optional on the wire for backwards compat with rooms that
+   * persisted state before this field existed — defaults to "ding".
+   */
+  modeId?: string;
   phase: Phase;
   players: Player[];
   /** Configured at lobby. Capped by total hand limits based on player count. */
@@ -164,28 +171,12 @@ export type SocialSignal = {
   handId?: string;
 };
 
-export type BotActionAudit = {
-  verdict: "plausible" | "deviation";
-  explanation: string;
-};
-
-export type BotActionLogEntry = {
-  id: string;
-  ts: number;
-  phaseElapsedMs: number | null;
-  phase: Phase;
-  playerId: string;
-  playerName: string;
-  action: ClientMessage;
-  applied: boolean;
-  communityCards: Card[];
-  actorHoleCards: Record<string, Card[]>;
-  rankingBefore: (string | null)[];
-  rankingAfter: (string | null)[];
-  acquireRequestsBefore: AcquireRequest[];
-  acquireRequestsAfter: AcquireRequest[];
-  audit?: BotActionAudit;
-};
+// BotActionLogEntry / BotActionAudit are server-owned concepts (the server is
+// the only producer; clients consume them read-only via the broadcast). Their
+// canonical definitions live in `../../party/types.ts`; we re-export here for
+// backwards-compatible `@/lib/types` imports from client code.
+import type { BotActionLogEntry, BotActionAudit } from "../../party/types";
+export type { BotActionLogEntry, BotActionAudit };
 
 /**
  * All messages sent from the client to the PartyKit server.

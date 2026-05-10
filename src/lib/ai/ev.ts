@@ -1,6 +1,7 @@
 import type { GameState } from "../types";
 import type { BeliefState } from "./belief";
 import { applyChipMoveToRanking } from "../chipMove";
+import type { PerTickCaches } from "./context";
 
 /**
  * Compute a cheap surrogate for "how wrong is this ranking?"
@@ -102,12 +103,30 @@ export function scoreAction(
   myPlayerId: string,
   belief: BeliefState,
   myEstimates: Map<string, number>,
-  trustOverrides?: Map<string, number>
+  trustOverrides?: Map<string, number>,
+  /**
+   * Optional per-tick cache. When supplied AND no trustOverrides apply, all
+   * `strengthOf` lookups are memoized for the duration of one decideAction
+   * tick — avoids recomputing the same handId→strength lookup across the
+   * many scoreAction calls that happen per tick.
+   */
+  caches?: PerTickCaches
 ): ActionScore {
   const baseStrengthOf = buildStrengthFn(state, myPlayerId, belief, myEstimates);
+  // trustOverrides change strength per call, so they bypass the per-tick cache.
+  const memoizedBase =
+    caches && !trustOverrides
+      ? (handId: string): number => {
+          const hit = caches.strengthByHand.get(handId);
+          if (hit !== undefined) return hit;
+          const v = baseStrengthOf(handId);
+          caches.strengthByHand.set(handId, v);
+          return v;
+        }
+      : baseStrengthOf;
   const strengthOf = trustOverrides
-    ? (handId: string): number => trustOverrides.get(handId) ?? baseStrengthOf(handId)
-    : baseStrengthOf;
+    ? (handId: string): number => trustOverrides.get(handId) ?? memoizedBase(handId)
+    : memoizedBase;
   const currInv = expectedInversions(state.ranking, strengthOf);
   const nextInv = expectedInversions(after, strengthOf);
 

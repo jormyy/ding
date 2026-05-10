@@ -103,7 +103,7 @@ function previousReadyForPlayer(ctx: AuditContext, entry: BotActionLogEntry): Bo
 
 function previousAppliedPlacementForHand(
   ctx: AuditContext,
-  entry: BotActionLogEntry,
+  _entry: BotActionLogEntry,
   handId: string
 ): BotActionLogEntry | null {
   for (let i = ctx.index - 1; i >= 0; i--) {

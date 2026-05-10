@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import type { ChatMessage } from "@/lib/types";
 
 interface ChatPanelProps {
@@ -8,6 +8,31 @@ interface ChatPanelProps {
   myId: string;
   onSend: (text: string) => void;
 }
+
+/**
+ * Single chat row — memoized so re-rendering 100 messages on each game tick
+ * does not cost. Pure: depends only on the message + identity flag.
+ */
+const ChatRow = memo(function ChatRow({
+  message,
+  isMine,
+}: {
+  message: ChatMessage;
+  isMine: boolean;
+}) {
+  return (
+    <div
+      className="text-xs leading-snug break-words"
+      title={new Date(message.ts).toLocaleTimeString()}
+    >
+      <span className={`font-bold ${isMine ? "text-green-300" : "text-white"}`}>
+        {message.playerName}
+      </span>
+      <span className="text-gray-600">: </span>
+      <span className="text-gray-200">{message.text}</span>
+    </div>
+  );
+});
 
 export default function ChatPanel({ messages, myId, onSend }: ChatPanelProps) {
   const [text, setText] = useState("");
@@ -38,26 +63,9 @@ export default function ChatPanel({ messages, myId, onSend }: ChatPanelProps) {
             No messages yet. Say hi!
           </p>
         ) : (
-          messages.map((m) => {
-            const isMine = m.playerId === myId;
-            return (
-              <div
-                key={m.id}
-                className="text-xs leading-snug break-words"
-                title={new Date(m.ts).toLocaleTimeString()}
-              >
-                <span
-                  className={`font-bold ${
-                    isMine ? "text-green-300" : "text-white"
-                  }`}
-                >
-                  {m.playerName}
-                </span>
-                <span className="text-gray-600">: </span>
-                <span className="text-gray-200">{m.text}</span>
-              </div>
-            );
-          })
+          messages.map((m) => (
+            <ChatRow key={m.id} message={m} isMine={m.playerId === myId} />
+          ))
         )}
         <div ref={endRef} />
       </div>

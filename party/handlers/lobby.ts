@@ -1,8 +1,7 @@
 import type { Hand } from "../../src/lib/types";
 import { MAX_PLAYERS, MAX_TOTAL_HANDS } from "../../src/lib/constants";
 import { createDeck, dealCards, shuffleDeck } from "../../src/lib/deckUtils";
-import type { ServerGameState } from "../state";
-import type { Handler, HandlerCtx, HandlerResult } from "./types";
+import type { Handler, HandlerResult } from "./types";
 
 export const configure: Handler = (state, player, msg) => {
   if (msg.type !== "configure") return { kind: "ignore" };

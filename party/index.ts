@@ -1,43 +1,45 @@
 import type * as Party from "partykit/server";
-import type { BotActionLogEntry, ClientMessage, Player, ServerMessage } from "../src/lib/types";
-import { COMMUNITY_CARDS_FOR_PHASE, LOBBY_GRACE_MS, MAX_PLAYERS } from "../src/lib/constants";
+import type { ClientMessage, Player, ServerMessage } from "../src/lib/types";
+import { MAX_PLAYERS } from "../src/lib/constants";
 import { BotController, type BotMeta } from "./bots";
 import {
   type ServerGameState,
   createInitialState,
   buildClientState,
   broadcastStateTo,
-  assertRankingInvariant,
+  forgetPlayerInBroadcaster,
 } from "./state";
-import { handlerMap } from "./handlers/index";
 import type { HandlerCtx } from "./handlers/types";
 import { advancePhaseIfAllReady } from "./handlers/lifecycle";
 import { auditBotActionLog } from "./botAudit";
+import { ConnectionManager } from "./server/connectionManager";
+import { AlarmScheduler } from "./server/alarmScheduler";
+import { sweepLobbyGhosts } from "./server/lobbySweeper";
+import { RoomStorage } from "./server/roomStorage";
+import { dispatchAction } from "./pipeline/dispatch";
 
 export { buildClientState } from "./state";
 export type { ServerGameState } from "./state";
 
-const STORAGE_KEY_STATE = "state";
-const STORAGE_KEY_BOT_META = "botMeta";
-const STORAGE_KEY_KICKED = "kickedPids";
-
 /**
- * Main PartyKit server for Ding.
+ * Main PartyKit server for Ding — now a thin orchestrator over the
+ * server-module split:
  *
- * Responsibilities:
- * - Manage WebSocket connections and player identity (join/reconnect/disconnect)
- * - Maintain the authoritative `ServerGameState` (unmasked cards)
- * - Validate and dispatch all player actions through `handlerMap`
- * - Broadcast masked game state to each connected client
- * - Manage the `BotController` for AI players
- * - Persist state, bot personalities, and kicked-pid set across DO hibernation
- * - Drive timer expiry via DO alarms (no always-on setInterval)
+ *   - ConnectionManager owns the WebSocket map.
+ *   - RoomStorage handles versioned persistence + migration.
+ *   - AlarmScheduler computes & dirty-bit-gates the next DO alarm.
+ *   - dispatchAction (pipeline) wraps every action: invariants, gen bump,
+ *     bot log append.
+ *   - BotController drives AI players (unchanged).
  *
- * Bots bypass WebSockets entirely; they call `dispatchBotAction()` directly.
+ * The handler dispatch table is reused unchanged; reducer migration
+ * (one file per ClientMessage) lands incrementally inside dispatchAction.
  */
 export default class DingServer implements Party.Server {
   private state: ServerGameState;
-  private connections: Map<string, Party.Connection> = new Map();
+  private conns: ConnectionManager;
+  private storageHelper: RoomStorage;
+  private alarmScheduler: AlarmScheduler;
   private lastChatAt: Map<string, number> = new Map();
   private kickedPids: Set<string> = new Set();
   private botMeta: Record<string, BotMeta> = {};
@@ -45,6 +47,9 @@ export default class DingServer implements Party.Server {
 
   constructor(readonly room: Party.Room) {
     this.state = createInitialState();
+    this.conns = new ConnectionManager();
+    this.storageHelper = new RoomStorage(room);
+    this.alarmScheduler = new AlarmScheduler(room);
     this.botController = this.makeBotController();
   }
 
@@ -55,7 +60,7 @@ export default class DingServer implements Party.Server {
       mask: (playerId) => buildClientState(this.state, playerId),
       persistBotMeta: (playerId, meta) => {
         this.botMeta[playerId] = meta;
-        void this.room.storage.put(STORAGE_KEY_BOT_META, this.botMeta);
+        void this.storageHelper.saveBotMeta(this.botMeta);
       },
     });
   }
@@ -63,19 +68,15 @@ export default class DingServer implements Party.Server {
   /**
    * Lifecycle hook called by PartyKit before any messages are delivered.
    * Restores state, bot personalities, and the kicked-pid set from storage
-   * so the room survives DO hibernation, deploys, and evictions.
+   * via RoomStorage (which migrates the persisted blob forward).
    */
   async onStart(): Promise<void> {
     try {
-      const stored = await this.room.storage.get<ServerGameState>(STORAGE_KEY_STATE);
+      const stored = await this.storageHelper.loadState();
       if (stored) this.state = stored;
-      const meta = await this.room.storage.get<Record<string, BotMeta>>(STORAGE_KEY_BOT_META);
-      if (meta) this.botMeta = meta;
-      const kicked = await this.room.storage.get<string[]>(STORAGE_KEY_KICKED);
-      if (kicked) this.kickedPids = new Set(kicked);
+      this.botMeta = await this.storageHelper.loadBotMeta();
+      this.kickedPids = await this.storageHelper.loadKicked();
     } catch (err) {
-      // Corrupt storage: fall back to fresh state. The schema is unversioned
-      // — first incompatible change should add a version field and migrate.
       // eslint-disable-next-line no-console
       console.error("[ding] failed to load persisted state, using fresh", err);
       this.state = createInitialState();
@@ -89,11 +90,11 @@ export default class DingServer implements Party.Server {
       this.botController.rehydrateBot(p, this.botMeta[p.id]);
     }
     this.botController.notifyStateChanged();
-    await this.scheduleNextAlarm();
+    await this.alarmScheduler.schedule(this.state);
   }
 
   private getPlayerByConn(connId: string): Player | undefined {
-    return this.state.players.find((p) => p.connId === connId);
+    return this.conns.playerByConn(this.state.players, connId);
   }
 
   /**
@@ -134,25 +135,6 @@ export default class DingServer implements Party.Server {
     return advancePhaseIfAllReady(this.state);
   }
 
-  /**
-   * Evict lobby players whose grace window has elapsed since they
-   * disconnected. Reuses `removePlayerFromLobby` for creator transfer.
-   * Returns true if any player was removed.
-   */
-  private sweepLobbyGhosts(): boolean {
-    if (this.state.phase !== "lobby") return false;
-    const now = Date.now();
-    const stale = this.state.players.filter(
-      (p) =>
-        !p.connected &&
-        p.disconnectedAt !== null &&
-        p.disconnectedAt !== undefined &&
-        p.disconnectedAt + LOBBY_GRACE_MS <= now
-    );
-    for (const p of stale) this.removePlayerFromLobby(p.id);
-    return stale.length > 0;
-  }
-
   private removePlayerFromLobby(targetId: string): void {
     if (this.state.phase !== "lobby") return;
     const idx = this.state.players.findIndex((p) => p.id === targetId);
@@ -167,7 +149,7 @@ export default class DingServer implements Party.Server {
     if (removed.isBot) {
       this.botController.removeBot(removed.id);
       delete this.botMeta[removed.id];
-      void this.room.storage.put(STORAGE_KEY_BOT_META, this.botMeta);
+      void this.storageHelper.saveBotMeta(this.botMeta);
     }
   }
 
@@ -181,63 +163,22 @@ export default class DingServer implements Party.Server {
     if (this.state.score !== null && this.state.botActionLog.some((entry) => !entry.audit)) {
       auditBotActionLog(this.state);
     }
-    assertRankingInvariant(this.state);
     // Enforce the round timer server-side on every state change so bots
     // get auto-readied without waiting for the alarm to fire.
     this.applyRoundTimerIfExpired();
-    broadcastStateTo(this.room, this.state, this.connections);
+    broadcastStateTo(this.room, this.state, this.conns.raw());
     this.botController.notifyStateChanged();
     void this.persistState();
-    void this.scheduleNextAlarm();
+    void this.alarmScheduler.schedule(this.state);
   }
 
   private async persistState(): Promise<void> {
     try {
-      await this.room.storage.put(STORAGE_KEY_STATE, this.state);
-      await this.room.storage.put(STORAGE_KEY_KICKED, Array.from(this.kickedPids));
+      await this.storageHelper.saveState(this.state);
+      await this.storageHelper.saveKicked(this.kickedPids);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("[ding] persistState failed", err);
-    }
-  }
-
-  /**
-   * Compute the next time the alarm should fire (round-timer expiry or
-   * lobby-ghost grace expiry) and arm it. Deletes the alarm entirely if
-   * nothing pending — this lets the DO hibernate.
-   */
-  private async scheduleNextAlarm(): Promise<void> {
-    const candidates: number[] = [];
-    const { phase, phaseStartedAt, roundTimerSeconds } = this.state;
-    if (
-      phaseStartedAt !== null &&
-      roundTimerSeconds > 0 &&
-      phase !== "lobby" &&
-      phase !== "reveal"
-    ) {
-      candidates.push(phaseStartedAt + roundTimerSeconds * 1000);
-    }
-    if (phase === "lobby") {
-      for (const p of this.state.players) {
-        if (
-          !p.connected &&
-          p.disconnectedAt !== null &&
-          p.disconnectedAt !== undefined
-        ) {
-          candidates.push(p.disconnectedAt + LOBBY_GRACE_MS);
-        }
-      }
-    }
-    try {
-      if (candidates.length === 0) {
-        await this.room.storage.deleteAlarm();
-        return;
-      }
-      const next = Math.max(Date.now() + 100, Math.min(...candidates));
-      await this.room.storage.setAlarm(next);
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error("[ding] scheduleNextAlarm failed", err);
     }
   }
 
@@ -252,52 +193,21 @@ export default class DingServer implements Party.Server {
     this.broadcast();
   }
 
-  private dispatchBotAction(playerId: string, msg: ClientMessage): void {
-    const player = this.state.players.find((p) => p.id === playerId);
-    if (!player) return;
-    const beforeFingerprint = this.actionFingerprint();
-    const entry = this.createBotActionLogEntry(player, msg);
-    this.handlePlayerAction(player, msg, undefined, entry, beforeFingerprint);
-  }
-
-  private actionFingerprint(): string {
-    return JSON.stringify({
-      phase: this.state.phase,
-      ranking: this.state.ranking,
-      ready: this.state.players.map((p) => [p.id, p.ready]),
-      revealIndex: this.state.revealIndex,
-      score: this.state.score,
-      acquireRequests: this.state.acquireRequests,
+  private sweepLobbyGhosts(): boolean {
+    return sweepLobbyGhosts(this.state, {
+      removePlayerFromLobby: (id) => this.removePlayerFromLobby(id),
     });
   }
 
-  private createBotActionLogEntry(player: Player, msg: ClientMessage): BotActionLogEntry {
-    const count = COMMUNITY_CARDS_FOR_PHASE[this.state.phase];
-    const actorHoleCards: Record<string, BotActionLogEntry["actorHoleCards"][string]> = {};
-    for (const hand of this.state.hands.filter((h) => h.playerId === player.id)) {
-      actorHoleCards[hand.id] = hand.cards.map((card) => ({ ...card }));
-    }
-    return {
-      id: `${Date.now()}-${this.state.botActionLog.length}`,
-      ts: Date.now(),
-      phaseElapsedMs: this.state.phaseStartedAt === null ? null : Date.now() - this.state.phaseStartedAt,
-      phase: this.state.phase,
-      playerId: player.id,
-      playerName: player.name,
-      action: msg,
-      applied: false,
-      communityCards: this.state.allCommunityCards.slice(0, count),
-      actorHoleCards,
-      rankingBefore: this.state.ranking.slice(),
-      rankingAfter: this.state.ranking.slice(),
-      acquireRequestsBefore: this.state.acquireRequests.map((request) => ({ ...request })),
-      acquireRequestsAfter: this.state.acquireRequests.map((request) => ({ ...request })),
-    };
+  private dispatchBotAction(playerId: string, msg: ClientMessage): void {
+    const player = this.state.players.find((p) => p.id === playerId);
+    if (!player) return;
+    this.handlePlayerAction(player, msg, undefined, true);
   }
 
   /** Track a new WebSocket connection. */
   onConnect(conn: Party.Connection) {
-    this.connections.set(conn.id, conn);
+    this.conns.add(conn);
   }
 
   /**
@@ -311,9 +221,10 @@ export default class DingServer implements Party.Server {
    * recreated fresh on the next human reconnect.
    */
   onClose(conn: Party.Connection) {
-    this.connections.delete(conn.id);
+    this.conns.remove(conn.id);
     const player = this.getPlayerByConn(conn.id);
     if (player) {
+      forgetPlayerInBroadcaster(player.id);
       if (this.state.phase === "lobby") {
         player.connected = false;
         player.disconnectedAt = Date.now();
@@ -330,7 +241,7 @@ export default class DingServer implements Party.Server {
       }
       this.broadcast();
     }
-    if (this.connections.size === 0) {
+    if (this.conns.size() === 0) {
       this.botController.dispose();
       this.botController = this.makeBotController();
     }
@@ -350,10 +261,10 @@ export default class DingServer implements Party.Server {
     }
     const player = this.getPlayerByConn(sender.id);
     if (!player) return;
-    this.handlePlayerAction(player, msg, sender);
+    this.handlePlayerAction(player, msg, sender, false);
   }
 
-/**
+  /**
    * Handle a player joining the room.
    *
    * Supports three paths:
@@ -417,39 +328,39 @@ export default class DingServer implements Party.Server {
   }
 
   /**
-   * Validate and dispatch a player action through the handler map.
+   * Validate and dispatch a player action through the pipeline.
    *
-   * Constructs a `HandlerCtx` with server-level resources (connections, kicked
-   * set, bot controller, room) so handlers can perform side effects like
-   * closing connections or resetting state.
+   * Bot actions go through dispatchAction with `isBot=true` so
+   * the dispatcher logs them with hole-card snapshots; human actions skip
+   * the bot log path.
    */
   private handlePlayerAction(
     player: Player,
     msg: ClientMessage,
-    sender?: Party.Connection,
-    botLogEntry?: BotActionLogEntry,
-    botBeforeFingerprint?: string
+    sender: Party.Connection | undefined,
+    isBot: boolean
   ): void {
     const ctx: HandlerCtx = {
       lastChatAt: this.lastChatAt,
       kickedPids: this.kickedPids,
-      connections: this.connections,
+      connections: this.conns.raw(),
       botController: this.botController,
       room: this.room,
       removePlayerFromLobby: (id) => this.removePlayerFromLobby(id),
-      resetState: (newState) => { this.state = newState; },
+      resetState: (newState) => {
+        this.state = newState;
+        this.alarmScheduler.invalidate();
+      },
     };
-    const result = handlerMap[msg.type](this.state, player, msg, ctx);
+    const { result, botLogEntry } = dispatchAction({
+      state: this.state,
+      player,
+      msg,
+      handlerCtx: ctx,
+      sender,
+      isBot,
+    });
     const loggedBotAction = !!botLogEntry;
-    if (botLogEntry && botBeforeFingerprint !== undefined) {
-      botLogEntry.applied = botBeforeFingerprint !== this.actionFingerprint();
-      botLogEntry.rankingAfter = this.state.ranking.slice();
-      botLogEntry.acquireRequestsAfter = this.state.acquireRequests.map((request) => ({ ...request }));
-      this.state.botActionLog.push(botLogEntry);
-      if (this.state.botActionLog.length > 500) {
-        this.state.botActionLog = this.state.botActionLog.slice(-500);
-      }
-    }
     switch (result.kind) {
       case "ignore":
         if (loggedBotAction) this.broadcast();

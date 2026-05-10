@@ -8,25 +8,12 @@ import { decideAction, newBotMemo, type BotMemo } from "../src/lib/ai/strategy";
 import { randomTraits, type Traits } from "../src/lib/ai/personality";
 import type { Archetype } from "../src/lib/ai/archetypes";
 import type { ClientMessage } from "../src/lib/types";
-import type * as Party from "partykit/server";
 import { computeTrueRanking } from "../party/scoring";
+import { FakeConn, asPartyConnection, makeFakeRoom, argOr } from "./lib/harness";
 
-const NUM_GAMES = Number(process.argv[process.argv.indexOf("--games") + 1]) || 50;
-const NUM_BOTS = Number(process.argv[process.argv.indexOf("--bots") + 1]) || 4;
-const HANDS = Number(process.argv[process.argv.indexOf("--hands") + 1]) || 2;
-
-class FakeConn { closed = false; constructor(public id: string) {} send() {} close() { this.closed = true; } }
-function asPartyConnection(c: FakeConn): Party.Connection { return c as unknown as Party.Connection; }
-function makeFakeRoom(): Party.Room {
-  return {
-    id: "r", internalID: "r", env: {} as Record<string, unknown>,
-    context: {} as Party.ExecutionContext, broadcast: () => {},
-    getConnections: () => ({ next: () => ({ done: true, value: undefined }) }) as unknown as Iterable<Party.Connection<unknown>>,
-    getConnection: () => undefined, getMyAlarm: () => Promise.resolve(null),
-    setAlarm: () => Promise.resolve(), deleteAlarm: () => Promise.resolve(),
-    storage: {} as unknown as Party.Storage,
-  };
-}
+const NUM_GAMES = argOr("games", 50);
+const NUM_BOTS = argOr("bots", 4);
+const HANDS = argOr("hands", 2);
 
 // Smart human: at each tick, pick the highest-EV action using TRUE strengths.
 // Goal: place own hands optimally, then propose perfect-information swaps.

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { AcquireRequest, GameState } from "@/lib/types";
 import RequestItemDesktop from "./RequestItemDesktop";
 import RequestItemMobileLandscape from "./RequestItemMobileLandscape";
@@ -16,9 +17,12 @@ interface RequestItemProps {
   onCancel?: (initiatorHandId: string, recipientHandId: string) => void;
 }
 
-export default function RequestItem(props: RequestItemProps) {
+function RequestItemImpl(props: RequestItemProps) {
   const { variant, ...rest } = props;
   if (variant === "mobile-landscape") return <RequestItemMobileLandscape {...rest} />;
   if (variant === "mobile-portrait") return <RequestItemMobilePortrait {...rest} />;
   return <RequestItemDesktop {...rest} />;
 }
+
+const RequestItem = memo(RequestItemImpl);
+export default RequestItem;

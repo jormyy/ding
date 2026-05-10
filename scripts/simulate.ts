@@ -12,89 +12,23 @@ import type { ServerGameState } from "../party/state";
 import { decideAction, newBotMemo, type BotMemo } from "../src/lib/ai/strategy";
 import { randomTraits, type Traits } from "../src/lib/ai/personality";
 import type { ClientMessage } from "../src/lib/types";
-import type * as Party from "partykit/server";
-
-// ---- arg parsing ----
-function argOr(name: string, fallback: number): number {
-  const i = process.argv.indexOf("--" + name);
-  if (i === -1) return fallback;
-  return Number(process.argv[i + 1]);
-}
+import {
+  FakeConn,
+  asPartyConnection,
+  makeFakeRoom,
+  argOr,
+  freshActionStats,
+  bumpActionStats,
+  type ActionStats,
+} from "./lib/harness";
 
 const NUM_GAMES = argOr("games", 10);
-const NUM_BOTS = argOr("bots", 4);        // bots added via addBot
+const NUM_BOTS = argOr("bots", 4);
 const HANDS = argOr("hands", 2);
 
-// ---- fake partykit stubs ----
-class FakeConn {
-  public closed = false;
-  constructor(public id: string) {}
-  send(_msg: string) {
-    // Discard — we inspect state directly.
-  }
-  close() {
-    this.closed = true;
-  }
-}
-
-function asPartyConnection(conn: FakeConn): Party.Connection {
-  return conn as unknown as Party.Connection;
-}
-
-function makeFakeRoom(): Party.Room {
-  let count = 0;
-  return {
-    id: "sim-room",
-    internalID: "sim-room",
-    env: {} as Record<string, unknown>,
-    context: {} as Party.ExecutionContext,
-    broadcast: (_msg: string | ArrayBuffer | ArrayBufferView, _without?: string[]) => {
-      count++;
-    },
-    getConnections: () => ({ next: () => ({ done: true, value: undefined }) }) as unknown as Iterable<Party.Connection<unknown>>,
-    getConnection: () => undefined,
-    getMyAlarm: () => Promise.resolve(null),
-    setAlarm: () => Promise.resolve(),
-    deleteAlarm: () => Promise.resolve(),
-    storage: {} as unknown as Party.Storage,
-  };
-}
-
-// ---- stats ----
-type Stats = {
-  proposals: number;
-  accepts: number;
-  rejects: number;
-  cancels: number;
-  readies: number;
-  flips: number;
-  moves: number;
-  swaps: number;
-  unclaims: number;
-  dings: number;
-};
-
-function freshStats(): Stats {
-  return {
-    proposals: 0, accepts: 0, rejects: 0, cancels: 0,
-    readies: 0, flips: 0, moves: 0, swaps: 0, unclaims: 0, dings: 0,
-  };
-}
-
-function bump(s: Stats, type: ClientMessage["type"]): void {
-  switch (type) {
-    case "proposeChipMove": s.proposals++; break;
-    case "acceptChipMove": s.accepts++; break;
-    case "rejectChipMove": s.rejects++; break;
-    case "cancelChipMove": s.cancels++; break;
-    case "ready": s.readies++; break;
-    case "flip": s.flips++; break;
-    case "move": s.moves++; break;
-    case "swap": s.swaps++; break;
-    case "unclaim": s.unclaims++; break;
-    case "ding": s.dings++; break;
-  }
-}
+type Stats = ActionStats;
+const freshStats = freshActionStats;
+const bump = bumpActionStats;
 
 // ---- one game ----
 async function runOneGame(gameIdx: number): Promise<{

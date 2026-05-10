@@ -4,8 +4,7 @@ import {
   type ServerGameState,
   createInitialState,
 } from "../state";
-import { computeTrueRanking, computeTrueRanks, countInversions } from "../scoring";
-import { solveHands, solvedHandName } from "../solver";
+import { dingEvaluator } from "../../src/modes/ding/evaluator";
 import type { Handler } from "./types";
 import { inGamePhase } from "./types";
 
@@ -31,13 +30,13 @@ export function advancePhaseIfAllReady(state: ServerGameState): boolean {
   state.acquireRequests = [];
 
   if (nextPhase === "reveal") {
-    const solvedMap = solveHands(state.hands, state.allCommunityCards);
+    const solvedMap = dingEvaluator.solveAll(state.hands, state.allCommunityCards);
     for (const hand of state.hands) {
       const solved = solvedMap.get(hand.id);
-      if (solved) hand.madeHandName = solvedHandName(solved);
+      if (solved) hand.madeHandName = dingEvaluator.describe(solved);
     }
-    state.trueRanking = computeTrueRanking(state.hands, state.allCommunityCards);
-    state.trueRanks = computeTrueRanks(
+    state.trueRanking = dingEvaluator.trueRanking(state.hands, state.allCommunityCards);
+    state.trueRanks = dingEvaluator.trueRanks(
       state.trueRanking,
       state.hands,
       state.allCommunityCards
@@ -90,7 +89,7 @@ export const flip: Handler = (state, player, msg) => {
   if (!handToFlipId) {
     state.revealIndex++;
     if (state.revealIndex >= totalHands) {
-      state.score = countInversions(
+      state.score = dingEvaluator.countInversions(
         state.ranking,
         state.trueRanking!,
         state.hands,
@@ -110,7 +109,7 @@ export const flip: Handler = (state, player, msg) => {
   state.revealIndex++;
 
   if (state.revealIndex === totalHands) {
-    state.score = countInversions(
+    state.score = dingEvaluator.countInversions(
       state.ranking,
       state.trueRanking!,
       state.hands,

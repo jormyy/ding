@@ -14,26 +14,23 @@ import { decideAction, newBotMemo, type BotMemo } from "../src/lib/ai/strategy";
 import { randomTraits, type Traits } from "../src/lib/ai/personality";
 import type { Archetype } from "../src/lib/ai/archetypes";
 import type { ClientMessage } from "../src/lib/types";
-import type * as Party from "partykit/server";
 import { computeTrueRanks, computeTrueRanking } from "../party/scoring";
 import type { TraceSink, TruthTrace } from "../src/lib/ai/trace";
 import { currentHandStrength } from "../src/lib/ai/handStrength";
 import * as fs from "fs";
-
-function argOr(name: string, fallback: number): number {
-  const i = process.argv.indexOf("--" + name);
-  if (i === -1) return fallback;
-  return Number(process.argv[i + 1]);
-}
-function argFlag(name: string): boolean {
-  return process.argv.indexOf("--" + name) !== -1;
-}
-function argStr(name: string): string | null {
-  const i = process.argv.indexOf("--" + name);
-  if (i === -1) return null;
-  const v = process.argv[i + 1];
-  return v ?? null;
-}
+import {
+  FakeConn,
+  asPartyConnection,
+  makeFakeRoom,
+  argOr,
+  argFlag,
+  argStr,
+  freshActionStats,
+  bumpActionStats,
+  median,
+  mean,
+  type ActionStats,
+} from "./lib/harness";
 
 const NUM_GAMES = argOr("games", 50);
 const NUM_BOTS = argOr("bots", 4); // bots added via addBot
@@ -43,65 +40,10 @@ const ORACLE = argFlag("oracle");
 const TRACE_PATH = argStr("trace");
 const COOLDOWN_MS = argOr("cooldown", 0); // sleep between games to limit thermal load
 
-class FakeConn {
-  public closed = false;
-  constructor(public id: string) {}
-  send(_msg: string) {}
-  close() { this.closed = true; }
-}
-function asPartyConnection(c: FakeConn): Party.Connection { return c as unknown as Party.Connection; }
-function makeFakeRoom(): Party.Room {
-  // No-op storage: the persistence path was added when DO alarms replaced
-  // setInterval, but the fast harness has no need for durable state — we
-  // throw away the room after each game.
-  const storage = {
-    get: async () => undefined,
-    put: async () => {},
-    delete: async () => false,
-    deleteAll: async () => {},
-    list: async () => new Map(),
-    getAlarm: async () => null,
-    setAlarm: async () => {},
-    deleteAlarm: async () => {},
-    transaction: async (cb: (txn: unknown) => Promise<void>) => { await cb({}); },
-  };
-  return {
-    id: "sim-room", internalID: "sim-room",
-    env: {} as Record<string, unknown>,
-    context: {} as Party.ExecutionContext,
-    broadcast: () => {},
-    getConnections: () => ({ next: () => ({ done: true, value: undefined }) }) as unknown as Iterable<Party.Connection<unknown>>,
-    getConnection: () => undefined,
-    getMyAlarm: () => Promise.resolve(null),
-    setAlarm: () => Promise.resolve(),
-    deleteAlarm: () => Promise.resolve(),
-    storage: storage as unknown as Party.Storage,
-  };
-}
-
-type Stats = {
-  proposals: number; accepts: number; rejects: number; cancels: number;
-  readies: number; flips: number; moves: number; swaps: number;
-  unclaims: number; dings: number; fuckoffs: number;
-};
-function freshStats(): Stats {
-  return { proposals: 0, accepts: 0, rejects: 0, cancels: 0, readies: 0, flips: 0, moves: 0, swaps: 0, unclaims: 0, dings: 0, fuckoffs: 0 };
-}
-function bump(s: Stats, type: ClientMessage["type"]): void {
-  switch (type) {
-    case "proposeChipMove": s.proposals++; break;
-    case "acceptChipMove": s.accepts++; break;
-    case "rejectChipMove": s.rejects++; break;
-    case "cancelChipMove": s.cancels++; break;
-    case "ready": s.readies++; break;
-    case "flip": s.flips++; break;
-    case "move": s.moves++; break;
-    case "swap": s.swaps++; break;
-    case "unclaim": s.unclaims++; break;
-    case "ding": s.dings++; break;
-    case "fuckoff": s.fuckoffs++; break;
-  }
-}
+// Stats type is the harness's ActionStats; alias for in-file readability.
+type Stats = ActionStats;
+const freshStats = freshActionStats;
+const bump = bumpActionStats;
 
 type SimResult = {
   inversions: number | null;
@@ -397,17 +339,6 @@ async function runOneGame(gameIdx: number, traceWriter: TraceWriter): Promise<Si
     ownInversions: ownInv,
     crossInversions: crossInv,
   };
-}
-
-function median(xs: number[]): number {
-  if (xs.length === 0) return NaN;
-  const s = [...xs].sort((a, b) => a - b);
-  const m = Math.floor(s.length / 2);
-  return s.length % 2 === 0 ? (s[m - 1] + s[m]) / 2 : s[m];
-}
-function mean(xs: number[]): number {
-  if (xs.length === 0) return NaN;
-  return xs.reduce((a, b) => a + b, 0) / xs.length;
 }
 
 async function main() {

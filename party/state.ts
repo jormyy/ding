@@ -5,7 +5,6 @@ import type {
   GameState,
   Hand,
   Phase,
-  Player,
 } from "../src/lib/types";
 import { COMMUNITY_CARDS_FOR_PHASE } from "../src/lib/constants";
 
@@ -19,11 +18,23 @@ import { COMMUNITY_CARDS_FOR_PHASE } from "../src/lib/constants";
 export interface ServerGameState extends GameState {
   /** All 5 community cards (unmasked). Sliced for broadcast via `buildClientState`. */
   allCommunityCards: Card[];
+  /**
+   * Monotonic generation counter — bumped by the action dispatcher whenever
+   * an applied action might have changed any client-visible slice. Used by:
+   *
+   *   - the bot action fingerprint (replaces JSON.stringify), and
+   *   - any future mask cache that wants a single int as its invalidation key.
+   *
+   * Treat this as engine-internal: do not include it in client broadcasts
+   * (it lives only on the server-side extension).
+   */
+  gen: number;
 }
 
 /** Create a fresh empty server state for a new room. */
 export function createInitialState(): ServerGameState {
   return {
+    modeId: "ding",
     phase: "lobby",
     players: [],
     handsPerPlayer: 1,
@@ -45,6 +56,7 @@ export function createInitialState(): ServerGameState {
     dingLog: [],
     fuckoffLog: [],
     botActionLog: [],
+    gen: 0,
   };
 }
 
@@ -88,6 +100,7 @@ export function buildClientState(state: ServerGameState, playerId: string): Game
   const communityCardsToShow = state.allCommunityCards.slice(0, count);
 
   return {
+    modeId: state.modeId ?? "ding",
     phase: state.phase,
     players: state.players,
     handsPerPlayer: state.handsPerPlayer,
@@ -112,39 +125,60 @@ export function buildClientState(state: ServerGameState, playerId: string): Game
 }
 
 /**
- * Broadcast the current (masked) game state to every connected client.
- * Each connection receives a personalized view with opponent cards hidden.
+ * Per-player mask cache. Skipping `conn.send` when the masked output is
+ * byte-identical to the previous broadcast removes the dominant cost in
+ * chatty rooms (every action triggers a broadcast, but most actions don't
+ * change every player's view).
  */
-export function broadcastStateTo(
-  room: Party.Room,
-  state: ServerGameState,
-  connections: Map<string, Party.Connection>
-) {
-  for (const [connId, conn] of Array.from(connections.entries())) {
-    const player = state.players.find((p) => p.connId === connId);
-    const clientState = buildClientState(state, player?.id ?? "");
-    const msg = { type: "state", state: clientState };
-    conn.send(JSON.stringify(msg));
+export class MaskBroadcaster {
+  private lastJsonByPlayer: Map<string, string> = new Map();
+
+  /** Drop a player's cache entry on disconnect to keep the map bounded. */
+  forget(playerId: string): void {
+    this.lastJsonByPlayer.delete(playerId);
+  }
+
+  /** Reset the entire cache (e.g., after `playAgain` rebuilds state). */
+  reset(): void {
+    this.lastJsonByPlayer.clear();
+  }
+
+  broadcast(
+    state: ServerGameState,
+    connections: Map<string, Party.Connection>
+  ): void {
+    // Build connId → playerId once instead of state.players.find per connection.
+    const playerByConn = new Map<string, string>();
+    for (const p of state.players) playerByConn.set(p.connId, p.id);
+
+    for (const [connId, conn] of connections) {
+      const playerId = playerByConn.get(connId) ?? "";
+      const clientState = buildClientState(state, playerId);
+      const payload = JSON.stringify({ type: "state", state: clientState });
+      const previous = this.lastJsonByPlayer.get(playerId);
+      if (previous === payload) continue;
+      this.lastJsonByPlayer.set(playerId, payload);
+      conn.send(payload);
+    }
   }
 }
 
+const defaultBroadcaster = new MaskBroadcaster();
+
 /**
- * Debug assertion: verify the ranking array has no duplicates and matches
- * the total hand count. Logs errors to the console if invariants are violated.
+ * Broadcast the masked game state to every connected client through the
+ * default `MaskBroadcaster` so byte-identical re-broadcasts are skipped.
  */
-export function assertRankingInvariant(state: ServerGameState) {
-  const claimed = state.ranking.filter((r): r is string => r !== null);
-  const unique = new Set(claimed);
-  if (unique.size !== claimed.length) {
-    // eslint-disable-next-line no-console
-    console.error("[ding] ranking has duplicate hand ids", claimed);
-  }
-  if (state.hands.length > 0 && state.ranking.length !== state.hands.length) {
-    // eslint-disable-next-line no-console
-    console.error(
-      "[ding] ranking length mismatch",
-      state.ranking.length,
-      state.hands.length
-    );
-  }
+export function broadcastStateTo(
+  _room: Party.Room,
+  state: ServerGameState,
+  connections: Map<string, Party.Connection>
+) {
+  defaultBroadcaster.broadcast(state, connections);
 }
+
+/** Drop a single player's cache entry from the default broadcaster. */
+export function forgetPlayerInBroadcaster(playerId: string): void {
+  defaultBroadcaster.forget(playerId);
+}
+
