@@ -78,14 +78,9 @@ interface HistoryChipProps {
   phaseLabel: string;
 }
 
-function HistoryChipImpl({ rank, total, phaseLabel }: HistoryChipProps) {
-  const isFirst = rank === 1;
-  const isLast = rank === total;
-
+function HistoryChipImpl({ rank, total: _total, phaseLabel }: HistoryChipProps) {
   let chipBg = "bg-gray-700/60 border-gray-600/50 text-gray-300";
   if (rank === null) chipBg = "bg-gray-800/40 border-gray-700/30 text-gray-600";
-  else if (isFirst) chipBg = "bg-amber-600/60 border-amber-400/50 text-amber-100";
-  else if (isLast) chipBg = "bg-red-950/70 border-red-800/50 text-red-400";
 
   return (
     <div className="flex flex-col items-center gap-[1px]">
