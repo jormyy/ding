@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import type { ClientMessage, GameState } from "@/lib/types";
-import { MAX_PLAYERS, MAX_TOTAL_HANDS } from "@/lib/constants";
+import { MAX_PLAYERS } from "@/lib/constants";
+import {
+  getGameModeDefinition,
+  getMaxHandsPerPlayerForMode,
+  listGameModes,
+  type DingGameModeDefinition,
+} from "@/lib/gameModes";
 import { D } from "@/lib/theme";
 
 interface LobbyProps {
@@ -39,12 +45,14 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
   const canStart = gameState.players.length >= 2;
 
   const playerCount = gameState.players.length;
-  const maxHands = playerCount > 0 ? Math.floor(MAX_TOTAL_HANDS / playerCount) : MAX_PLAYERS;
+  const selectedMode = getGameModeDefinition(gameState.modeId);
+  const modeOptions = listGameModes();
+  const maxHands = playerCount > 0 ? getMaxHandsPerPlayerForMode(selectedMode.id, playerCount) : MAX_PLAYERS;
   const seatsOpen = Math.max(0, MAX_PLAYERS - playerCount);
   const canAddBot =
     isCreator &&
     playerCount < MAX_PLAYERS &&
-    Math.floor(MAX_TOTAL_HANDS / (playerCount + 1)) >= gameState.handsPerPlayer;
+    getMaxHandsPerPlayerForMode(selectedMode.id, playerCount + 1) >= gameState.handsPerPlayer;
 
   const roomUrl =
     typeof window !== "undefined" ? `${window.location.origin}/room/${code}` : `/room/${code}`;
@@ -170,141 +178,145 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
           </span>
         </div>
 
-        {/* Roster — only real players, then a single "open seats" footer if room not full.
-            Eliminating the per-empty-seat rows saves ~250px of vertical space and lets the
-            three settings groups + Start button fit in a 720px viewport. */}
-        <div className="flex flex-col gap-1.5 min-h-0 overflow-y-auto">
-          {gameState.players.map((p, i) => (
-            <div
-              key={p.id}
-              className="flex items-center gap-3 rounded-lg px-3 py-2"
-              style={{
-                background: "rgba(10,30,18,0.6)",
-                border: "1px solid rgba(255,255,255,0.06)",
-              }}
-            >
+        <div className="flex-1 min-h-0 overflow-y-auto pr-1 -mr-1 flex flex-col gap-2">
+          {/* Roster — only real players, then a single "open seats" footer if room not full. */}
+          <div className="flex flex-col gap-1.5 min-h-0">
+            {gameState.players.map((p, i) => (
               <div
-                className="w-7 h-7 rounded-full flex items-center justify-center font-black text-xs flex-shrink-0"
-                style={
-                  i === 0
-                    ? { background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink }
-                    : { background: "rgba(255,255,255,0.1)", color: D.sub }
-                }
+                key={p.id}
+                className="flex items-center gap-3 rounded-lg px-3 py-2 min-w-0"
+                style={{
+                  background: "rgba(10,30,18,0.6)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                }}
               >
-                {p.name[0].toUpperCase()}
-              </div>
-              <div
-                className="flex-1 min-w-0 text-sm font-bold truncate"
-                style={{ color: D.goldBright }}
-              >
-                {p.name}
-                {p.isBot && (
-                  <span className="ml-1.5" title="Bot">
-                    🤖
-                  </span>
-                )}
-                {p.id === myId && (
-                  <span className="ml-1.5 text-xs font-medium" style={{ color: D.accent }}>
-                    (you)
-                  </span>
-                )}
-              </div>
-              {i === 0 && (
                 <div
-                  className="text-[9px] font-black tracking-widest uppercase"
-                  style={{ color: D.gold }}
+                  className="w-7 h-7 rounded-full flex items-center justify-center font-black text-xs flex-shrink-0"
+                  style={
+                    i === 0
+                      ? { background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink }
+                      : { background: "rgba(255,255,255,0.1)", color: D.sub }
+                  }
                 >
-                  Host
+                  {p.name[0].toUpperCase()}
                 </div>
-              )}
-              {!p.connected && (
-                <div className="text-[9px] font-bold" style={{ color: D.muted }}>
-                  away
+                <div
+                  className="flex-1 min-w-0 text-sm font-bold truncate"
+                  style={{ color: D.goldBright }}
+                >
+                  {p.name}
+                  {p.isBot && (
+                    <span className="ml-1.5" title="Bot">
+                      bot
+                    </span>
+                  )}
+                  {p.id === myId && (
+                    <span className="ml-1.5 text-xs font-medium" style={{ color: D.accent }}>
+                      (you)
+                    </span>
+                  )}
                 </div>
-              )}
-              {isCreator && p.id !== myId && (
+                {i === 0 && (
+                  <div
+                    className="text-[9px] font-black tracking-widest uppercase"
+                    style={{ color: D.gold }}
+                  >
+                    Host
+                  </div>
+                )}
+                {!p.connected && (
+                  <div className="text-[9px] font-bold" style={{ color: D.muted }}>
+                    away
+                  </div>
+                )}
+                {isCreator && p.id !== myId && (
+                  <button
+                    type="button"
+                    onClick={() => onSend({ type: "kick", playerId: p.id })}
+                    aria-label={`Remove ${p.name}`}
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold leading-none transition-colors hover:bg-red-900/40 hover:text-red-300"
+                    style={{
+                      background: "rgba(255,255,255,0.05)",
+                      color: D.muted,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Open-seats summary + add bot — replaces the per-seat empty rows. */}
+          {seatsOpen > 0 && (
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex-1 min-w-0 text-[10px] font-bold tracking-wide uppercase truncate" style={{ color: D.muted }}>
+                {seatsOpen} {seatsOpen === 1 ? "seat" : "seats"} open
+              </div>
+              {isCreator && (
                 <button
                   type="button"
-                  onClick={() => onSend({ type: "kick", playerId: p.id })}
-                  aria-label={`Remove ${p.name}`}
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold leading-none transition-colors hover:bg-red-900/40 hover:text-red-300"
+                  onClick={() => onSend({ type: "addBot" })}
+                  disabled={!canAddBot}
+                  className="rounded-lg px-3 py-1.5 text-xs font-bold tracking-wide transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
                   style={{
-                    background: "rgba(255,255,255,0.05)",
-                    color: D.muted,
-                    border: "1px solid rgba(255,255,255,0.08)",
+                    background: "rgba(10,30,18,0.6)",
+                    color: D.goldBright,
+                    border: `1px dashed ${D.panelBorder}`,
                   }}
                 >
-                  ×
+                  + Add bot
                 </button>
               )}
             </div>
-          ))}
-        </div>
+          )}
 
-        {/* Open-seats summary + add bot — replaces the per-seat empty rows. */}
-        {seatsOpen > 0 && (
-          <div className="flex items-center gap-2">
-            <div className="flex-1 text-[10px] font-bold tracking-wide uppercase" style={{ color: D.muted }}>
-              {seatsOpen} {seatsOpen === 1 ? "seat" : "seats"} open
+          <ModeSelector
+            selectedMode={selectedMode}
+            modeOptions={modeOptions}
+            disabled={!isCreator}
+            onChange={(modeId) => onSend({ type: "configure", modeId })}
+          />
+
+          {isCreator && (
+            <div className="flex flex-col gap-2">
+              <SettingRow label="Hands per player" hint={`${playerCount}p x ${gameState.handsPerPlayer}h = ${playerCount * gameState.handsPerPlayer} hands`}>
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <PillToggle
+                    key={n}
+                    label={String(n)}
+                    active={gameState.handsPerPlayer === n}
+                    disabled={n > maxHands}
+                    onClick={() => onSend({ type: "configure", handsPerPlayer: n })}
+                  />
+                ))}
+              </SettingRow>
+
+              <SettingRow label="Game timer" hint={gameState.gameTimerSeconds > 0 ? "Counts down for the whole game" : "No overall limit"}>
+                {GAME_TIMER_OPTIONS.map(({ label, value }) => (
+                  <PillToggle
+                    key={value}
+                    label={label}
+                    active={gameState.gameTimerSeconds === value}
+                    onClick={() => onSend({ type: "configure", gameTimerSeconds: value })}
+                  />
+                ))}
+              </SettingRow>
+
+              <SettingRow label="Round timer" hint={gameState.roundTimerSeconds > 0 ? "Auto-readies all players when time's up" : "No per-round limit"}>
+                {ROUND_TIMER_OPTIONS.map(({ label, value }) => (
+                  <PillToggle
+                    key={value}
+                    label={label}
+                    active={gameState.roundTimerSeconds === value}
+                    onClick={() => onSend({ type: "configure", roundTimerSeconds: value })}
+                  />
+                ))}
+              </SettingRow>
             </div>
-            {isCreator && (
-              <button
-                type="button"
-                onClick={() => onSend({ type: "addBot" })}
-                disabled={!canAddBot}
-                className="rounded-lg px-3 py-1.5 text-xs font-bold tracking-wide transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{
-                  background: "rgba(10,30,18,0.6)",
-                  color: D.goldBright,
-                  border: `1px dashed ${D.panelBorder}`,
-                }}
-              >
-                + Add bot 🤖
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Settings — three compact rows. Pill toggles instead of aspect-square saves ~80px. */}
-        {isCreator && (
-          <div className="flex flex-col gap-2">
-            <SettingRow label="Hands per player" hint={`${playerCount}p × ${gameState.handsPerPlayer}h = ${playerCount * gameState.handsPerPlayer} hands`}>
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <PillToggle
-                  key={n}
-                  label={String(n)}
-                  active={gameState.handsPerPlayer === n}
-                  disabled={n > maxHands}
-                  onClick={() => onSend({ type: "configure", handsPerPlayer: n })}
-                />
-              ))}
-            </SettingRow>
-
-            <SettingRow label="Game timer" hint={gameState.gameTimerSeconds > 0 ? "Counts down for the whole game" : "No overall limit"}>
-              {GAME_TIMER_OPTIONS.map(({ label, value }) => (
-                <PillToggle
-                  key={value}
-                  label={label}
-                  active={gameState.gameTimerSeconds === value}
-                  onClick={() => onSend({ type: "configure", gameTimerSeconds: value })}
-                />
-              ))}
-            </SettingRow>
-
-            <SettingRow label="Round timer" hint={gameState.roundTimerSeconds > 0 ? "Auto-readies all players when time's up" : "No per-round limit"}>
-              {ROUND_TIMER_OPTIONS.map(({ label, value }) => (
-                <PillToggle
-                  key={value}
-                  label={label}
-                  active={gameState.roundTimerSeconds === value}
-                  onClick={() => onSend({ type: "configure", roundTimerSeconds: value })}
-                />
-              ))}
-            </SettingRow>
-          </div>
-        )}
-
-        <div className="flex-1" />
+          )}
+        </div>
 
         {isCreator ? (
           <div className="flex flex-col gap-1.5">
@@ -368,6 +380,73 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
   );
 }
 
+function ModeSelector({
+  selectedMode,
+  modeOptions,
+  disabled,
+  onChange,
+}: {
+  selectedMode: DingGameModeDefinition;
+  modeOptions: readonly DingGameModeDefinition[];
+  disabled: boolean;
+  onChange: (modeId: string) => void;
+}) {
+  const selectedIndex = modeOptions.findIndex((mode) => mode.id === selectedMode.id);
+  return (
+    <div
+      className="rounded-lg px-3 py-2 min-w-0"
+      style={{ background: "rgba(10,30,18,0.6)", border: "1px solid rgba(255,255,255,0.06)" }}
+    >
+      <div className="flex items-center justify-between gap-2 mb-1.5 min-w-0">
+        <div
+          className="text-[9px] font-black tracking-[0.25em] uppercase flex-shrink-0"
+          style={{ color: D.sub }}
+        >
+          Game mode
+        </div>
+        <div className="text-[10px] truncate" style={{ color: D.muted }}>
+          {Math.max(1, selectedIndex + 1)}/{modeOptions.length}
+        </div>
+      </div>
+      <select
+        value={selectedMode.id}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full min-w-0 h-8 rounded-md px-2 text-xs font-black outline-none disabled:opacity-70"
+        style={{
+          background: "rgba(0,0,0,0.35)",
+          color: D.goldBright,
+          border: "1px solid rgba(255,255,255,0.1)",
+        }}
+        aria-label="Game mode"
+      >
+        {modeOptions.map((mode) => (
+          <option key={mode.id} value={mode.id}>
+            {mode.name}
+          </option>
+        ))}
+      </select>
+      <div className="mt-1.5 text-[11px] leading-snug" style={{ color: D.sub }}>
+        <span className="font-bold" style={{ color: D.goldBright }}>
+          {selectedMode.shortName}.
+        </span>{" "}
+        {selectedMode.summary}
+      </div>
+      <div className="mt-1 flex gap-1 overflow-x-auto pb-0.5">
+        {selectedMode.tags.map((tag) => (
+          <span
+            key={tag}
+            className="rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide whitespace-nowrap"
+            style={{ background: "rgba(255,255,255,0.06)", color: D.muted }}
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** One settings row: small uppercase label + flex pill row + tiny hint. */
 function SettingRow({
   label,
@@ -394,7 +473,7 @@ function SettingRow({
           {hint}
         </div>
       </div>
-      <div className="flex gap-1.5">{children}</div>
+      <div className="flex gap-1.5 min-w-0">{children}</div>
     </div>
   );
 }

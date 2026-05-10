@@ -36,6 +36,10 @@ function SeatHandImpl({
   const cardProps = isMobile ? { tiny: true as const } : { small: true as const };
   const showOwnFaces = isMe && hand.cards.length > 0;
   const showRevealFaces = isReveal && hand.flipped && hand.cards.length > 0;
+  const publicCards = hand.publicCards ?? [];
+  const cardCount = hand.cardCount ?? hand.cards.length;
+  const hiddenBacks = Math.max(0, cardCount - publicCards.length);
+  const shouldShowPublicFaces = !isMe && !showRevealFaces && publicCards.length > 0;
   return (
     <div
       className={[
@@ -56,9 +60,16 @@ function SeatHandImpl({
           : undefined
       }
     >
-      {(isReveal && showRevealFaces) || (!isReveal && showOwnFaces)
-        ? hand.cards.map((card, i) => <CardFace key={i} card={card} {...cardProps} />)
-        : [0, 1].map((i) => <CardBack key={i} {...cardProps} />)}
+      {(isReveal && showRevealFaces) || (!isReveal && showOwnFaces) ? (
+        hand.cards.map((card, i) => <CardFace key={i} card={card} {...cardProps} />)
+      ) : shouldShowPublicFaces ? (
+        <>
+          {publicCards.map((card, i) => <CardFace key={`public-${i}`} card={card} {...cardProps} />)}
+          {Array.from({ length: hiddenBacks }).map((_, i) => <CardBack key={`hidden-${i}`} {...cardProps} />)}
+        </>
+      ) : (
+        Array.from({ length: Math.max(1, cardCount) }).map((_, i) => <CardBack key={i} {...cardProps} />)
+      )}
     </div>
   );
 }

@@ -23,6 +23,7 @@ export default function TableFelt({
   const commCardProps = isMobile ? { tiny: true as const } : { small: true as const };
   const commCardW = isMobile ? 26 : 36;
   const commCardH = isMobile ? 38 : 52;
+  const communitySlots = Math.max(5, communityCards.length);
 
   const phaseLabel =
     phase === "preflop" ? "pre-flop"
@@ -56,7 +57,7 @@ export default function TableFelt({
           {phaseLabel}
         </div>
         <div className="flex gap-1 pointer-events-none">
-          {Array.from({ length: 5 }).map((_, i) => {
+          {Array.from({ length: communitySlots }).map((_, i) => {
             const card = communityCards[i];
             return card ? (
               <div key={i} className="drop-shadow-lg">

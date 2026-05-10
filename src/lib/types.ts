@@ -31,6 +31,10 @@ export type Hand = {
   playerId: string;
   /** Hole cards. Empty array when sent to non-owners (server masking). */
   cards: Card[];
+  /** Total hidden+visible cards in this hand, preserved when cards are masked. */
+  cardCount?: number;
+  /** Cards intentionally visible to everyone before reveal. */
+  publicCards?: Card[];
   /** Whether this hand has been revealed during the reveal phase. */
   flipped: boolean;
   /** Human-readable made hand name, populated by the server when entering reveal. */
@@ -184,7 +188,7 @@ export type { BotActionLogEntry, BotActionAudit };
  */
 export type ClientMessage =
   | { type: "join"; name: string; pid: string }
-  | { type: "configure"; handsPerPlayer?: number; gameTimerSeconds?: number; roundTimerSeconds?: number }
+  | { type: "configure"; handsPerPlayer?: number; gameTimerSeconds?: number; roundTimerSeconds?: number; modeId?: string }
   | { type: "start" }
   | { type: "move"; handId: string; toIndex: number }
   | { type: "swap"; handIdA: string; handIdB: string }

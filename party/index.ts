@@ -17,6 +17,7 @@ import { AlarmScheduler } from "./server/alarmScheduler";
 import { sweepLobbyGhosts } from "./server/lobbySweeper";
 import { RoomStorage } from "./server/roomStorage";
 import { dispatchAction } from "./pipeline/dispatch";
+import { getMaxHandsPerPlayerForMode } from "../src/lib/gameModes";
 
 export { buildClientState } from "./state";
 export type { ServerGameState } from "./state";
@@ -323,6 +324,10 @@ export default class DingServer implements Party.Server {
       isCustom: hasCustomPrefix || undefined,
     };
     this.state.players.push(newPlayer);
+    this.state.handsPerPlayer = Math.min(
+      this.state.handsPerPlayer,
+      getMaxHandsPerPlayerForMode(this.state.modeId, this.state.players.length)
+    );
     sender.send(JSON.stringify({ type: "welcome", playerId: newPlayer.id } as ServerMessage));
     this.broadcast();
   }

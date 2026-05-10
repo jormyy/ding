@@ -5,6 +5,7 @@ import { CardFace } from "../../CardFace";
 import VolumeControl from "../../VolumeControl";
 import CustomOutputButton from "../../CustomOutputButton";
 import { D } from "@/lib/theme";
+import { getGameModeDefinition } from "@/lib/gameModes";
 
 interface RevealHeaderProps {
   gameState: GameState;
@@ -35,6 +36,7 @@ export default function RevealHeader({
   isCustom,
   onCustomOutput,
 }: RevealHeaderProps) {
+  const mode = getGameModeDefinition(gameState.modeId);
   return (
     <div
       className="flex-none relative z-10 flex items-center gap-4 px-5"
@@ -51,6 +53,9 @@ export default function RevealHeader({
         </div>
         <div className="font-black leading-none" style={{ fontSize: 20, color: D.goldBright, fontFamily: D.serif }}>
           {gameState.players.length} players · {total} hands
+        </div>
+        <div className="text-[10px] font-black uppercase tracking-wider truncate max-w-36" style={{ color: D.sub }}>
+          {mode.shortName}
         </div>
       </div>
 

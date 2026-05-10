@@ -6,7 +6,7 @@ import type {
   Hand,
   Phase,
 } from "../src/lib/types";
-import { COMMUNITY_CARDS_FOR_PHASE } from "../src/lib/constants";
+import { visibleCommunityCardCount } from "../src/lib/gameModes";
 
 /**
  * Server-side game state. Extends the client-visible `GameState` with
@@ -66,9 +66,11 @@ function maskHandsForPlayer(
   phase: Phase
 ): Hand[] {
   return hands.map((hand) => {
-    if (hand.playerId === playerId) return hand;
-    if (hand.flipped && phase === "reveal") return hand;
-    return { ...hand, cards: [] };
+    const cardCount = hand.cardCount ?? hand.cards.length;
+    const publicCards = hand.publicCards ?? [];
+    if (hand.playerId === playerId) return { ...hand, cardCount, publicCards };
+    if (hand.flipped && phase === "reveal") return { ...hand, cardCount, publicCards };
+    return { ...hand, cards: [], cardCount, publicCards };
   });
 }
 
@@ -96,7 +98,7 @@ function maskBotActionLogForPlayer(
  * - In reveal phase, shows cards for hands that have already been flipped.
  */
 export function buildClientState(state: ServerGameState, playerId: string): GameState {
-  const count = COMMUNITY_CARDS_FOR_PHASE[state.phase];
+  const count = visibleCommunityCardCount(state.modeId, state.phase);
   const communityCardsToShow = state.allCommunityCards.slice(0, count);
 
   return {
@@ -181,4 +183,3 @@ export function broadcastStateTo(
 export function forgetPlayerInBroadcaster(playerId: string): void {
   defaultBroadcaster.forget(playerId);
 }
-

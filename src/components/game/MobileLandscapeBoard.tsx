@@ -3,6 +3,7 @@
 import type { GameState } from "@/lib/types";
 import type { UseBoardReturn } from "@/hooks/useGameBoard";
 import { PHASE_LABELS } from "@/lib/constants";
+import { getGameModeDefinition } from "@/lib/gameModes";
 import PokerTable from "../PokerTable";
 import ChatPanel from "../ChatPanel";
 import ReadyButton from "../ReadyButton";
@@ -48,12 +49,18 @@ export default function MobileLandscapeBoard({
     isCreator, isReady, confirmingEnd,
     mobileChatOpen, setMobileChatOpen,
   } = board;
+  const mode = getGameModeDefinition(gameState.modeId);
 
   return (
     <div className="h-[100dvh] flex flex-col" style={{ background: "#0a1813" }}>
       {toastEl}
       <div className="flex-none px-3 py-1 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(201,165,74,0.18)", background: "rgba(10,40,22,0.95)" }}>
-        <span className="font-serif font-black" style={{ fontSize: 16, color: "#f5e6b8" }}>Ding</span>
+        <div className="flex items-baseline gap-2 min-w-0">
+          <span className="font-serif font-black" style={{ fontSize: 16, color: "#f5e6b8" }}>Ding</span>
+          <span className="text-[9px] font-black uppercase truncate max-w-20" style={{ color: "#c9a54a" }}>
+            {mode.shortName}
+          </span>
+        </div>
         <div className="flex items-center gap-2">
           {PHASE_LABELS.map((phase) => (
             <div key={phase} className="text-[9px] font-black uppercase tracking-widest" style={{ color: gameState.phase === phase ? "#c9a54a" : "rgba(255,255,255,0.2)" }}>

@@ -28,7 +28,19 @@ function cardKey(c: Card): string {
  * convention shared with humans following the same guide.
  */
 export function preflopTierStrength(hole: Card[]): number {
-  if (hole.length !== 2) return 0.5;
+  if (hole.length === 0) return 0.5;
+  if (hole.length === 1) {
+    return 0.18 + ((RANK_VALUE[hole[0].rank] - 2) / 12) * 0.42;
+  }
+  if (hole.length > 2) {
+    let best = 0;
+    for (let i = 0; i < hole.length; i++) {
+      for (let j = i + 1; j < hole.length; j++) {
+        best = Math.max(best, preflopTierStrength([hole[i], hole[j]]));
+      }
+    }
+    return Math.min(1, best + Math.min(0.08, (hole.length - 2) * 0.03));
+  }
   const a = RANK_VALUE[hole[0].rank];
   const b = RANK_VALUE[hole[1].rank];
   const hi = Math.max(a, b);
@@ -75,12 +87,13 @@ export function preflopTierStrength(hole: Card[]): number {
  * the equity it'd have at showdown.
  */
 export function currentHandStrength(hole: Card[], board: Card[]): number {
-  if (hole.length < 2) return 0.10;
+  if (hole.length < 1) return 0.10;
 
   // Preflop: tier-based score (no made hand to read).
   if (board.length === 0) return preflopTierStrength(hole);
 
   const all = [...hole, ...board];
+  if (all.length < 5) return preflopTierStrength(hole);
   const ph = PokerHand.solve(all.map(cardToPokersolverStr));
   const rank = ph.rank;
 

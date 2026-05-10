@@ -13,6 +13,7 @@
  */
 
 import { createInitialState, type ServerGameState } from "../state";
+import { DEFAULT_GAME_MODE_ID, isGameModeId } from "../../src/lib/gameModes";
 
 export const STATE_VERSION = 1;
 
@@ -64,5 +65,11 @@ export function migrateState(raw: unknown): ServerGameState {
 function stripVersion(v: VersionedState): ServerGameState {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { __version, ...rest } = v;
-  return rest as ServerGameState;
+  const state = rest as ServerGameState;
+  if (!state.modeId || !isGameModeId(state.modeId)) state.modeId = DEFAULT_GAME_MODE_ID;
+  for (const hand of state.hands ?? []) {
+    hand.cardCount = hand.cardCount ?? hand.cards?.length ?? 0;
+    hand.publicCards = hand.publicCards ?? [];
+  }
+  return state;
 }

@@ -4,7 +4,10 @@ import {
   type ServerGameState,
   createInitialState,
 } from "../state";
-import { dingEvaluator } from "../../src/modes/ding/evaluator";
+import {
+  computeShowdownForMode,
+  countInversionsForRanks,
+} from "../../src/lib/gameModeShowdown";
 import type { Handler } from "./types";
 import { inGamePhase } from "./types";
 
@@ -30,17 +33,12 @@ export function advancePhaseIfAllReady(state: ServerGameState): boolean {
   state.acquireRequests = [];
 
   if (nextPhase === "reveal") {
-    const solvedMap = dingEvaluator.solveAll(state.hands, state.allCommunityCards);
+    const showdown = computeShowdownForMode(state.modeId, state.hands, state.allCommunityCards);
     for (const hand of state.hands) {
-      const solved = solvedMap.get(hand.id);
-      if (solved) hand.madeHandName = dingEvaluator.describe(solved);
+      hand.madeHandName = showdown.madeHandNames[hand.id];
     }
-    state.trueRanking = dingEvaluator.trueRanking(state.hands, state.allCommunityCards);
-    state.trueRanks = dingEvaluator.trueRanks(
-      state.trueRanking,
-      state.hands,
-      state.allCommunityCards
-    );
+    state.trueRanking = showdown.trueRanking;
+    state.trueRanks = showdown.trueRanks;
     state.revealIndex = 0;
   } else {
     state.ranking = Array(state.hands.length).fill(null);
@@ -89,12 +87,7 @@ export const flip: Handler = (state, player, msg) => {
   if (!handToFlipId) {
     state.revealIndex++;
     if (state.revealIndex >= totalHands) {
-      state.score = dingEvaluator.countInversions(
-        state.ranking,
-        state.trueRanking!,
-        state.hands,
-        state.allCommunityCards
-      );
+      state.score = countInversionsForRanks(state.ranking, state.trueRanks);
     }
     return { kind: "broadcast" };
   }
@@ -109,12 +102,7 @@ export const flip: Handler = (state, player, msg) => {
   state.revealIndex++;
 
   if (state.revealIndex === totalHands) {
-    state.score = dingEvaluator.countInversions(
-      state.ranking,
-      state.trueRanking!,
-      state.hands,
-      state.allCommunityCards
-    );
+    state.score = countInversionsForRanks(state.ranking, state.trueRanks);
   }
 
   return { kind: "broadcast" };
@@ -129,6 +117,7 @@ export const playAgain: Handler = (state, player, _msg, ctx) => {
   const newState = createInitialState();
   newState.players = players;
   newState.chatMessages = chat;
+  newState.modeId = state.modeId ?? "ding";
   newState.gameTimerSeconds = state.gameTimerSeconds;
   newState.roundTimerSeconds = state.roundTimerSeconds;
   ctx.resetState(newState);
@@ -145,6 +134,7 @@ export const endGame: Handler = (state, player, _msg, ctx) => {
   const newState = createInitialState();
   newState.players = players;
   newState.chatMessages = chat;
+  newState.modeId = state.modeId ?? "ding";
   newState.gameTimerSeconds = state.gameTimerSeconds;
   newState.roundTimerSeconds = state.roundTimerSeconds;
   ctx.resetState(newState);

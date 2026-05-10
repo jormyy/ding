@@ -1,14 +1,24 @@
-import type { Hand } from "../../src/lib/types";
-import { MAX_PLAYERS, MAX_TOTAL_HANDS } from "../../src/lib/constants";
-import { createDeck, dealCards, shuffleDeck } from "../../src/lib/deckUtils";
+import { MAX_PLAYERS } from "../../src/lib/constants";
+import { shuffleDeck } from "../../src/lib/deckUtils";
+import {
+  getGameModeDefinition,
+  getMaxHandsPerPlayerForMode,
+  isGameModeId,
+} from "../../src/lib/gameModes";
+import { createDeckForMode, dealCardsForMode } from "../../src/lib/gameModeDeal";
 import type { Handler, HandlerResult } from "./types";
 
 export const configure: Handler = (state, player, msg) => {
   if (msg.type !== "configure") return { kind: "ignore" };
   if (!player.isCreator || state.phase !== "lobby") return { kind: "ignore" };
+  if (msg.modeId !== undefined && isGameModeId(msg.modeId)) {
+    state.modeId = msg.modeId;
+    const maxHands = getMaxHandsPerPlayerForMode(state.modeId, state.players.length);
+    state.handsPerPlayer = Math.min(state.handsPerPlayer, maxHands);
+  }
   if (msg.handsPerPlayer !== undefined) {
     const playerCount = state.players.length;
-    const maxHands = Math.floor(MAX_TOTAL_HANDS / playerCount);
+    const maxHands = getMaxHandsPerPlayerForMode(state.modeId, playerCount);
     state.handsPerPlayer = Math.max(1, Math.min(maxHands, msg.handsPerPlayer));
   }
   if (msg.gameTimerSeconds !== undefined) {
@@ -24,7 +34,9 @@ export const addBot: Handler = (state, player, _msg, ctx) => {
   if (!player.isCreator || state.phase !== "lobby") return { kind: "ignore" };
   if (state.players.length >= MAX_PLAYERS) return { kind: "ignore" };
   const newCount = state.players.length + 1;
-  if (Math.floor(MAX_TOTAL_HANDS / newCount) < state.handsPerPlayer) return { kind: "ignore" };
+  if (getMaxHandsPerPlayerForMode(state.modeId, newCount) < state.handsPerPlayer) {
+    return { kind: "ignore" };
+  }
   const botPlayer = ctx.botController.addBot();
   state.players.push(botPlayer);
   return { kind: "broadcast" };
@@ -37,21 +49,14 @@ export const start: Handler = (state, player) => {
 
   state.players = connectedPlayers;
 
-  const deck = shuffleDeck(createDeck());
-  const playerIds = state.players.map((p) => p.id);
-  const { playerHands, communityCards } = dealCards(deck, playerIds, state.handsPerPlayer);
+  const mode = getGameModeDefinition(state.modeId);
+  state.modeId = mode.id;
+  const maxHands = getMaxHandsPerPlayerForMode(mode.id, state.players.length);
+  state.handsPerPlayer = Math.min(state.handsPerPlayer, maxHands);
 
-  const hands: Hand[] = [];
-  for (const playerId of playerIds) {
-    for (let h = 0; h < state.handsPerPlayer; h++) {
-      hands.push({
-        id: `${playerId}-${h}`,
-        playerId,
-        cards: playerHands[playerId][h],
-        flipped: false,
-      });
-    }
-  }
+  const deck = shuffleDeck(createDeckForMode(mode.id));
+  const playerIds = state.players.map((p) => p.id);
+  const { hands, communityCards } = dealCardsForMode(deck, playerIds, state.handsPerPlayer, mode.id);
 
   const now = Date.now();
   state.hands = hands;

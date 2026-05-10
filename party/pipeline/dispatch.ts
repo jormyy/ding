@@ -18,7 +18,7 @@ import type { ServerGameState } from "../state";
 import type { HandlerCtx, HandlerResult } from "../handlers/types";
 import { dingReducers } from "../../src/modes/ding/reducers";
 import { runInvariants } from "../state/invariants";
-import { COMMUNITY_CARDS_FOR_PHASE } from "../../src/lib/constants";
+import { visibleCommunityCardCount } from "../../src/lib/gameModes";
 
 /** How many bot action log entries to keep on the server. */
 export const BOT_ACTION_LOG_CAP = 100;
@@ -89,7 +89,7 @@ function createBotActionLogEntry(
   rankingBefore: (string | null)[],
   acquireRequestsBefore: BotActionLogEntry["acquireRequestsBefore"]
 ): BotActionLogEntry {
-  const count = COMMUNITY_CARDS_FOR_PHASE[state.phase];
+  const count = visibleCommunityCardCount(state.modeId, state.phase);
   const actorHoleCards: Record<string, Card[]> = {};
   for (const hand of state.hands) {
     if (hand.playerId !== player.id) continue;

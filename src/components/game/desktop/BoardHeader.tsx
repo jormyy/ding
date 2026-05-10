@@ -8,6 +8,7 @@
 import { memo } from "react";
 import type { GameState } from "@/lib/types";
 import { PHASE_LABELS, PHASE_STEP_LABELS } from "@/lib/constants";
+import { getGameModeDefinition } from "@/lib/gameModes";
 import GameTimer from "../GameTimer";
 
 export interface BoardHeaderProps {
@@ -32,6 +33,7 @@ function BoardHeaderImpl({
   const currentPhaseIdx = PHASE_LABELS.indexOf(
     gameState.phase as typeof PHASE_LABELS[number]
   );
+  const mode = getGameModeDefinition(gameState.modeId);
   return (
     <div
       className="flex-none flex items-center px-4 gap-3"
@@ -55,6 +57,17 @@ function BoardHeaderImpl({
           Room {code}
         </span>
       )}
+      <span
+        className="hidden md:block max-w-28 truncate rounded-full px-2 py-0.5 text-[10px] font-black uppercase"
+        style={{
+          color: "#f5e6b8",
+          background: "rgba(255,255,255,0.06)",
+          border: "1px solid rgba(255,255,255,0.08)",
+        }}
+        title={mode.detail}
+      >
+        {mode.shortName}
+      </span>
       <div className="flex-1 flex items-center justify-center gap-0">
         {PHASE_STEP_LABELS.map((label, i) => {
           const done = i < currentPhaseIdx;

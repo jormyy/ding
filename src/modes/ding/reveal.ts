@@ -5,7 +5,10 @@
  */
 
 import type { Card, Hand } from "../../lib/types";
-import { dingEvaluator } from "./evaluator";
+import {
+  computeShowdownForMode,
+  countInversionsForRanks,
+} from "../../lib/gameModeShowdown";
 
 /**
  * Index in `ranking` of the next hand to be flipped.
@@ -32,10 +35,10 @@ export function nextFlipHandId(
 export function computeReveal(
   ranking: (string | null)[],
   hands: Hand[],
-  board: Card[]
+  board: Card[],
+  modeId?: string
 ): { score: number; trueRanking: string[]; trueRanks: Record<string, number> } {
-  const trueRanking = dingEvaluator.trueRanking(hands, board);
-  const trueRanks = dingEvaluator.trueRanks(trueRanking, hands, board);
-  const score = dingEvaluator.countInversions(ranking, trueRanking, hands, board);
-  return { score, trueRanking, trueRanks };
+  const showdown = computeShowdownForMode(modeId, hands, board);
+  const score = countInversionsForRanks(ranking, showdown.trueRanks);
+  return { score, trueRanking: showdown.trueRanking, trueRanks: showdown.trueRanks };
 }
