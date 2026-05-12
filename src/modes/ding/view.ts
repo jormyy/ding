@@ -7,7 +7,7 @@
 
 import { registerMode, type GameModeView } from "../registry";
 import { dingPhases } from "./phases";
-import { listGameModes } from "../../lib/gameModes";
+import { listGameModes } from "../../lib/gameMode";
 
 function buildView(id: string): GameModeView {
   return {

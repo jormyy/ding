@@ -5,7 +5,7 @@ import { CardFace } from "../../CardFace";
 import VolumeControl from "../../VolumeControl";
 import CustomOutputButton from "../../CustomOutputButton";
 import { D } from "@/lib/theme";
-import { getGameModeDefinition } from "@/lib/gameModes";
+import { getGameModeDefinition } from "@/lib/gameMode";
 
 interface RevealHeaderProps {
   gameState: GameState;

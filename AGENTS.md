@@ -11,17 +11,14 @@ npm run dev          # Next.js (:3000) + PartyKit (:1999)
 
 Open http://localhost:3000. The PartyKit dev server runs on :1999 automatically.
 
-```bash
-npm test             # Vitest watch mode
-npm run test:run     # One-shot (for CI)
-```
+There are no unit tests or CI test workflows in this repo. Validate changes by running the dev server and the agent-browser smoke flow.
 
 ## Tech Constraints
 
 - **Next.js 14 App Router**. All pages are Server Components by default. Any client-side interactivity must use `"use client"`.
 - **PartyKit server** runs on a separate port. The client connects via `PartySocket` using `NEXT_PUBLIC_PARTYKIT_HOST`.
-- **No database**. All game state lives in-memory on the PartyKit server, persisted via `room.storage` for hibernation. Chat history is capped at 100 messages; the bot action log is capped at 100 entries.
-- **TypeScript strict + noUnusedLocals + noUnusedParameters + noImplicitReturns**. Tests are excluded from typecheck via `tsconfig.json`'s `exclude`.
+- **No database**. All game state lives in-memory on the PartyKit server, persisted via `room.storage` for hibernation. Chat history is capped at 100 messages.
+- **TypeScript strict + noUnusedLocals + noUnusedParameters + noImplicitReturns**.
 
 ## Project Conventions
 
@@ -31,15 +28,13 @@ npm run test:run     # One-shot (for CI)
 - `src/components/` — Mode-agnostic React components (chrome, shells, dispatch).
 - `src/contexts/` — React contexts (e.g. `GameSession.tsx` for socket lifecycle + identity).
 - `src/hooks/` — Custom hooks that compose state + side effects.
-- `src/lib/` — Pure functions, types, constants, AI, and the `gameMode` contract. No React imports.
-- `src/modes/<id>/` — Per-mode implementation: phases, reducers, evaluator, scaler, reveal helpers, view registration. Adding a second mode lands here.
+- `src/lib/` — Pure functions, types, constants, AI, and the `gameMode/` subsystem (contract + catalogue + deal + showdown + visibility/deck helpers, all under one barrel `@/lib/gameMode`). No React imports.
+- `src/modes/ding/` — Ding's mode implementation: phases, reducers, evaluator, scaler, reveal helpers, view registration.
 - `src/modes/registry.ts` — Client-side mode registry consulted by `GameModeRouter`.
 - `party/` — Server-only code. Must not import React or browser APIs.
 - `party/pipeline/dispatch.ts` — The single funnel for state mutations.
 - `party/server/` — Extracted server modules (ConnectionManager, RoomStorage, AlarmScheduler, LobbySweeper).
 - `party/state/` — Invariants + state migration (`STATE_VERSION`, `migrateState`).
-- `tests/unit/` — Co-located by feature area. Excluded from production typecheck.
-- `scripts/` — Standalone Node scripts using `tsx`. Shared harness in `scripts/lib/harness.ts`.
 
 ### Naming
 
@@ -48,7 +43,7 @@ npm run test:run     # One-shot (for CI)
 - Reducers: `camelCase.ts` in `src/modes/ding/reducers/`, exported as `reduce<MessageType>` (e.g. `reduceMove`); registered in `dingReducers` table
 - Server modules: `camelCase.ts` in `party/server/` exporting a class or named functions
 - AI modules: domain-named (`belief.ts`, `ev.ts`, `range.ts`)
-- Types: PascalCase, exported from `src/lib/types.ts` (cross-wire types) or `party/types.ts` (server-only)
+- Types: PascalCase, exported from `src/lib/types.ts` (cross-wire types). Mode-data types live in `src/lib/gameMode/types.ts`.
 
 ### State Mutation Rules
 
@@ -62,7 +57,7 @@ npm run test:run     # One-shot (for CI)
 { kind: "broadcast-close-self" }
 ```
 
-The dispatcher (`party/pipeline/dispatch.ts`) routes through `dingReducers`, bumps `state.gen` on every non-`ignore` result, appends a bot-action log entry for bot-originated actions (capped at `BOT_ACTION_LOG_CAP = 100`), and runs invariants on every applied action.
+The dispatcher (`party/pipeline/dispatch.ts`) routes through `dingReducers`, bumps `state.gen` on every non-`ignore` result, and runs invariants on every applied action.
 
 Never deep-clone `ServerGameState` outside masking (`buildClientState` clones what it needs to strip).
 
@@ -78,10 +73,8 @@ Client action
   → dispatchAction({state, player, msg, handlerCtx, sender, isBot})
         ├─ dingReducers[msg.type](state, player, msg, ctx)   // mutates state in place
         ├─ if changed: state.gen++
-        ├─ if isBot:   append BotActionLogEntry (cap 100)
         └─ if changed: runInvariants(state)
   → broadcast()
-        ├─ auditBotActionLog(state)        // when score is computed
         ├─ applyRoundTimerIfExpired()      // server-side timer enforcement
         ├─ MaskBroadcaster.broadcast()     // per-player JSON byte-compare
         ├─ botController.notifyStateChanged()
@@ -237,30 +230,17 @@ Key levers:
 - Flop: 0.40
 - Preflop: 0 (preflop placements do not constrain teammate ranges)
 
-### Running Simulations
+### Validating Bot Behavior
 
-```bash
-# Benchmark 50 games, 5 bots, 4 hands each
-npx tsx scripts/simulate.ts --games 50 --bots 5 --hands 4
-
-# Quick smoke test
-npx tsx scripts/simulateFast.ts --games 10 --bots 3 --hands 2
-
-# Capture / compare AI baseline (gate around AI refactors)
-npx tsx scripts/aiParity.ts --capture --out tmp/ai-baseline.json --games 100
-npx tsx scripts/aiParity.ts --compare --in  tmp/ai-baseline.json --games 100
-```
-
-`aiParity` compares aggregate metrics (win rate, median inversions, accept rate, per-archetype win rate) within tolerance. Tolerances are loose today (5pp on rates, ±2 on median inversions) because the harness is unseeded; tighten by seeding `randomTraits()` and the deck shuffler.
-
-Watch for in any sim:
-- Average inversion count (lower is better)
-- Average phase duration (too fast = bots aren't trading enough)
-- Bot-to-bot trade acceptance rate
+The offline simulator + parity harness has been removed. To validate bot behavior, run the dev server (`npm run dev`), open a room in the browser, add bots, and play hands through to reveal. The agent-browser skill can automate this for repeatable smoke runs.
 
 ## Common Tasks
 
 ### Adding a New GameMode
+
+Most mode variants in the 200-mode catalogue are configuration entries in `src/lib/gameMode/catalog.ts` and need no per-mode code. Add a new `DingGameModeDefinition` to that array and the engine handles it through the shared `ding` mode runtime.
+
+For a mode with genuinely new runtime behavior:
 
 1. Create `src/modes/<id>/index.ts` exporting the mode's public surface (evaluator, scaler, phases, reducers)
 2. Implement `GameMode<S, A>` from `src/lib/gameMode/types.ts`
@@ -286,7 +266,6 @@ Watch for in any sim:
 4. Register the reducer in `dingReducers` (`src/modes/ding/reducers/index.ts`)
 5. Optional: add a typed factory in `src/lib/clientMsg.ts`
 6. Add UI trigger in components/hooks
-7. Add tests in `tests/unit/` if logic is non-trivial
 
 ### Adding a New Server Message Type
 
@@ -310,65 +289,13 @@ When the persisted state shape changes incompatibly:
 2. Add a case to `migrateState` that converts the previous version to the new shape
 3. Older blobs forward-migrate on load; rooms persisted with a future version refuse to load (start fresh)
 
-## Testing Guidelines
-
-### Unit Test Patterns
-
-```ts
-import { describe, it, expect } from 'vitest'
-import { myFunction } from '../../src/lib/myModule'
-
-describe('myFunction', () => {
-  it('handles the happy path', () => {
-    expect(myFunction(input)).toBe(expected)
-  })
-
-  it('handles edge case', () => {
-    expect(myFunction(edgeCase)).toBe(something)
-  })
-})
-```
-
-### AI Test Patterns
-
-When testing bot behavior, construct a `GameState` and call `decideAction()` directly:
-
-```ts
-import { decideAction, newBotMemo } from '../../src/lib/ai/strategy'
-import { randomTraits } from '../../src/lib/ai/personality'
-
-const state = { /* ...minimal GameState... */ }
-const { traits } = randomTraits()
-const memo = newBotMemo()
-const action = decideAction(state, 'bot-1', traits, memo)
-```
-
-Use `fastTickAll()` in `BotController` for integration-style bot tests without timers.
-
-### Reducer / Handler Test Patterns
-
-Import the reducer (or underlying handler) and pass a minimal `ServerGameState`:
-
-```ts
-import { reduceMove } from '../../src/modes/ding/reducers/move'
-// or directly:
-import { move } from '../../party/handlers/ranking'
-
-const state = createInitialState()
-// ...set up hands, ranking, players...
-const result = reduceMove(state, player, { type: 'move', handId: 'p1-0', toIndex: 0 }, ctx)
-expect(result.kind).toBe('broadcast')
-```
-
 ## Deployment Checklist
 
 Before deploying:
 
 - [ ] `npm run build` passes
-- [ ] `npm run test:run` passes
 - [ ] `npx tsc --noEmit` passes (catches strictness regressions)
-- [ ] 200-mode catalogue canary: sampled agent-browser smoke over 5 green modes passes through deal/preflop/flop/turn/river/reveal, including one deal-choice mode, one visibility mode, one event mode, one wild/identity mode, and one insanity mode. Capture screenshots under `sim/screens/<mode-id>/`.
-- [ ] simulateFast canary is informational only while bot repairs remain out of scope: `npx tsx scripts/simulateFast.ts --games 50 --bots 4 --hands 2` (do not block catalogue deployment on bot-only failures without a human-playthrough reproduction)
+- [ ] Agent-browser smoke: create a room, add bots, play one full hand through to reveal. Repeat on at least one non-default catalogue mode.
 - [ ] PartyKit host is configured in production environment (`NEXT_PUBLIC_PARTYKIT_HOST`)
 - [ ] `partykit.json` `name` field is correct for production
 
@@ -388,7 +315,6 @@ Check `BotController` — if `connections.size === 0`, the controller is dispose
 
 **Memory growth in long-running rooms:**
 - Chat is capped at 100 messages
-- Bot action log is capped at 100 entries (`BOT_ACTION_LOG_CAP` in `dispatch.ts`)
 - `MaskBroadcaster.lastJsonByPlayer` shrinks on disconnect via `forgetPlayerInBroadcaster`
 - `rankHistory` grows by one array per phase per hand — for 22 hands × 4 phases = 88 numbers max
 - Scaler caches (`percentileCache`, `absStrengthCache`) are bounded by `MAX_CACHE_ENTRIES = 256` with FIFO eviction

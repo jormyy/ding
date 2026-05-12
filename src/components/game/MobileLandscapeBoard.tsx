@@ -3,7 +3,7 @@
 import type { GameState } from "@/lib/types";
 import type { UseBoardReturn } from "@/hooks/useGameBoard";
 import { PHASE_LABELS } from "@/lib/constants";
-import { getGameModeDefinition } from "@/lib/gameModes";
+import { getGameModeDefinition } from "@/lib/gameMode";
 import PokerTable from "../PokerTable";
 import ChatPanel from "../ChatPanel";
 import ReadyButton from "../ReadyButton";

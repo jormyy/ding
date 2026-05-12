@@ -8,7 +8,7 @@
 import { memo } from "react";
 import type { GameState } from "@/lib/types";
 import { PHASES_META } from "@/lib/constants";
-import { getGameModeDefinition } from "@/lib/gameModes";
+import { getGameModeDefinition } from "@/lib/gameMode";
 import GameTimer from "../GameTimer";
 
 export interface BoardHeaderProps {

@@ -8,7 +8,7 @@ import type { Card, Hand } from "../../lib/types";
 import {
   computeShowdownForMode,
   countInversionsForRanks,
-} from "../../lib/gameModeShowdown";
+} from "../../lib/gameMode";
 
 /**
  * Index in `ranking` of the next hand to be flipped.

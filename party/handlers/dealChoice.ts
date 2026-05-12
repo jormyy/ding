@@ -1,5 +1,4 @@
-import { getGameModeDefinition } from "../../src/lib/gameModes";
-import { keepBestCards } from "../../src/lib/gameModeDeal";
+import { getGameModeDefinition, keepBestCards } from "../../src/lib/gameMode";
 import type { Card } from "../../src/lib/types";
 import type { Handler } from "./types";
 

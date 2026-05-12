@@ -8,7 +8,7 @@ import {
   getMaxHandsPerPlayerForMode,
   listGameModes,
   type DingGameModeDefinition,
-} from "@/lib/gameModes";
+} from "@/lib/gameMode";
 import { D } from "@/lib/theme";
 
 interface LobbyProps {

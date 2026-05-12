@@ -12,7 +12,6 @@ import RevealHeader from "./reveal/RevealHeader";
 import RevealRow from "./reveal/RevealRow";
 import AccuracySidebar from "./reveal/AccuracySidebar";
 import InversionsGraph from "./reveal/InversionsGraph";
-import BotActionAuditPanel from "./reveal/BotActionAuditPanel";
 
 interface RevealResultsProps {
   gameState: GameState;
@@ -107,7 +106,6 @@ export default function RevealResults({
         <div className="flex flex-col gap-3 min-h-0 overflow-hidden">
           <InversionsGraph data={inversionsData} />
           <AccuracySidebar ranked={ranked} best={best} worst={worst} maxOff={maxOff} myEntry={myEntry} />
-          <BotActionAuditPanel gameState={gameState} />
         </div>
 
         {mobileChatOpen && (

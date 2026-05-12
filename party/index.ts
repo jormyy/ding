@@ -11,13 +11,12 @@ import {
 } from "./state";
 import type { HandlerCtx } from "./handlers/types";
 import { advancePhaseIfAllReady } from "./handlers/lifecycle";
-import { auditBotActionLog } from "./botAudit";
 import { ConnectionManager } from "./server/connectionManager";
 import { AlarmScheduler } from "./server/alarmScheduler";
 import { sweepLobbyGhosts } from "./server/lobbySweeper";
 import { RoomStorage } from "./server/roomStorage";
 import { dispatchAction } from "./pipeline/dispatch";
-import { getMaxHandsPerPlayerForMode } from "../src/lib/gameModes";
+import { getMaxHandsPerPlayerForMode } from "../src/lib/gameMode";
 
 export { buildClientState } from "./state";
 export type { ServerGameState } from "./state";
@@ -29,8 +28,7 @@ export type { ServerGameState } from "./state";
  *   - ConnectionManager owns the WebSocket map.
  *   - RoomStorage handles versioned persistence + migration.
  *   - AlarmScheduler computes & dirty-bit-gates the next DO alarm.
- *   - dispatchAction (pipeline) wraps every action: invariants, gen bump,
- *     bot log append.
+ *   - dispatchAction (pipeline) wraps every action: invariants, gen bump.
  *   - BotController drives AI players (unchanged).
  *
  * The handler dispatch table is reused unchanged; reducer migration
@@ -161,9 +159,6 @@ export default class DingServer implements Party.Server {
    * in-flight promises until they resolve.
    */
   private broadcast(): void {
-    if (this.state.score !== null && this.state.botActionLog.some((entry) => !entry.audit)) {
-      auditBotActionLog(this.state);
-    }
     // Enforce the round timer server-side on every state change so bots
     // get auto-readied without waiting for the alarm to fire.
     this.applyRoundTimerIfExpired();
@@ -342,10 +337,6 @@ export default class DingServer implements Party.Server {
 
   /**
    * Validate and dispatch a player action through the pipeline.
-   *
-   * Bot actions go through dispatchAction with `isBot=true` so
-   * the dispatcher logs them with hole-card snapshots; human actions skip
-   * the bot log path.
    */
   private handlePlayerAction(
     player: Player,
@@ -365,7 +356,7 @@ export default class DingServer implements Party.Server {
         this.alarmScheduler.invalidate();
       },
     };
-    const { result, botLogEntry } = dispatchAction({
+    const { result } = dispatchAction({
       state: this.state,
       player,
       msg,
@@ -373,10 +364,8 @@ export default class DingServer implements Party.Server {
       sender,
       isBot,
     });
-    const loggedBotAction = !!botLogEntry;
     switch (result.kind) {
       case "ignore":
-        if (loggedBotAction) this.broadcast();
         break;
       case "broadcast":
         this.broadcast();

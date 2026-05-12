@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { ClientMessage, GameState, Hand } from "@/lib/types";
-import { getGameModeDefinition } from "@/lib/gameModes";
+import { getGameModeDefinition } from "@/lib/gameMode";
 import { D } from "@/lib/theme";
 import { CardFace } from "./CardFace";
 

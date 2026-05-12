@@ -1,6 +1,5 @@
 import type * as Party from "partykit/server";
 import type {
-  BotActionLogEntry,
   Card,
   ChaosEvent,
   DealChoiceProgress,
@@ -18,7 +17,7 @@ import {
   visibleHoleCardDetail,
   visibleHoleCardIndexes,
   type HoleCardVisibilityDetail,
-} from "../src/lib/gameModes";
+} from "../src/lib/gameMode";
 
 /**
  * Server-side game state. Extends the client-visible `GameState` with
@@ -76,7 +75,6 @@ export function createInitialState(): ServerGameState {
     chatMessages: [],
     dingLog: [],
     fuckoffLog: [],
-    botActionLog: [],
     pendingChaosEvents: [],
     gen: 0,
   };
@@ -136,22 +134,6 @@ function selectVisibleHoleCards(cards: Card[], count: number, indexes?: readonly
   return cards.slice(0, count);
 }
 
-function maskBotActionLogForPlayer(
-  entries: BotActionLogEntry[],
-  playerId: string,
-  phase: Phase
-): BotActionLogEntry[] {
-  const showAllHoleCards = phase === "reveal";
-  return entries.map((entry) => {
-    if (showAllHoleCards || entry.playerId === playerId) return entry;
-    const actorHoleCards: Record<string, Card[]> = {};
-    for (const handId of Object.keys(entry.actorHoleCards)) {
-      actorHoleCards[handId] = [];
-    }
-    return { ...entry, actorHoleCards };
-  });
-}
-
 function maskDealChoicesForPlayer(
   dealChoices: Record<string, DealChoiceProgress>,
   hands: Hand[],
@@ -205,7 +187,6 @@ export function buildClientState(state: ServerGameState, playerId: string): Game
     chatMessages: state.chatMessages,
     dingLog: state.dingLog,
     fuckoffLog: state.fuckoffLog,
-    botActionLog: maskBotActionLogForPlayer(state.botActionLog, playerId, state.phase),
   };
 }
 

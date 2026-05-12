@@ -1,4 +1,4 @@
-import { getGameModeDefinition, type PhaseEffectId } from "../../src/lib/gameModes";
+import { getGameModeDefinition, type PhaseEffectId } from "../../src/lib/gameMode";
 import type { Card, ChaosEvent, Phase, Rank, Suit } from "../../src/lib/types";
 import type { ServerGameState } from "../state";
 

@@ -185,8 +185,6 @@ export type GameState = {
   dingLog: SocialSignal[];
   /** Recent fuckoff events, newest last. Capped server-side at ~20. */
   fuckoffLog: SocialSignal[];
-  /** Ordered bot action log. Opponent hole cards are masked until reveal. */
-  botActionLog: BotActionLogEntry[];
 };
 
 /** The three kinds of chip moves between players. */
@@ -241,13 +239,6 @@ export type ChaosEventAction = {
   event: ChaosEventType;
   affected: string[];
 };
-
-// BotActionLogEntry / BotActionAudit are server-owned concepts (the server is
-// the only producer; clients consume them read-only via the broadcast). Their
-// canonical definitions live in `../../party/types.ts`; we re-export here for
-// backwards-compatible `@/lib/types` imports from client code.
-import type { BotActionLogEntry, BotActionAudit } from "../../party/types";
-export type { BotActionLogEntry, BotActionAudit };
 
 /**
  * All messages sent from the client to the PartyKit server.

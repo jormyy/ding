@@ -27,7 +27,6 @@ Open http://localhost:3000, share the 6-character room code, ready up, play. Up 
 | Multiplayer  | [PartyKit](https://www.partykit.io/) (WebSocket server)   |
 | Hand eval    | [pokersolver](https://github.com/goldfire/pokersolver)    |
 | Styling      | Tailwind CSS                                              |
-| Tests        | Vitest                                                    |
 
 ## Architecture in one paragraph
 
@@ -41,28 +40,23 @@ The client mounts a `GameSessionProvider` (socket lifecycle + identity + notific
 party/        PartyKit server (orchestrator + pipeline + state + handlers)
 src/app/      Next.js App Router pages
 src/components/, src/contexts/, src/hooks/   UI + hooks
-src/lib/      Shared types, constants, design tokens, AI, GameMode contract
+src/lib/      Shared types, constants, design tokens, AI, gameMode/ subsystem
 src/modes/    Per-mode implementations (ding/ today)
-tests/        Vitest unit tests
-scripts/      Headless simulation + benchmarking harnesses
 ```
 
 ## Common commands
 
 ```bash
-npm run dev                                          # both dev servers
-npm run build                                        # production build
-npm run test:run                                     # tests once
-npx tsx scripts/simulateFast.ts --games 50 --bots 4  # bot simulation
-npm run party:deploy                                 # deploy PartyKit
+npm run dev          # both dev servers
+npm run build        # production build
+npm run party:deploy # deploy PartyKit
 ```
 
 ## Where to look next
 
 - **`AGENTS.md`** — full developer guide: pipeline, GameMode contract, AI internals, common tasks, troubleshooting.
-- **`src/lib/gameMode/types.ts`** — the plugin contract every mode satisfies.
-- **`src/modes/ding/`** — Ding-specific implementation.
-- **`scripts/aiParity.ts`** — capture / compare AI behavior baselines around any AI refactor.
+- **`src/lib/gameMode/`** — the GameMode contract, the 200-mode catalogue, and shared deal/showdown/visibility helpers.
+- **`src/modes/ding/`** — Ding-specific runtime implementation.
 
 ## Deployment
 

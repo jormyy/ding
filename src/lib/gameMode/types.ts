@@ -25,13 +25,207 @@
 
 import type {
   Card,
+  CardMeta,
   ChatMessage,
   ClientMessage,
   Hand,
   Phase,
   Player,
+  Rank,
   SocialSignal,
+  Suit,
 } from "../types";
+
+// -------- Mode data types ------------------------------------------------
+
+export const DEFAULT_GAME_MODE_ID = "ding";
+
+export type DeckKind =
+  | "standard"
+  | "short"
+  | "stripped"
+  | "bottomHalf"
+  | "double"
+  | "triple"
+  | "half"
+  | "pinochle"
+  | "tarot"
+  | "suitHeavy"
+  | "suitLight"
+  | "jokers"
+  | "cursed"
+  | "blessed"
+  | "glitch"
+  | "twoSuited"
+  | "marked"
+  | "trickster";
+
+export type HoleCardVisibilityDetail = "full" | "suit" | "rank" | "color" | "hidden";
+
+export type PublicHoleCardSelection = "first" | "highest" | "lowest";
+
+export type ScoreRule =
+  | "high"
+  | "lowball"
+  | "flush"
+  | "straight"
+  | "pairs"
+  | "red"
+  | "black";
+
+export type DealConstraint =
+  | "pocketPair"
+  | "sharedFirstCard"
+  | "differentSuits"
+  | "sameSuit"
+  | "connectedRanks"
+  | "gappedRanks"
+  | "polarRanks"
+  | "lowRanks"
+  | "highRanks";
+
+export interface GameModeDealRule {
+  /** Cards consumed per hand before any automatic keep/discard rule. */
+  holeCards: number;
+  /** Cards kept in the hand after deal. Omitted means keep every hole card. */
+  keepCards?: number;
+  /** Player-driven deal-time keep selection. */
+  dealChoice?: {
+    dealtCards: number;
+    keepCards: number;
+    selectionPhase: boolean;
+    /** Allows one full-hand redraw during deal choice before locking. */
+    mulligan?: boolean;
+    /** Selects one card to pass left before preflop. */
+    tradeUp?: boolean;
+    /** Keeps one local card and inherits the right neighbor's discarded card. */
+    inheritance?: boolean;
+  };
+  /** Cards from each hand shown to every player before reveal. */
+  publicCards?: number;
+  /** Which hole cards become public when publicCards is set. Defaults to first dealt. */
+  publicCardSelection?: PublicHoleCardSelection;
+  /** Cards from each hand shown to every player by phase. Overrides publicCards when set. */
+  visibleHoleCards?: Partial<Record<Phase, number>>;
+  /** Which parts of visible hole cards are shown. Defaults to full card identity. */
+  visibleHoleCardDetail?: HoleCardVisibilityDetail | Partial<Record<Phase, HoleCardVisibilityDetail>>;
+  /** Optional explicit hole-card indexes to expose by phase. Defaults to the first N cards. */
+  visibleHoleCardIndexes?: Partial<Record<Phase, number[]>>;
+  /** Total community cards dealt for showdown. */
+  communityCards: number;
+  /** Optional board grouping for modes that score hands against separate boards. */
+  boards?: {
+    count?: number;
+    cardsPerBoard?: number;
+    cardIndexes?: number[][];
+    scoring: "best";
+  };
+  /** Community cards visible in each phase. Reveal always shows all cards. */
+  visibleCommunityCards?: Partial<Record<Phase, number>>;
+  /** Optional canonical scoring prefix when display-only effects add non-scoring board slots. */
+  scoreCommunityCards?: number;
+  /** Which parts of visible community cards are shown before reveal. Defaults to full card identity. */
+  visibleCommunityCardDetail?: Partial<Record<Phase, HoleCardVisibilityDetail>>;
+  /** Per-card overrides for visible community-card display, keyed by community-card index. */
+  visibleCommunityCardDetails?: Partial<Record<Phase, Record<number, HoleCardVisibilityDetail>>>;
+  /** Adds alternate unresolved identities to dealt cards without changing physical card count. */
+  possibleIdentities?: "holes" | "board" | "holesAndBoard";
+  /** Add automatically discarded keepCards to the community board after the regular board. */
+  discardedCardsToCommunity?: boolean;
+  /** Marks the first N kept hole cards in each hand as counterfeit after dealing. */
+  counterfeitHoleCards?: number;
+  /** Deck family to deal from. */
+  deck?: DeckKind;
+  /** Optional constrained hand construction before the board is dealt. */
+  constraint?: DealConstraint;
+}
+
+export type PhaseEffectId =
+  | "randomReplaceVisibleCommunity"
+  | "reverseCommunity"
+  | "mirrorCommunity"
+  | "shuffleCommunity"
+  | "rotateHoleCardsClockwise"
+  | "incrementFirstHolePerHand"
+  | "removeFaceCards"
+  | "removeSevens"
+  | "reassignAllSuits"
+  | "invertAllRanks"
+  | "removeAdjacentToRiver"
+  | "stormSurge"
+  | "scrambleCommunitySuits"
+  | "swapFirstCardsFirstTwoHands"
+  | "removeLastCommunity"
+  | "upgradeHighestHole"
+  | "faceCardsToAces"
+  | "faceCardsToTwos"
+  | "removeOneHolePerHand"
+  | "removeEvenRanks"
+  | "removeFirstHolePerHand"
+  | "shuffleAllHoleCards"
+  | "swapFirstHoleWithFirstCommunity"
+  | "incrementFirstCommunityRank"
+  | "festivalBoostFirstCommunity"
+  | "revertBoardToFlop"
+  | "reverseTableAndBoard"
+  | "singularityAverageFirstTwoHoles"
+  | "firstCommunityAbsorbsSecondSuit"
+  | "convergeSevensToAces"
+  | "rotateHoleRanksAcrossHands"
+  | "removeHighestRankInPlay"
+  | "spreadPlagueToFirstCard"
+  | "rotateFirstHoleCardsClockwise"
+  | "mixHolesWithBurn"
+  | "rotateAllCardPositions"
+  | "incrementAllRanks"
+  | "incrementAllHoleRanks"
+  | "cipherRanksWithRiver"
+  | "staticFlickerFirstCards"
+  | "splitHandsAtReveal"
+  | "schismDeckHighOnly";
+
+export interface DingGameModeDefinition {
+  id: string;
+  name: string;
+  shortName: string;
+  summary: string;
+  detail: string;
+  tags: readonly string[];
+  deal: GameModeDealRule;
+  phaseEffects?: Partial<Record<Phase, readonly PhaseEffectId[]>>;
+  wildCards?: {
+    ranks?: readonly Rank[];
+    suits?: readonly Suit[];
+    metas?: readonly CardMeta[];
+  };
+  excludedRanks?: readonly Rank[];
+  excludedMetas?: readonly CardMeta[];
+  forceRankByMeta?: {
+    first?: CardMeta;
+    last?: CardMeta;
+  };
+  identityResolution?: "bestPossible";
+  infoFeatures?: readonly string[];
+  syntheticPair?: "adjacent" | "spread";
+  rankTransform?: "inverted";
+  suitTransform?: "color";
+  score: ScoreRule;
+}
+
+export const standardDeal: GameModeDealRule = {
+  holeCards: 2,
+  communityCards: 5,
+};
+
+export const baseVisibleCommunity: Record<Phase, number> = {
+  lobby: 0,
+  dealChoice: 0,
+  preflop: 0,
+  flop: 3,
+  turn: 4,
+  river: 5,
+  reveal: 5,
+};
 
 // -------- Base shapes ----------------------------------------------------
 

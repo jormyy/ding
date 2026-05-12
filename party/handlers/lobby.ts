@@ -4,8 +4,9 @@ import {
   getGameModeDefinition,
   getMaxHandsPerPlayerForMode,
   isGameModeId,
-} from "../../src/lib/gameModes";
-import { createDeckForMode, dealCardsForMode } from "../../src/lib/gameModeDeal";
+  createDeckForMode,
+  dealCardsForMode,
+} from "../../src/lib/gameMode";
 import type { Handler, HandlerResult } from "./types";
 import type { DealChoiceProgress } from "../../src/lib/types";
 
@@ -73,7 +74,6 @@ export const start: Handler = (state, player) => {
   state.trueRanking = null;
   state.trueRanks = null;
   state.score = null;
-  state.botActionLog = [];
   state.gameStartedAt = now;
   state.phaseStartedAt = now;
 

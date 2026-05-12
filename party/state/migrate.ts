@@ -13,7 +13,7 @@
  */
 
 import { createInitialState, type ServerGameState } from "../state";
-import { DEFAULT_GAME_MODE_ID, isGameModeId } from "../../src/lib/gameModes";
+import { DEFAULT_GAME_MODE_ID, isGameModeId } from "../../src/lib/gameMode";
 
 export const STATE_VERSION = 1;
 

@@ -27,7 +27,6 @@ import {
   rankingAfterChipMove,
   type ActionScore,
 } from "./ev";
-import type { TraceSink, TraceCandidate } from "./trace";
 import { newPerTickCaches } from "./context";
 // Modifiers / gates / strength helpers live in their decomposed homes; the
 // strategy orchestrator is thin and pulls them in via these imports.
@@ -149,48 +148,12 @@ function deferralWeight(belief: BeliefState, handId: string): number {
 }
 
 
-function reasonFor(c: Candidate): string {
-  switch (c.msg.type) {
-    case "move": {
-      const meta = c.meta as { isUnrankedPlacement?: boolean; anchor?: number; slot?: number; ownStrength?: number } | undefined;
-      const slot = meta?.slot ?? -1;
-      const own = meta?.ownStrength ?? 0.5;
-      if ((slot === 0 && own >= 0.85) || ((meta?.anchor ?? 0) > 0)) return "anchor";
-      return meta?.isUnrankedPlacement ? "place" : "improveSlot";
-    }
-    case "swap": return "swap";
-    case "acceptChipMove": {
-      const meta = c.meta as { blendedDelta?: number; acceptBoost?: number } | undefined;
-      const bd = meta?.blendedDelta ?? 0;
-      if (bd > 0.5) return "acceptHighEV";
-      if (bd >= 0.05) return "accept";
-      return "acceptNeutral";
-    }
-    case "rejectChipMove": {
-      const meta = c.meta as { confidence?: number } | undefined;
-      return (meta?.confidence ?? 1) < 0.4 ? "rejectLowConf" : "reject";
-    }
-    case "proposeChipMove": return "propose";
-    case "cancelChipMove": return "cancel";
-    case "ready": {
-      return "readyAllSet";
-    }
-    case "ding": return "ding";
-    case "fuckoff": return "fuckoff";
-    case "flip": return "flip";
-    default: return c.msg.type;
-  }
-}
-
-
 export function decideAction(
   state: GameState,
   myPlayerId: string,
   traits: Traits,
   memo: BotMemo,
-  opts?: { trace?: TraceSink }
 ): ClientMessage | null {
-  const trace = opts?.trace;
   // Per-tick cache: reused across every scoreAction call within this
   // decideAction so the same handId→strength lookup isn't recomputed N times.
   // Bypassed automatically inside scoreAction when trustOverrides apply.
@@ -199,20 +162,6 @@ export function decideAction(
   if (memo.estimatesPhase !== state.phase) {
     if (state.phase === "reveal" && state.trueRanking) {
       updateSkillFromReveal(memo.belief, state, myPlayerId);
-    }
-    if (trace) {
-      const beliefs: Array<{ handId: string; mean: number; confidence: number }> = [];
-      for (const h of state.hands) {
-        if (h.playerId === myPlayerId) continue;
-        const mean = memo.belief.handStrength.get(h.id);
-        if (mean === undefined) continue;
-        beliefs.push({
-          handId: h.id,
-          mean,
-          confidence: memo.belief.handConfidence.get(h.id) ?? 0,
-        });
-      }
-      trace({ type: "phaseBoundary", phase: state.phase, myPlayerId, beliefs });
     }
     memo.estimates.clear();
     memo.estimatesPhase = state.phase;
@@ -256,59 +205,6 @@ export function decideAction(
   const gamePhases = ["preflop", "flop", "turn", "river"];
   if (!gamePhases.includes(state.phase)) return null;
 
-  // Trace emitter: builds and pushes a DecisionTrace via the optional sink.
-  // Captures `resignation` and the current candidates list lazily via closure.
-  let traceResignation = 0;
-  let traceCandidatesRef: Candidate[] = [];
-  const emitDecision = (
-    picked: ClientMessage,
-    reason: string,
-    pickedIndex: number,
-    pickedMeta?: Record<string, unknown>,
-  ): void => {
-    if (!trace) return;
-    const sorted = [...traceCandidatesRef].sort((a, b) => b.utility - a.utility).slice(0, 5);
-    const candidates: TraceCandidate[] = sorted.map((c) => ({
-      msgType: c.msg.type,
-      utility: c.utility,
-      teamInversionDelta: c.score.teamInversionDelta,
-      confidence: c.score.confidence,
-      meta: c.meta,
-    }));
-    const beliefSnapshot: Array<{ handId: string; mean: number; confidence: number }> = [];
-    for (const h of state.hands) {
-      if (h.playerId === myPlayerId) continue;
-      const mean = memo.belief.handStrength.get(h.id);
-      if (mean === undefined) continue;
-      beliefSnapshot.push({
-        handId: h.id,
-        mean,
-        confidence: memo.belief.handConfidence.get(h.id) ?? 0,
-      });
-    }
-    const myHandsInfo = (state.hands.filter((h) => h.playerId === myPlayerId)).map((h) => ({
-      handId: h.id,
-      ownStrength: memo.estimates.get(h.id) ?? 0.5,
-      slot: state.ranking.indexOf(h.id),
-    }));
-    trace({
-      type: "decision",
-      phase: state.phase,
-      myPlayerId,
-      decisionCount: memo.decisionCount,
-      resignation: traceResignation,
-      candidates,
-      pickedIndex,
-      picked,
-      reason,
-      myHands: myHandsInfo,
-      ranking: state.ranking.slice(),
-      beliefSnapshot,
-      acquireRequests: state.acquireRequests.map((r) => ({ ...r })),
-      pickedMeta,
-    });
-  };
-
   // Strategy guide: wait-and-watch at the start of each ranking phase so
   // teammate chip movement can reveal who improved on the new board.
   const myHandsForDefer = state.hands.filter((h) => h.playerId === myPlayerId);
@@ -343,7 +239,6 @@ export function decideAction(
       if (me && !me.ready) {
         memo.ticksSinceProgress = 0;
         const msg: ClientMessage = { type: "ready", ready: true };
-        emitDecision(msg, "readyOverDecisionCap", 0);
         return msg;
       }
     }
@@ -382,7 +277,6 @@ export function decideAction(
   const resignation = Math.max(0, Math.min(1,
     resignationRaw * (1.2 - 0.4 * traits.conscientiousness - 0.3 * traits.neuroticism - 0.2 * stubbornness)
   ));
-  traceResignation = resignation;
 
   // Effective stubbornness modulated by hand types + cedesEasily quirk.
   const cedesEasily = traits.quirks?.cedesEasily ?? 0;
@@ -841,7 +735,6 @@ export function decideAction(
   }
 
   // === 3. SELECTION ===
-  traceCandidatesRef = candidates;
   if (candidates.length === 0) {
     memo.idleTicks++;
     return null;
@@ -894,8 +787,6 @@ export function decideAction(
   memo.decisionCount++;
   memo.idleTicks = 0;
   commitAction(memo, pick.msg);
-  const pickedIdx = top.indexOf(pick);
-  emitDecision(pick.msg, reasonFor(pick), pickedIdx === -1 ? 0 : pickedIdx, pick.meta);
 
   if (pick.msg.type === "rejectChipMove") {
     memo.recentlyRejected.add(reqKey(pick.msg.initiatorHandId, pick.msg.recipientHandId));
