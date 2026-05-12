@@ -37,9 +37,11 @@ function SeatHandImpl({
   const showOwnFaces = isMe && hand.cards.length > 0;
   const showRevealFaces = isReveal && hand.flipped && hand.cards.length > 0;
   const publicCards = hand.publicCards ?? [];
+  const publicCardHints = hand.publicCardHints ?? [];
   const cardCount = hand.cardCount ?? hand.cards.length;
-  const hiddenBacks = Math.max(0, cardCount - publicCards.length);
-  const shouldShowPublicFaces = !isMe && !showRevealFaces && publicCards.length > 0;
+  const publicDisplayCards = publicCards.length > 0 ? publicCards : publicCardHints;
+  const hiddenBacks = Math.max(0, cardCount - publicDisplayCards.length);
+  const shouldShowPublicFaces = !isMe && !showRevealFaces && publicDisplayCards.length > 0;
   return (
     <div
       className={[
@@ -64,7 +66,7 @@ function SeatHandImpl({
         hand.cards.map((card, i) => <CardFace key={i} card={card} {...cardProps} />)
       ) : shouldShowPublicFaces ? (
         <>
-          {publicCards.map((card, i) => <CardFace key={`public-${i}`} card={card} {...cardProps} />)}
+          {publicDisplayCards.map((card, i) => <CardFace key={`public-${i}`} card={card} {...cardProps} />)}
           {Array.from({ length: hiddenBacks }).map((_, i) => <CardBack key={`hidden-${i}`} {...cardProps} />)}
         </>
       ) : (

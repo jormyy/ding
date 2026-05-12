@@ -5,6 +5,7 @@ import { useGameBoard } from "@/hooks/useGameBoard";
 import PortraitWarning from "./game/PortraitWarning";
 import MobileLandscapeBoard from "./game/MobileLandscapeBoard";
 import DesktopBoard from "./game/DesktopBoard";
+import DealChoiceBoard from "./DealChoiceBoard";
 
 interface GameBoardProps {
   gameState: GameState;
@@ -42,6 +43,17 @@ export default function GameBoard({
   ) : null;
 
   if (board.isPortrait) return <PortraitWarning />;
+
+  if (gameState.phase === "dealChoice") {
+    return (
+      <DealChoiceBoard
+        gameState={gameState}
+        myId={myId}
+        code={code}
+        onSend={onSend}
+      />
+    );
+  }
 
   if (board.isMobileLandscape) {
     return (

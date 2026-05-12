@@ -1,4 +1,5 @@
 import type { Phase } from "../../src/lib/types";
+import type { ChaosEvent } from "../../src/lib/types";
 import { PHASE_ORDER } from "../../src/lib/constants";
 import {
   type ServerGameState,
@@ -10,6 +11,9 @@ import {
 } from "../../src/lib/gameModeShowdown";
 import type { Handler } from "./types";
 import { inGamePhase } from "./types";
+import { applyModePhaseEffects } from "./phaseEffects";
+
+const CHAOS_ACTION_LOG_CAP = 100;
 
 /**
  * If all connected players are ready, advance the phase. Returns true if the
@@ -31,6 +35,8 @@ export function advancePhaseIfAllReady(state: ServerGameState): boolean {
   const currentIndex = PHASE_ORDER.indexOf(state.phase as Phase);
   const nextPhase = PHASE_ORDER[currentIndex + 1];
   state.acquireRequests = [];
+  const chaosEvents = applyModePhaseEffects(state, nextPhase);
+  appendChaosEvents(state, chaosEvents);
 
   if (nextPhase === "reveal") {
     const showdown = computeShowdownForMode(state.modeId, state.hands, state.allCommunityCards);
@@ -50,6 +56,32 @@ export function advancePhaseIfAllReady(state: ServerGameState): boolean {
   for (const p of state.players) p.ready = false;
 
   return true;
+}
+
+function appendChaosEvents(state: ServerGameState, events: readonly ChaosEvent[]): void {
+  if (events.length === 0) return;
+  state.pendingChaosEvents.push(...events);
+  for (const event of events) {
+    state.botActionLog.push({
+      id: `${Date.now()}-chaos-${state.botActionLog.length}`,
+      ts: Date.now(),
+      phaseElapsedMs: state.phaseStartedAt === null ? null : Date.now() - state.phaseStartedAt,
+      phase: event.phase,
+      playerId: "__system__",
+      playerName: "Chaos",
+      action: { type: "chaos-event", event: event.event, affected: event.affected },
+      applied: true,
+      communityCards: state.allCommunityCards.slice(),
+      actorHoleCards: {},
+      rankingBefore: state.ranking.slice(),
+      rankingAfter: state.ranking.slice(),
+      acquireRequestsBefore: [],
+      acquireRequestsAfter: [],
+    });
+  }
+  if (state.botActionLog.length > CHAOS_ACTION_LOG_CAP) {
+    state.botActionLog.splice(0, state.botActionLog.length - CHAOS_ACTION_LOG_CAP);
+  }
 }
 
 export const ready: Handler = (state, player, msg) => {

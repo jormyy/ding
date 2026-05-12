@@ -50,6 +50,11 @@ export default function MobileLandscapeBoard({
     mobileChatOpen, setMobileChatOpen,
   } = board;
   const mode = getGameModeDefinition(gameState.modeId);
+  const phaseLabel = gameState.phase === "dealChoice"
+    ? "choose"
+    : gameState.phase === "preflop"
+    ? "pre-flop"
+    : gameState.phase;
 
   return (
     <div className="h-[100dvh] flex flex-col" style={{ background: "#0a1813" }}>
@@ -70,7 +75,7 @@ export default function MobileLandscapeBoard({
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#2fb873" }}>
-            {gameState.phase === "preflop" ? "pre-flop" : gameState.phase}
+            {phaseLabel}
           </span>
           <GameTimer gameState={gameState} onAutoReady={() => handleReady(true)} />
           {isCreator && (confirmingEnd

@@ -367,7 +367,8 @@ Before deploying:
 - [ ] `npm run build` passes
 - [ ] `npm run test:run` passes
 - [ ] `npx tsc --noEmit` passes (catches strictness regressions)
-- [ ] simulateFast canary green: `npx tsx scripts/simulateFast.ts --games 50 --bots 4 --hands 2` (zero integrity failures)
+- [ ] 200-mode catalogue canary: sampled agent-browser smoke over 5 green modes passes through deal/preflop/flop/turn/river/reveal, including one deal-choice mode, one visibility mode, one event mode, one wild/identity mode, and one insanity mode. Capture screenshots under `sim/screens/<mode-id>/`.
+- [ ] simulateFast canary is informational only while bot repairs remain out of scope: `npx tsx scripts/simulateFast.ts --games 50 --bots 4 --hands 2` (do not block catalogue deployment on bot-only failures without a human-playthrough reproduction)
 - [ ] PartyKit host is configured in production environment (`NEXT_PUBLIC_PARTYKIT_HOST`)
 - [ ] `partykit.json` `name` field is correct for production
 

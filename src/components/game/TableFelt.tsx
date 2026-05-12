@@ -26,7 +26,8 @@ export default function TableFelt({
   const communitySlots = Math.max(5, communityCards.length);
 
   const phaseLabel =
-    phase === "preflop" ? "pre-flop"
+    phase === "dealChoice" ? "choose"
+    : phase === "preflop" ? "pre-flop"
     : phase === "flop" ? "flop"
     : phase === "turn" ? "turn"
     : phase === "river" ? "river"

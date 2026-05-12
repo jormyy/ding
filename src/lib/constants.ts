@@ -21,6 +21,7 @@ export const MAX_SIGNAL_LOG = 20;
 // Phase order (mode-agnostic shape; Ding currently uses all six entries).
 export const PHASE_ORDER: Phase[] = [
   "lobby",
+  "dealChoice",
   "preflop",
   "flop",
   "turn",
@@ -32,6 +33,7 @@ export const PHASE_ORDER: Phase[] = [
 // callers; once mode plumbing lands this becomes mode.phases-derived).
 export const COMMUNITY_CARDS_FOR_PHASE: Record<Phase, number> = {
   lobby: 0,
+  dealChoice: 0,
   preflop: 0,
   flop: 3,
   turn: 4,
@@ -64,6 +66,7 @@ export type PhaseMeta = {
 };
 
 export const PHASES_META: readonly PhaseMeta[] = [
+  { phase: "dealChoice", label: "dealChoice", step: "Choose" },
   { phase: "preflop", label: "preflop", step: "Pre-flop", short: "P", history: "Pre" },
   { phase: "flop", label: "flop", step: "Flop", short: "F", history: "Flop" },
   { phase: "turn", label: "turn", step: "Turn", short: "T", history: "Turn" },
@@ -80,7 +83,7 @@ const _playablePhases = PHASES_META.filter(
 export const PHASE_LABELS = _playablePhases.map((m) => m.label) as readonly string[] as
   readonly ["preflop", "flop", "turn", "river"];
 export const PHASE_STEP_LABELS = PHASES_META.map((m) => m.step) as readonly string[] as
-  readonly ["Pre-flop", "Flop", "Turn", "River", "Reveal"];
+  readonly ["Choose", "Pre-flop", "Flop", "Turn", "River", "Reveal"];
 export const PHASE_SHORT_LABELS = _playablePhases.map((m) => m.short!) as readonly string[] as
   readonly ["P", "F", "T", "R"];
 export const PHASE_HISTORY_LABELS = _playablePhases.map((m) => m.history!) as readonly string[] as

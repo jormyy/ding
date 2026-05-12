@@ -11,7 +11,7 @@
  * for backwards-compatible client imports.
  */
 
-import type { ClientMessage, Card, Phase, AcquireRequest } from "../src/lib/types";
+import type { ClientMessage, Card, Phase, AcquireRequest, ChaosEventAction } from "../src/lib/types";
 
 export type BotActionAudit = {
   verdict: "plausible" | "deviation";
@@ -25,7 +25,7 @@ export type BotActionLogEntry = {
   phase: Phase;
   playerId: string;
   playerName: string;
-  action: ClientMessage;
+  action: ClientMessage | ChaosEventAction;
   applied: boolean;
   communityCards: Card[];
   /**

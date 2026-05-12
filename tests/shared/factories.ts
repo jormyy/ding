@@ -110,6 +110,7 @@ export function createGameState(overrides: Partial<GameState> = {}): GameState {
     communityCards: [],
     ranking: [],
     hands: [],
+    dealChoices: {},
     revealIndex: 0,
     trueRanking: null,
     trueRanks: null,
@@ -133,6 +134,7 @@ export function createServerGameState(
   const gameState = createGameState(overrides) as ServerGameState
   const defaults: Partial<ServerGameState> = {
     allCommunityCards: overrides.communityCards || [],
+    dealDeck: [],
   }
   return { ...gameState, ...defaults }
 }

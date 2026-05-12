@@ -1,0 +1,21 @@
+{
+  "modeId": "smoke-hole",
+  "room": "ERHDTN",
+  "score": 1,
+  "trueRanking": [
+    "canary-erhdtn-bravo-0",
+    "1a736320-af11-42db-9453-793933be4177-0"
+  ],
+  "trueRanks": {
+    "canary-erhdtn-bravo-0": 1,
+    "1a736320-af11-42db-9453-793933be4177-0": 2
+  },
+  "phases": [
+    "preflop",
+    "flop",
+    "turn",
+    "river",
+    "reveal",
+    "reveal-results"
+  ]
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import type { Card } from "@/lib/types";
+import type { DisplayedCard } from "@/lib/types";
 import { getSuitSymbol, getRankDisplay } from "@/lib/utils";
 
 const SUIT_COLOR: Record<string, string> = {
@@ -11,15 +11,26 @@ const SUIT_COLOR: Record<string, string> = {
 };
 
 interface CardFaceProps {
-  card: Card;
+  card: DisplayedCard;
   small?: boolean;
   tiny?: boolean;
 }
 
 export function CardFace({ card, small = false, tiny = false }: CardFaceProps) {
-  const symbol = getSuitSymbol(card.suit);
-  const colorClass = SUIT_COLOR[card.suit] ?? "text-gray-900";
-  const rankDisplay = getRankDisplay(card.rank);
+  const isUncertain = (card.possibleIdentities?.length ?? 0) > 0;
+  const isSpecial = card.meta === "joker" || card.meta === "tarot";
+  const symbol = isSpecial
+    ? card.meta === "joker" ? "J" : "T"
+    : isUncertain ? "?"
+      : card.suit ? getSuitSymbol(card.suit) : card.color === "red" ? "●" : card.color === "black" ? "●" : "?";
+  const colorClass = card.suit
+    ? SUIT_COLOR[card.suit] ?? "text-gray-900"
+    : card.color === "red"
+      ? "text-red-500"
+      : card.color === "black"
+        ? "text-gray-900"
+        : "text-gray-500";
+  const rankDisplay = isSpecial ? "W" : isUncertain ? "?" : card.rank ? getRankDisplay(card.rank) : "?";
 
   if (tiny) {
     return (
@@ -116,4 +127,3 @@ export function CardBack({ small = false, tiny = false }: { small?: boolean; tin
     </div>
   );
 }
-

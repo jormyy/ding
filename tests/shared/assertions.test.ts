@@ -309,6 +309,8 @@ describe('assertValidPhaseTransition', () => {
   it('should allow valid transitions', () => {
     const validTransitions: [Phase, Phase][] = [
       ['lobby', 'preflop'],
+      ['lobby', 'dealChoice'],
+      ['dealChoice', 'preflop'],
       ['preflop', 'flop'],
       ['flop', 'turn'],
       ['turn', 'river'],

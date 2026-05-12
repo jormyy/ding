@@ -20,7 +20,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import PartySocket from "partysocket";
-import type { ClientMessage, GameState, ServerMessage } from "@/lib/types";
+import type { ClientMessage, GameState, Phase, ServerMessage } from "@/lib/types";
 import { NOTIFICATION_FADE_MS } from "@/lib/constants";
 import {
   playDingSound,
@@ -32,6 +32,14 @@ import {
 export interface Notification {
   id: string;
   playerName: string;
+}
+
+export interface ChaosNotification {
+  id: string;
+  event: string;
+  affected: string[];
+  phase: Phase;
+  modeId: string;
 }
 
 export interface GameSessionValue {
@@ -61,6 +69,8 @@ export interface GameSessionValue {
   dingNotifications: Notification[];
   /** Recent fuckoff events to display as toasts. */
   fuckoffNotifications: Notification[];
+  /** Recent phase-effect events to display as toasts. */
+  chaosNotifications: ChaosNotification[];
 }
 
 const Ctx = createContext<GameSessionValue | null>(null);
@@ -100,6 +110,7 @@ export function GameSessionProvider({
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [dingNotifications, setDingNotifications] = useState<Notification[]>([]);
   const [fuckoffNotifications, setFuckoffNotifications] = useState<Notification[]>([]);
+  const [chaosNotifications, setChaosNotifications] = useState<ChaosNotification[]>([]);
 
   const socketRef = useRef<PartySocket | null>(null);
   const myNameRef = useRef<string | null>(null);
@@ -142,6 +153,21 @@ export function GameSessionProvider({
           setFuckoffNotifications((prev) => [...prev, { id, playerName: msg.playerName }]);
           setTimeout(() => {
             setFuckoffNotifications((prev) => prev.filter((n) => n.id !== id));
+          }, NOTIFICATION_FADE_MS);
+        } else if (msg.type === "chaos-event") {
+          const id = crypto.randomUUID();
+          setChaosNotifications((prev) => [
+            ...prev,
+            {
+              id,
+              event: msg.event,
+              affected: msg.affected,
+              phase: msg.phase,
+              modeId: msg.modeId,
+            },
+          ]);
+          setTimeout(() => {
+            setChaosNotifications((prev) => prev.filter((n) => n.id !== id));
           }, NOTIFICATION_FADE_MS);
         } else if (msg.type === "customOutput") {
           if (msg.playerName !== myNameRef.current) {
@@ -218,6 +244,7 @@ export function GameSessionProvider({
     leave,
     dingNotifications,
     fuckoffNotifications,
+    chaosNotifications,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

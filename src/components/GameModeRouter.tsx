@@ -37,6 +37,7 @@ export function GameModeRouter() {
     leave,
     dingNotifications,
     fuckoffNotifications,
+    chaosNotifications,
   } = session;
 
   if (connectionError) return <ConnectionErrorScreen message={connectionError} />;
@@ -62,6 +63,7 @@ export function GameModeRouter() {
         <NotificationToasts
           dingNotifications={dingNotifications}
           fuckoffNotifications={fuckoffNotifications}
+          chaosNotifications={chaosNotifications}
         />
       </>
     );
@@ -69,9 +71,33 @@ export function GameModeRouter() {
 
   if (gameState.phase === "reveal") {
     return (
-      <Reveal
+      <>
+        <Reveal
+          gameState={gameState}
+          myId={myId}
+          onSend={send}
+          onDing={ding}
+          dingNotifications={dingNotifications}
+          onFuckoff={fuckoff}
+          fuckoffNotifications={fuckoffNotifications}
+          isCustom={isCustom}
+          onCustomOutput={customOutput}
+        />
+        <NotificationToasts
+          dingNotifications={[]}
+          fuckoffNotifications={[]}
+          chaosNotifications={chaosNotifications}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <GameBoard
         gameState={gameState}
         myId={myId}
+        code={code}
         onSend={send}
         onDing={ding}
         dingNotifications={dingNotifications}
@@ -80,21 +106,11 @@ export function GameModeRouter() {
         isCustom={isCustom}
         onCustomOutput={customOutput}
       />
-    );
-  }
-
-  return (
-    <GameBoard
-      gameState={gameState}
-      myId={myId}
-      code={code}
-      onSend={send}
-      onDing={ding}
-      dingNotifications={dingNotifications}
-      onFuckoff={fuckoff}
-      fuckoffNotifications={fuckoffNotifications}
-      isCustom={isCustom}
-      onCustomOutput={customOutput}
-    />
+      <NotificationToasts
+        dingNotifications={[]}
+        fuckoffNotifications={[]}
+        chaosNotifications={chaosNotifications}
+      />
+    </>
   );
 }

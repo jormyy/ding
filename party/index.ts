@@ -167,10 +167,18 @@ export default class DingServer implements Party.Server {
     // Enforce the round timer server-side on every state change so bots
     // get auto-readied without waiting for the alarm to fire.
     this.applyRoundTimerIfExpired();
+    this.flushChaosEvents();
     broadcastStateTo(this.room, this.state, this.conns.raw());
     this.botController.notifyStateChanged();
     void this.persistState();
     void this.alarmScheduler.schedule(this.state);
+  }
+
+  private flushChaosEvents(): void {
+    const events = this.state.pendingChaosEvents.splice(0);
+    for (const event of events) {
+      this.room.broadcast(JSON.stringify({ type: "chaos-event", ...event } satisfies ServerMessage));
+    }
   }
 
   private async persistState(): Promise<void> {

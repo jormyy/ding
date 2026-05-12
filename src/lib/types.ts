@@ -17,8 +17,36 @@ export type Rank =
   | "K"
   | "A";
 
+export type CardMeta =
+  | "joker"
+  | "tarot"
+  | "cursed"
+  | "blessed"
+  | "counterfeit"
+  | "glitched"
+  | "twoSuited"
+  | "marked"
+  | "trickster";
+
 /** A single playing card. */
-export type Card = { rank: Rank; suit: Suit };
+export type Card = { rank: Rank; suit: Suit; meta?: CardMeta; possibleIdentities?: Card[] };
+
+export type CardColor = "red" | "black";
+
+/** A card display that may reveal only part of the real card identity. */
+export type DisplayedCard = {
+  rank?: Rank;
+  suit?: Suit;
+  color?: CardColor;
+  meta?: CardMeta;
+  possibleIdentities?: Card[];
+};
+
+export type ModeInfo = {
+  id: string;
+  label: string;
+  value: string;
+};
 
 /**
  * A single hand belonging to a player.
@@ -35,10 +63,29 @@ export type Hand = {
   cardCount?: number;
   /** Cards intentionally visible to everyone before reveal. */
   publicCards?: Card[];
+  /** Partial card identities intentionally visible to everyone before reveal. */
+  publicCardHints?: DisplayedCard[];
   /** Whether this hand has been revealed during the reveal phase. */
   flipped: boolean;
   /** Human-readable made hand name, populated by the server when entering reveal. */
   madeHandName?: string;
+};
+
+export type DealChoiceProgress = {
+  /** Number of cards this hand must keep before ranking starts. */
+  keepCards: number;
+  /** Selected card indexes in the hand's current card order. Masked for non-owners. */
+  selectedIndexes: number[] | null;
+  /** True once the owner has locked a selection. */
+  submitted: boolean;
+  /** True when this hand may redraw its full deal once before locking. */
+  canMulligan?: boolean;
+  /** True once the one-time redraw has been spent. */
+  mulliganUsed?: boolean;
+  /** True when the selected card will be passed to the left neighbor. */
+  tradeUp?: boolean;
+  /** True when the unselected card will be passed left and replaced by the right neighbor's discard. */
+  inheritance?: boolean;
 };
 
 /** A player (human or bot) in the room. */
@@ -69,6 +116,7 @@ export type Player = {
 /** Game phase. */
 export type Phase =
   | "lobby"
+  | "dealChoice"
   | "preflop"
   | "flop"
   | "turn"
@@ -101,6 +149,8 @@ export type GameState = {
   gameStartedAt: number | null;
   /** Community cards revealed so far for this phase. */
   communityCards: Card[];
+  /** Mode-specific public information surfaced by the server. */
+  modeInfo?: ModeInfo[];
   /**
    * Board slots, index 0 = rank 1 (best), index N-1 = rank N (worst).
    * `null` = unclaimed slot.
@@ -108,6 +158,8 @@ export type GameState = {
   ranking: (string | null)[];
   /** All hands in the game. Cards are masked for non-owners. */
   hands: Hand[];
+  /** Deal-time card selections for modes that deal extra cards before preflop. */
+  dealChoices: Record<string, DealChoiceProgress>;
   /**
    * During reveal: how many hands have been flipped so far.
    * Flipping proceeds worst-ranked → best-ranked.
@@ -175,6 +227,21 @@ export type SocialSignal = {
   handId?: string;
 };
 
+export type ChaosEventType = string;
+
+export type ChaosEvent = {
+  event: ChaosEventType;
+  affected: string[];
+  phase: Phase;
+  modeId: string;
+};
+
+export type ChaosEventAction = {
+  type: "chaos-event";
+  event: ChaosEventType;
+  affected: string[];
+};
+
 // BotActionLogEntry / BotActionAudit are server-owned concepts (the server is
 // the only producer; clients consume them read-only via the broadcast). Their
 // canonical definitions live in `../../party/types.ts`; we re-export here for
@@ -190,6 +257,8 @@ export type ClientMessage =
   | { type: "join"; name: string; pid: string }
   | { type: "configure"; handsPerPlayer?: number; gameTimerSeconds?: number; roundTimerSeconds?: number; modeId?: string }
   | { type: "start" }
+  | { type: "chooseDealCards"; handId: string; indexes: number[] }
+  | { type: "mulliganHand"; handId: string }
   | { type: "move"; handId: string; toIndex: number }
   | { type: "swap"; handIdA: string; handIdB: string }
   | { type: "transferOwnChip"; fromHandId: string; toHandId: string }
@@ -217,6 +286,7 @@ export type ClientMessage =
 export type ServerMessage =
   | { type: "state"; state: GameState }
   | { type: "welcome"; playerId: string }
+  | ({ type: "chaos-event" } & ChaosEvent)
   | { type: "ding"; playerName: string }
   | { type: "fuckoff"; playerName: string }
   | { type: "customOutput"; playerName: string; text: string; rate: number; pitch: number; voiceURI?: string }

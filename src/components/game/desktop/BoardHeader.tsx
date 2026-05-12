@@ -7,7 +7,7 @@
 
 import { memo } from "react";
 import type { GameState } from "@/lib/types";
-import { PHASE_LABELS, PHASE_STEP_LABELS } from "@/lib/constants";
+import { PHASES_META } from "@/lib/constants";
 import { getGameModeDefinition } from "@/lib/gameModes";
 import GameTimer from "../GameTimer";
 
@@ -30,9 +30,7 @@ function BoardHeaderImpl({
   onAutoReady,
   onEndGameClick,
 }: BoardHeaderProps) {
-  const currentPhaseIdx = PHASE_LABELS.indexOf(
-    gameState.phase as typeof PHASE_LABELS[number]
-  );
+  const currentPhaseIdx = PHASES_META.findIndex((meta) => meta.phase === gameState.phase);
   const mode = getGameModeDefinition(gameState.modeId);
   return (
     <div
@@ -69,11 +67,11 @@ function BoardHeaderImpl({
         {mode.shortName}
       </span>
       <div className="flex-1 flex items-center justify-center gap-0">
-        {PHASE_STEP_LABELS.map((label, i) => {
+        {PHASES_META.map((meta, i) => {
           const done = i < currentPhaseIdx;
           const active = i === currentPhaseIdx;
           return (
-            <div key={label} className="flex items-center">
+            <div key={meta.phase} className="flex items-center">
               <div
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl transition-colors"
                 style={{ background: active ? "rgba(201,165,74,0.15)" : "transparent" }}
@@ -95,10 +93,10 @@ function BoardHeaderImpl({
                     color: active ? "#f5e6b8" : done ? "#2fb873" : "rgba(255,255,255,0.3)",
                   }}
                 >
-                  {label}
+                  {meta.step}
                 </span>
               </div>
-              {i < PHASE_STEP_LABELS.length - 1 && (
+              {i < PHASES_META.length - 1 && (
                 <div
                   className="w-3 h-px"
                   style={{ background: "rgba(255,255,255,0.08)" }}

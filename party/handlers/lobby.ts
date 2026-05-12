@@ -7,6 +7,7 @@ import {
 } from "../../src/lib/gameModes";
 import { createDeckForMode, dealCardsForMode } from "../../src/lib/gameModeDeal";
 import type { Handler, HandlerResult } from "./types";
+import type { DealChoiceProgress } from "../../src/lib/types";
 
 export const configure: Handler = (state, player, msg) => {
   if (msg.type !== "configure") return { kind: "ignore" };
@@ -56,15 +57,18 @@ export const start: Handler = (state, player) => {
 
   const deck = shuffleDeck(createDeckForMode(mode.id));
   const playerIds = state.players.map((p) => p.id);
-  const { hands, communityCards } = dealCardsForMode(deck, playerIds, state.handsPerPlayer, mode.id);
+  const { hands, communityCards, remainingDeck, burnCards } = dealCardsForMode(deck, playerIds, state.handsPerPlayer, mode.id);
 
   const now = Date.now();
   state.hands = hands;
   state.ranking = Array(hands.length).fill(null);
   state.rankHistory = {};
   state.allCommunityCards = communityCards;
+  state.dealDeck = remainingDeck;
+  state.burnCards = burnCards;
   state.communityCards = [];
-  state.phase = "preflop";
+  state.dealChoices = buildDealChoices(mode.deal.dealChoice, hands);
+  state.phase = Object.keys(state.dealChoices).length > 0 ? "dealChoice" : "preflop";
   state.revealIndex = 0;
   state.trueRanking = null;
   state.trueRanks = null;
@@ -77,6 +81,26 @@ export const start: Handler = (state, player) => {
 
   return { kind: "broadcast" };
 };
+
+function buildDealChoices(
+  dealChoice: ReturnType<typeof getGameModeDefinition>["deal"]["dealChoice"],
+  hands: { id: string }[]
+): Record<string, DealChoiceProgress> {
+  if (!dealChoice?.selectionPhase) return {};
+  const choices: Record<string, DealChoiceProgress> = {};
+  for (const hand of hands) {
+    choices[hand.id] = {
+      keepCards: dealChoice.keepCards,
+      selectedIndexes: null,
+      submitted: false,
+      canMulligan: dealChoice.mulligan,
+      mulliganUsed: false,
+      tradeUp: dealChoice.tradeUp,
+      inheritance: dealChoice.inheritance,
+    };
+  }
+  return choices;
+}
 
 export const kick: Handler = (state, player, msg, ctx): HandlerResult => {
   if (msg.type !== "kick") return { kind: "ignore" };

@@ -2,6 +2,8 @@ import type { Card, Hand, Rank, Suit } from "./types";
 import { getGameModeDefinition, type ScoreRule } from "./gameModes";
 import type { SolvedHand } from "./gameMode/types";
 import { dingEvaluator } from "../modes/ding/evaluator";
+import { Hand as PokerHand } from "pokersolver";
+import { cardToPokersolverStr } from "./utils";
 
 const RANK_VALUE: Record<Rank, number> = {
   "2": 2,
@@ -21,6 +23,25 @@ const RANK_VALUE: Record<Rank, number> = {
 
 const RED_SUITS = new Set<Suit>(["H", "D"]);
 const BLACK_SUITS = new Set<Suit>(["C", "S"]);
+const RANKS: readonly Rank[] = ["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"];
+const SUITS: readonly Suit[] = ["H", "D", "C", "S"];
+const POKER_SUITS = ["h", "d", "c", "s"] as const;
+const INVERTED_RANK: Record<Rank, Rank> = {
+  A: "2",
+  K: "3",
+  Q: "4",
+  J: "5",
+  T: "6",
+  "9": "7",
+  "8": "8",
+  "7": "9",
+  "6": "T",
+  "5": "J",
+  "4": "Q",
+  "3": "K",
+  "2": "A",
+};
+type RawPokerSolved = ReturnType<typeof PokerHand.solve>;
 
 export interface ModeShowdown {
   trueRanking: string[];
@@ -41,15 +62,35 @@ export function computeShowdownForMode(
   const mode = getGameModeDefinition(modeId);
   const mutableHands = hands.slice();
   const mutableBoard = board.slice();
-  const highRanking = dingEvaluator.trueRanking(mutableHands, mutableBoard);
-  const highRanks = dingEvaluator.trueRanks(highRanking, mutableHands, mutableBoard);
-  const solved = dingEvaluator.solveAll(mutableHands, mutableBoard);
+  if (mode.score === "high" && mode.deal.boards?.scoring === "best") {
+    return computeBestBoardHighShowdown(mode.id, mutableHands, mutableBoard);
+  }
+  const scoringBoard = mode.deal.scoreCommunityCards === undefined
+    ? mutableBoard
+    : mutableBoard.slice(0, mode.deal.scoreCommunityCards);
+  const evaluatedHands = filterHandsForMode(mode, mutableHands);
+  const evaluatedBoard = filterCardsForMode(mode, scoringBoard);
+
+  if (
+    mode.score === "high" &&
+    (mode.wildCards || mode.rankTransform || mode.syntheticPair || mode.suitTransform || mode.identityResolution)
+  ) {
+    return computeConfiguredHighShowdown(mode, evaluatedHands, evaluatedBoard);
+  }
+
+  const highRanking = dingEvaluator.trueRanking(evaluatedHands, evaluatedBoard);
+  const highRanks = dingEvaluator.trueRanks(highRanking, evaluatedHands, evaluatedBoard);
+  const solved = dingEvaluator.solveAll(evaluatedHands, evaluatedBoard);
 
   if (mode.score === "high") {
+    const trueRanking = applyMetaRankForces(mode, highRanking, evaluatedHands);
     return {
-      trueRanking: highRanking,
-      trueRanks: highRanks,
-      madeHandNames: describeHighHands(mutableHands, solved),
+      trueRanking,
+      trueRanks: ranksFromOrdered(trueRanking, (a, b) => {
+        return metaForceBucket(mode, a, evaluatedHands) === metaForceBucket(mode, b, evaluatedHands) &&
+          highRanks[a] === highRanks[b];
+      }),
+      madeHandNames: describeHighHands(evaluatedHands, solved),
     };
   }
 
@@ -63,7 +104,7 @@ export function computeShowdownForMode(
       trueRanking,
       trueRanks: ranksFromOrdered(trueRanking, (a, b) => highRanks[a] === highRanks[b]),
       madeHandNames: Object.fromEntries(
-        mutableHands.map((hand) => {
+        evaluatedHands.map((hand) => {
           const high = solved.get(hand.id);
           const description = high ? dingEvaluator.describe(high) : "Incomplete";
           return [hand.id, `Lowball: ${description}`];
@@ -74,10 +115,10 @@ export function computeShowdownForMode(
 
   const ruleScores = new Map<string, RuleScore>();
   for (const hand of mutableHands) {
-    ruleScores.set(hand.id, scoreForRule(mode.score, hand, mutableBoard));
+    ruleScores.set(hand.id, scoreForRule(mode.score, hand, evaluatedBoard));
   }
 
-  const trueRanking = mutableHands
+  const trueRanking = evaluatedHands
     .map((hand) => hand.id)
     .sort((a, b) => {
       const primary = compareScore(ruleScores.get(b)!, ruleScores.get(a)!);
@@ -93,9 +134,379 @@ export function computeShowdownForMode(
       return compareScore(ruleScores.get(a)!, ruleScores.get(b)!) === 0 && highRanks[a] === highRanks[b];
     }),
     madeHandNames: Object.fromEntries(
-      mutableHands.map((hand) => [hand.id, ruleScores.get(hand.id)!.label])
+      evaluatedHands.map((hand) => [hand.id, ruleScores.get(hand.id)!.label])
     ),
   };
+}
+
+function computeConfiguredHighShowdown(
+  mode: ReturnType<typeof getGameModeDefinition>,
+  hands: readonly Hand[],
+  board: readonly Card[]
+): ModeShowdown {
+  const solvedByHand = new Map<string, RawPokerSolved | null>();
+  for (const hand of hands) {
+    solvedByHand.set(hand.id, solveConfiguredHighHand(mode, hand.cards, board));
+  }
+
+  const trueRanking = hands.map((hand) => hand.id).sort((a, b) => {
+    const left = solvedByHand.get(a);
+    const right = solvedByHand.get(b);
+    if (!left && !right) return 0;
+    if (!left) return 1;
+    if (!right) return -1;
+    const winners = PokerHand.winners([left, right]);
+    if (winners.length === 2) return 0;
+    return winners[0] === left ? -1 : 1;
+  });
+
+  const label = mode.wildCards ? "Wild" : mode.identityResolution ? "Identity" : "Inverted";
+  return {
+    trueRanking,
+    trueRanks: ranksFromOrdered(trueRanking, (a, b) => {
+      const left = solvedByHand.get(a);
+      const right = solvedByHand.get(b);
+      if (!left || !right) return left === right;
+      return PokerHand.winners([left, right]).length === 2;
+    }),
+    madeHandNames: Object.fromEntries(
+      hands.map((hand) => {
+        const solved = solvedByHand.get(hand.id);
+        return [hand.id, solved ? `${label}: ${describeRaw(solved)}` : "Incomplete"];
+      })
+    ),
+  };
+}
+
+function solveConfiguredHighHand(
+  mode: ReturnType<typeof getGameModeDefinition>,
+  hole: readonly Card[],
+  board: readonly Card[]
+): RawPokerSolved | null {
+  let best: RawPokerSolved | null = null;
+  for (const identityCards of possibleIdentityVariants(hole.concat(board))) {
+    const solved = solveConfiguredHighCards(mode, identityCards, hole.length);
+    if (!solved) continue;
+    if (!best) {
+      best = solved;
+      continue;
+    }
+    const winners = PokerHand.winners([best, solved]);
+    if (winners.length === 1 && winners[0] === solved) best = solved;
+  }
+  return best;
+}
+
+function solveConfiguredHighCards(
+  mode: ReturnType<typeof getGameModeDefinition>,
+  sourceCards: readonly Card[],
+  holeLength: number
+): RawPokerSolved | null {
+  const cards = addSyntheticPairCards(mode, transformSuitsForMode(mode, sourceCards), holeLength);
+  const wildIndexes = cards
+    .map((card, index) => isWildCard(mode, card) ? index : -1)
+    .filter((index) => index !== -1);
+  let best: RawPokerSolved | null = null;
+  if (wildIndexes.length > 2) {
+    const assigned = wildIndexes.map((_, index) => bestEffortWildCandidate(index));
+    const replaced = cards.map((card, index) => {
+      const assignedIndex = wildIndexes.indexOf(index);
+      return assignedIndex === -1 ? card : assigned[assignedIndex];
+    });
+    const strs = normalizeSolverStrings(replaced.map((card) => cardToModeSolverStr(mode, card)));
+    return strs.length < 5 ? null : PokerHand.solve(strs);
+  }
+
+  const walk = (wildOffset: number, assigned: Card[]) => {
+    if (wildOffset === wildIndexes.length) {
+      const replaced = cards.map((card, index) => {
+        const assignedIndex = wildIndexes.indexOf(index);
+        return assignedIndex === -1 ? card : assigned[assignedIndex];
+      });
+      const strs = normalizeSolverStrings(replaced.map((card) => cardToModeSolverStr(mode, card)));
+      if (strs.length < 5) return;
+      const solved = PokerHand.solve(strs);
+      if (!best) {
+        best = solved;
+        return;
+      }
+      const winners = PokerHand.winners([best, solved]);
+      if (winners.length === 1 && winners[0] === solved) best = solved;
+      return;
+    }
+
+    for (const candidate of standardCandidateCards()) {
+      assigned.push(candidate);
+      walk(wildOffset + 1, assigned);
+      assigned.pop();
+    }
+  };
+
+  walk(0, []);
+  return best;
+}
+
+function possibleIdentityVariants(cards: readonly Card[]): Card[][] {
+  const identityIndexes = cards
+    .map((card, index) => (card.possibleIdentities?.length ?? 0) > 0 ? index : -1)
+    .filter((index) => index !== -1)
+    .slice(0, 8);
+  if (identityIndexes.length === 0) return [cards.map(stripPossibleIdentities)];
+
+  const variants: Card[][] = [];
+  const walk = (offset: number, current: Card[]) => {
+    if (offset === identityIndexes.length) {
+      variants.push(current.map(stripPossibleIdentities));
+      return;
+    }
+    const index = identityIndexes[offset];
+    const identities = cards[index].possibleIdentities ?? [cards[index]];
+    for (const identity of identities) {
+      const next = current.slice();
+      next[index] = identity;
+      walk(offset + 1, next);
+    }
+  };
+
+  walk(0, cards.slice());
+  return variants;
+}
+
+function stripPossibleIdentities(card: Card): Card {
+  const { possibleIdentities: _possibleIdentities, ...rest } = card;
+  return { ...rest };
+}
+
+function isWildCard(mode: ReturnType<typeof getGameModeDefinition>, card: Card): boolean {
+  const wild = mode.wildCards;
+  if (!wild) return false;
+  return Boolean(
+    (card.meta && wild.metas?.includes(card.meta)) ||
+    wild.ranks?.includes(card.rank) ||
+    wild.suits?.includes(card.suit)
+  );
+}
+
+function standardCandidateCards(): Card[] {
+  const out: Card[] = [];
+  for (const suit of SUITS) {
+    for (const rank of RANKS) out.push({ rank, suit });
+  }
+  return out;
+}
+
+function bestEffortWildCandidate(index: number): Card {
+  const ranks: readonly Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+  return { rank: ranks[index % ranks.length], suit: SUITS[index % SUITS.length] };
+}
+
+function cardToModeSolverStr(mode: ReturnType<typeof getGameModeDefinition>, card: Card): string {
+  if (mode.rankTransform !== "inverted") return cardToPokersolverStr(card);
+  return cardToPokersolverStr({ ...card, rank: INVERTED_RANK[card.rank] });
+}
+
+function transformSuitsForMode(mode: ReturnType<typeof getGameModeDefinition>, cards: readonly Card[]): Card[] {
+  if (mode.suitTransform !== "color") return cards.slice();
+  return cards.map((card) => ({
+    ...card,
+    suit: card.suit === "H" || card.suit === "D" ? "H" : "S",
+  }));
+}
+
+function addSyntheticPairCards(
+  mode: ReturnType<typeof getGameModeDefinition>,
+  cards: readonly Card[],
+  holeCount: number
+): Card[] {
+  if (!mode.syntheticPair) return cards.slice();
+  const found = syntheticPairCard(mode.syntheticPair, cards, holeCount);
+  return found ? cards.concat(found) : cards.slice();
+}
+
+function syntheticPairCard(kind: "adjacent" | "spread", cards: readonly Card[], holeCount: number): Card | null {
+  const indexed = cards
+    .map((card, index) => ({ card, originalIndex: index }))
+    .sort((a, b) => RANK_VALUE[a.card.rank] - RANK_VALUE[b.card.rank]);
+  for (let i = indexed.length - 1; i >= 0; i--) {
+    for (let j = 0; j < indexed.length; j++) {
+      if (i === j) continue;
+      if (indexed[i].originalIndex >= holeCount && indexed[j].originalIndex >= holeCount) continue;
+      const left = indexed[i].card;
+      const right = indexed[j].card;
+      const distance = Math.abs(RANK_VALUE[left.rank] - RANK_VALUE[right.rank]);
+      if (kind === "adjacent" && distance === 1) return { ...left, suit: nextSuit(left.suit) };
+      if (kind === "spread" && distance >= 8) return { ...left, suit: nextSuit(left.suit) };
+    }
+  }
+  return null;
+}
+
+function nextSuit(suit: Suit): Suit {
+  const index = SUITS.indexOf(suit);
+  return SUITS[(index + 1) % SUITS.length];
+}
+
+function normalizeSolverStrings(cards: readonly string[]): string[] {
+  const used = new Set<string>();
+  const out: string[] = [];
+  for (const raw of cards) {
+    if (!used.has(raw)) {
+      used.add(raw);
+      out.push(raw);
+      continue;
+    }
+    const rank = raw.slice(0, -1);
+    const replacement = POKER_SUITS
+      .map((suit) => `${rank}${suit}`)
+      .find((candidate) => !used.has(candidate));
+    if (!replacement) continue;
+    used.add(replacement);
+    out.push(replacement);
+  }
+  return out;
+}
+
+function describeRaw(raw: RawPokerSolved): string {
+  const solved = raw as { descr?: string; name?: string };
+  return solved.descr ?? solved.name ?? "";
+}
+
+function filterHandsForMode(
+  mode: ReturnType<typeof getGameModeDefinition>,
+  hands: readonly Hand[]
+): Hand[] {
+  if (!mode.excludedRanks) return hands.slice();
+  return hands.map((hand) => ({
+    ...hand,
+    cards: filterCardsForMode(mode, hand.cards),
+    cardCount: hand.cardCount,
+  }));
+}
+
+function filterCardsForMode(
+  mode: ReturnType<typeof getGameModeDefinition>,
+  cards: readonly Card[]
+): Card[] {
+  const excludedRanks = mode.excludedRanks;
+  const excludedMetas = mode.excludedMetas;
+  if ((!excludedRanks || excludedRanks.length === 0) && (!excludedMetas || excludedMetas.length === 0)) {
+    return cards.slice();
+  }
+  return cards.filter((card) => {
+    if (excludedRanks?.includes(card.rank)) return false;
+    if (card.meta && excludedMetas?.includes(card.meta)) return false;
+    return true;
+  });
+}
+
+function applyMetaRankForces(
+  mode: ReturnType<typeof getGameModeDefinition>,
+  ranking: readonly string[],
+  hands: readonly Hand[]
+): string[] {
+  if (!mode.forceRankByMeta) return ranking.slice();
+  return ranking.slice().sort((a, b) => {
+    const bucketDelta = metaForceBucket(mode, a, hands) - metaForceBucket(mode, b, hands);
+    if (bucketDelta !== 0) return bucketDelta;
+    return ranking.indexOf(a) - ranking.indexOf(b);
+  });
+}
+
+function metaForceBucket(
+  mode: ReturnType<typeof getGameModeDefinition>,
+  handId: string,
+  hands: readonly Hand[]
+): number {
+  const hand = hands.find((candidate) => candidate.id === handId);
+  if (!hand) return 1;
+  if (mode.forceRankByMeta?.first && hand.cards.some((card) => card.meta === mode.forceRankByMeta?.first)) return 0;
+  if (mode.forceRankByMeta?.last && hand.cards.some((card) => card.meta === mode.forceRankByMeta?.last)) return 2;
+  return 1;
+}
+
+function computeBestBoardHighShowdown(
+  modeId: string,
+  hands: readonly Hand[],
+  board: readonly Card[]
+): ModeShowdown {
+  const mode = getGameModeDefinition(modeId);
+  const boards = scoringBoards(board, mode.deal.boards!);
+  const solvedByHand = new Map<string, SolvedHand | null>();
+  const boardIndexByHand = new Map<string, number | null>();
+
+  for (const hand of hands) {
+    let best: SolvedHand | null = null;
+    let bestBoardIndex: number | null = null;
+    boards.forEach((candidateBoard, boardIndex) => {
+      const candidate = dingEvaluator.solveAll([hand], candidateBoard).get(hand.id) ?? null;
+      if (!candidate) return;
+      if (!best) {
+        best = candidate;
+        bestBoardIndex = boardIndex;
+        return;
+      }
+      const winners = PokerHand.winners([rawSolved(best), rawSolved(candidate)]);
+      if (winners.length === 1 && winners[0] === candidate.raw) {
+        best = candidate;
+        bestBoardIndex = boardIndex;
+      }
+    });
+    solvedByHand.set(hand.id, best);
+    boardIndexByHand.set(hand.id, bestBoardIndex);
+  }
+
+  const trueRanking = hands.map((hand) => hand.id).sort((a, b) => {
+    const left = solvedByHand.get(a);
+    const right = solvedByHand.get(b);
+    if (!left && !right) return 0;
+    if (!left) return 1;
+    if (!right) return -1;
+    const winners = PokerHand.winners([rawSolved(left), rawSolved(right)]);
+    if (winners.length === 2) return 0;
+    return winners[0] === left.raw ? -1 : 1;
+  });
+
+  return {
+    trueRanking,
+    trueRanks: ranksFromOrdered(trueRanking, (a, b) => {
+      const left = solvedByHand.get(a);
+      const right = solvedByHand.get(b);
+      if (!left || !right) return left === right;
+      return PokerHand.winners([rawSolved(left), rawSolved(right)]).length === 2;
+    }),
+    madeHandNames: Object.fromEntries(
+      hands.map((hand) => {
+        const solved = solvedByHand.get(hand.id);
+        const boardIndex = boardIndexByHand.get(hand.id);
+        const boardLabel = boardIndex === null || boardIndex === undefined
+          ? ""
+          : ` (Board ${boardIndex + 1})`;
+        return [hand.id, solved ? `${dingEvaluator.describe(solved)}${boardLabel}` : "Incomplete"];
+      })
+    ),
+  };
+}
+
+function rawSolved(solved: SolvedHand): RawPokerSolved {
+  return solved.raw as RawPokerSolved;
+}
+
+function scoringBoards(
+  board: readonly Card[],
+  config: NonNullable<ReturnType<typeof getGameModeDefinition>["deal"]["boards"]>
+): Card[][] {
+  if (config.cardIndexes) {
+    return config.cardIndexes.map((indexes) => indexes.map((index) => board[index]).filter(Boolean));
+  }
+
+  const cardsPerBoard = config.cardsPerBoard ?? 0;
+  const boardCount = config.count ?? 0;
+  const boards: Card[][] = [];
+  for (let boardIndex = 0; boardIndex < boardCount; boardIndex++) {
+    const start = boardIndex * cardsPerBoard;
+    boards.push(board.slice(start, start + cardsPerBoard));
+  }
+  return boards;
 }
 
 export function countInversionsForRanks(

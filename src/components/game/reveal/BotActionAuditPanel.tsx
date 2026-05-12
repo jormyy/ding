@@ -1,14 +1,16 @@
 "use client";
 
-import type { BotActionLogEntry, Card, ClientMessage, GameState } from "@/lib/types";
+import type { BotActionLogEntry, Card, ChaosEventAction, ClientMessage, GameState } from "@/lib/types";
 import { D } from "@/lib/theme";
 
 function cardText(card: Card): string {
   return `${card.rank}${card.suit}`;
 }
 
-function actionText(action: ClientMessage): string {
+function actionText(action: ClientMessage | ChaosEventAction): string {
   switch (action.type) {
+    case "chaos-event":
+      return `chaos ${action.event} affected ${action.affected.join(", ")}`;
     case "move":
       return `placed ${action.handId} at #${action.toIndex + 1}`;
     case "swap":

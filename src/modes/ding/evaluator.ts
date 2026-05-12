@@ -6,7 +6,7 @@
  */
 
 import { Hand as PokerHand } from "pokersolver";
-import type { Card, Hand } from "../../lib/types";
+import type { Card, Hand, Suit } from "../../lib/types";
 import { cardToPokersolverStr } from "../../lib/utils";
 import type {
   HandEvaluator,
@@ -14,6 +14,13 @@ import type {
 } from "../../lib/gameMode/types";
 
 type RawSolved = ReturnType<typeof PokerHand.solve>;
+const POKER_SUITS = ["h", "d", "c", "s"] as const;
+const SUIT_BY_CODE: Record<Suit, typeof POKER_SUITS[number]> = {
+  H: "h",
+  D: "d",
+  C: "c",
+  S: "s",
+};
 
 function wrap(raw: RawSolved): SolvedHand {
   return {
@@ -29,7 +36,7 @@ function unwrap(s: SolvedHand): RawSolved {
 
 function solveOne(hole: Card[], boardStrs: string[]): RawSolved | null {
   if (hole.length < 1) return null;
-  const strs = [...hole.map(cardToPokersolverStr), ...boardStrs];
+  const strs = normalizeDuplicateCardsForSolver(hole, boardStrs);
   if (strs.length < 5) return null;
   return PokerHand.solve(strs);
 }
@@ -134,3 +141,38 @@ export const dingEvaluator: HandEvaluator = {
     return raw.descr ?? raw.name ?? "";
   },
 };
+
+function normalizeDuplicateCardsForSolver(hole: Card[], boardStrs: string[]): string[] {
+  const used = new Set<string>();
+  const out: string[] = [];
+  const cards = hole.map(cardToPokersolverStr).concat(boardStrs);
+
+  for (const raw of cards) {
+    if (!used.has(raw)) {
+      used.add(raw);
+      out.push(raw);
+      continue;
+    }
+
+    const rank = raw.slice(0, -1);
+    const replacement = POKER_SUITS
+      .map((suit) => `${rank}${suit}`)
+      .find((candidate) => !used.has(candidate));
+    if (!replacement) continue;
+    used.add(replacement);
+    out.push(replacement);
+  }
+
+  return out.sort((a, b) => {
+    const rankDelta = a.slice(0, -1).localeCompare(b.slice(0, -1));
+    if (rankDelta !== 0) return rankDelta;
+    return POKER_SUITS.indexOf(suitCode(a)) - POKER_SUITS.indexOf(suitCode(b));
+  });
+}
+
+function suitCode(card: string): typeof POKER_SUITS[number] {
+  const code = card.slice(-1);
+  return POKER_SUITS.includes(code as typeof POKER_SUITS[number])
+    ? code as typeof POKER_SUITS[number]
+    : SUIT_BY_CODE.S;
+}

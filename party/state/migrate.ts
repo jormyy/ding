@@ -67,6 +67,10 @@ function stripVersion(v: VersionedState): ServerGameState {
   const { __version, ...rest } = v;
   const state = rest as ServerGameState;
   if (!state.modeId || !isGameModeId(state.modeId)) state.modeId = DEFAULT_GAME_MODE_ID;
+  state.dealChoices = state.dealChoices ?? {};
+  state.dealDeck = state.dealDeck ?? [];
+  state.burnCards = state.burnCards ?? [];
+  state.pendingChaosEvents = [];
   for (const hand of state.hands ?? []) {
     hand.cardCount = hand.cardCount ?? hand.cards?.length ?? 0;
     hand.publicCards = hand.publicCards ?? [];

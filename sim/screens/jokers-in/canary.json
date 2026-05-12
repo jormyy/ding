@@ -1,0 +1,21 @@
+{
+  "modeId": "jokers-in",
+  "room": "U4ZFAY",
+  "score": 1,
+  "trueRanking": [
+    "canary-u4zfay-bravo-0",
+    "5f27fb6f-eb7f-4dec-9483-018ff5824c46-0"
+  ],
+  "trueRanks": {
+    "canary-u4zfay-bravo-0": 1,
+    "5f27fb6f-eb7f-4dec-9483-018ff5824c46-0": 2
+  },
+  "phases": [
+    "preflop",
+    "flop",
+    "turn",
+    "river",
+    "reveal",
+    "reveal-results"
+  ]
+}

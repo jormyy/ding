@@ -26,6 +26,8 @@ import { reduceEndGame } from "./endGame";
 import { reduceConfigure } from "./configure";
 import { reduceAddBot } from "./addBot";
 import { reduceStart } from "./start";
+import { reduceChooseDealCards } from "./chooseDealCards";
+import { reduceMulliganHand } from "./mulliganHand";
 import { reduceKick } from "./kick";
 import { reduceLeave } from "./leave";
 import { reduceDing } from "./ding";
@@ -40,6 +42,8 @@ export const dingReducers: Record<ClientMessage["type"], Reducer> = {
   configure: reduceConfigure,
   addBot: reduceAddBot,
   start: reduceStart,
+  chooseDealCards: reduceChooseDealCards,
+  mulliganHand: reduceMulliganHand,
   kick: reduceKick,
   leave: reduceLeave,
   move: reduceMove,

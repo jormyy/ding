@@ -144,6 +144,7 @@ export function assertValidCommunityCards(state: GameState, phase?: Phase): void
   // Check card count per phase
   const expectedCount: Record<Phase, number> = {
     lobby: 0,
+    dealChoice: 0,
     preflop: 0,
     flop: 3,
     turn: 4,
@@ -262,7 +263,8 @@ export function assertHandBelongsToPlayer(state: GameState, handId: string, play
  */
 export function assertValidPhaseTransition(from: Phase, to: Phase): void {
   const validTransitions: Record<Phase, Phase[]> = {
-    lobby: ['preflop'],
+    lobby: ['dealChoice', 'preflop'],
+    dealChoice: ['preflop'],
     preflop: ['preflop', 'flop'],
     flop: ['turn'],
     turn: ['river'],
