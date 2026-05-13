@@ -22,7 +22,24 @@ const featureHandlers: Partial<Record<InfoFeatureId, InfoFeatureHandler>> = {
   "suit-heat": (state, phase) => fact("suit-heat", "Suit Heat", suitHeat(state.dealDeck), phase),
   "phantom-card": (state, phase) => fact("phantom-card", "Phantom", state.dealDeck[0] === undefined ? "No phantom rank available" : `${state.dealDeck[0].rank} is not in at least one hand`, phase),
   "past-trace": (state, phase) => fact("past-trace", "Trace", state.lastHandSummary?.names.join(", ") ?? "No prior hand trace in this room yet", phase),
-  "card-theatre": (state, phase) => fact("card-theatre", "Theatre", theatreClue(state), phase),
+  "card-karma": (state, phase) => {
+    const top = state.lastHandSummary?.names[0];
+    return fact(
+      "card-karma",
+      "Karma",
+      top ? `Karma carries forward: ${top} took the prior hand` : "No prior hand yet",
+      phase,
+    );
+  },
+  "card-marriage": (_state, phase) =>
+    fact("card-marriage", "Marriage", "Adjacent hole cards are wedded and score as a synthetic pair", phase),
+  "reality-skip": (state, phase) =>
+    phase === "turn"
+      ? fact("reality-skip", "Skip", `Future glimpse: ${cardList(state.dealDeck.slice(0, 3))}`, phase)
+      : [],
+  "card-inheritance": (_state, phase) =>
+    fact("card-inheritance", "Inheritance", "One hole card is kept; the other came from your right neighbor's discard", phase),
+  "card-theatre": (state, phase) => fact("card-theatre", "Theatre", theatreClue(state, phase), phase),
   "card-conscience": (state, phase) => fact("card-conscience", "Conscience", conscienceRank(state), phase),
   "decoy": (_state, phase) => fact("decoy", "Decoy", "One table card is a decoy and does not score", phase),
   "card-decoy": (_state, phase) => fact("card-decoy", "Decoy", "One visible community card does not score", phase),
@@ -61,13 +78,13 @@ const genericInfoFeatureIds = [
   "wildfire", "avalanche", "storm-surge", "static", "wormhole", "black-hole", "gravity-well", "heat-wave",
   "cold-snap", "fog-bank", "rainstorm", "aurora", "hurricane", "ice-age", "volcano", "quantum-shuffle",
   "quantum-flop", "card-multiverse", "identity-crisis", "photographic-negative", "synesthesia", "shapeshifter",
-  "card-rebellion", "card-festival", "card-marriage", "anti-memory", "photographic-memory", "memory-hole",
-  "time-echo", "reality-skip", "reverse-universe", "card-singularity", "glitch-wars", "card-convergence",
+  "card-rebellion", "card-festival", "anti-memory", "photographic-memory", "memory-hole",
+  "time-echo", "reverse-universe", "card-singularity", "glitch-wars", "card-convergence",
   "card-halo", "card-vortex", "card-eclipse-total", "card-plague-spread", "card-diaspora", "card-soup",
   "card-madness", "card-tide", "card-drift", "recursive-board", "twin-universes", "mirror-world",
-  "card-constellation", "card-karma", "card-resurrection", "card-memorial", "hex-card", "blessed-card-absolute",
+  "card-constellation", "card-resurrection", "card-memorial", "hex-card", "blessed-card-absolute",
   "doomsday-card", "card-cipher", "card-static", "cell-division", "card-schism", "card-pendulum",
-  "card-pinball", "card-inheritance", "doppelganger-deck", "card-lunar", "pandemonium"
+  "card-pinball", "doppelganger-deck", "card-lunar", "pandemonium"
 ] satisfies InfoFeatureId[];
 
 for (const id of genericInfoFeatureIds) {
@@ -154,10 +171,16 @@ function tellFact(state: ServerGameState): string {
   return `${state.dealDeck.length} deck cards remain`;
 }
 
-function theatreClue(state: ServerGameState): string {
-  const hand = state.hands[0];
-  if (!hand) return "No hand is on stage yet";
-  return `${playerName(state, hand)} has ${hand.cards.length} card${hand.cards.length === 1 ? "" : "s"} on stage`;
+function theatreClue(state: ServerGameState, phase: Phase): string {
+  const hand = subjectHand(state, phase);
+  if (!hand) return "The stage is empty";
+  const live = state.hands.find((h) => h.id === hand.id);
+  if (!live || live.cards.length === 0) return `${playerName(state, hand)} steps onstage`;
+  const suits = new Map<string, number>();
+  for (const c of live.cards) suits.set(c.suit, (suits.get(c.suit) ?? 0) + 1);
+  const suitNote = Array.from(suits.entries()).map(([s, n]) => `${n}${s}`).join(" ");
+  const ranks = live.cards.map((c) => c.rank).join(",");
+  return `${playerName(state, hand)} reads as ${ranks} (${suitNote})`;
 }
 
 function conscienceRank(state: ServerGameState): string {
