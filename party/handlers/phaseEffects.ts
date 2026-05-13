@@ -45,10 +45,10 @@ export function applyModePhaseEffects(state: ServerGameState, phase: Phase): Cha
         mutateHoleCardAt(state, 0, incrementCardRank);
         break;
       case "removeFaceCards":
-        removeCardsWhere(state, (card) => card.rank === "J" || card.rank === "Q" || card.rank === "K");
+        removeAndRefillBoard(state, (card) => card.rank === "J" || card.rank === "Q" || card.rank === "K");
         break;
       case "removeSevens":
-        removeCardsWhere(state, (card) => card.rank === "7");
+        removeAndRefillBoard(state, (card) => card.rank === "7");
         break;
       case "reassignAllSuits":
         mapAllCards(state, rotateCardSuit);
@@ -258,6 +258,27 @@ function removeCardsWhere(state: ServerGameState, predicate: (card: Card) => boo
     hand.cards = hand.cards.filter((card) => !predicate(card));
     hand.publicCards = hand.publicCards?.filter((card) => !predicate(card));
     hand.cardCount = hand.cards.length;
+  }
+}
+
+/** Remove board cards matching `predicate` and refill from the deal deck so
+ *  the community board keeps its original card count (subject to deck supply).
+ *  Used by drought / plague which catalog-promise "replaced by fresh draws". */
+function removeAndRefillBoard(state: ServerGameState, predicate: (card: Card) => boolean): void {
+  const target = state.allCommunityCards.length;
+  state.allCommunityCards = state.allCommunityCards.filter((card) => !predicate(card));
+  for (const hand of state.hands) {
+    hand.cards = hand.cards.filter((card) => !predicate(card));
+    hand.publicCards = hand.publicCards?.filter((card) => !predicate(card));
+    hand.cardCount = hand.cards.length;
+  }
+  // Refill board from the head of dealDeck, skipping further matches so we
+  // don't immediately re-trigger.
+  while (state.allCommunityCards.length < target && state.dealDeck.length > 0) {
+    const next = state.dealDeck.shift();
+    if (!next) break;
+    if (predicate(next)) continue;
+    state.allCommunityCards.push(next);
   }
 }
 

@@ -122,11 +122,22 @@ export function GameSessionProvider({
     }
   }, [gameState, myId]);
 
+  const stateRef = useRef<GameState | null>(null);
+  const myIdRef = useRef<string | null>(null);
+  useEffect(() => { stateRef.current = gameState; }, [gameState]);
+  useEffect(() => { myIdRef.current = myId; }, [myId]);
+
   useEffect(() => {
     if (!playerName) return;
     const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST ?? "localhost:1999";
     const socket = new PartySocket({ host, room: code });
     socketRef.current = socket;
+    if (process.env.NODE_ENV !== "production" && typeof window !== "undefined") {
+      const w = window as unknown as { __dingSend: (m: ClientMessage) => void; __dingState: () => GameState | null; __dingMyId: () => string | null };
+      w.__dingSend = (m) => socket.send(JSON.stringify(m));
+      w.__dingState = () => stateRef.current;
+      w.__dingMyId = () => myIdRef.current;
+    }
 
     socket.addEventListener("open", () => {
       const pid = getOrCreatePid();
