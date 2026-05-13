@@ -311,6 +311,7 @@ export type InfoFeatureId =
   | "twin-universes"
   | "volcano"
   | "whisper-chain"
+  | "wild-rank-roulette"
   | "wildfire"
   | "wormhole";
 
@@ -328,6 +329,16 @@ export interface DingGameModeDefinition {
     suits?: readonly Suit[];
     metas?: readonly CardMeta[];
   };
+  /**
+   * Optional per-phase wild-card definitions. The reveal-phase entry is used
+   * for showdown scoring; earlier-phase entries describe the rotating wild as
+   * the hand progresses, surfaced via info chips.
+   */
+  wildCardsByPhase?: Partial<Record<Phase, {
+    ranks?: readonly Rank[];
+    suits?: readonly Suit[];
+    metas?: readonly CardMeta[];
+  }>>;
   excludedRanks?: readonly Rank[];
   excludedMetas?: readonly CardMeta[];
   forceRankByMeta?: {

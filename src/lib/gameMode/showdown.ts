@@ -59,7 +59,7 @@ export function computeShowdownForMode(
   hands: readonly Hand[],
   board: readonly Card[]
 ): ModeShowdown {
-  const mode = getGameModeDefinition(modeId);
+  const mode = resolveEffectiveMode(getGameModeDefinition(modeId));
   const mutableHands = hands.slice();
   const mutableBoard = board.slice();
   if (mode.score === "high" && mode.deal.boards?.scoring === "best") {
@@ -489,6 +489,14 @@ function computeBestBoardHighShowdown(
 
 function rawSolved(solved: SolvedHand): RawPokerSolved {
   return solved.raw as RawPokerSolved;
+}
+
+function resolveEffectiveMode(
+  mode: ReturnType<typeof getGameModeDefinition>
+): ReturnType<typeof getGameModeDefinition> {
+  const revealWild = mode.wildCardsByPhase?.reveal;
+  if (!revealWild) return mode;
+  return { ...mode, wildCards: revealWild };
 }
 
 function scoringBoards(

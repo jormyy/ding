@@ -46,6 +46,14 @@ const featureHandlers: Partial<Record<InfoFeatureId, InfoFeatureHandler>> = {
   "periscope": (state, phase) => phase === "river" ? neighborHoleAnnouncements("periscope", "Periscope", state, phase, 1) : [],
   "smoke-hole": (_state, phase) => fact("smoke-hole", "Smoke", phase === "preflop" || phase === "flop" ? "Hole cards show suits only" : "Hole cards are clear", phase),
   "communal-glance": (_state, phase) => fact("communal-glance", "Glance", "One hole-card slot is shared by the table", phase),
+  "wild-rank-roulette": (state, phase) => {
+    const mode = getGameModeDefinition(state.modeId);
+    const ranks = mode.wildCardsByPhase?.[phase]?.ranks;
+    const value = ranks && ranks.length > 0
+      ? `Wild rank: ${ranks.join(", ")}${phase === "reveal" ? " (counts for scoring)" : ""}`
+      : "No wild rank this street";
+    return fact("wild-rank-roulette", "Roulette", value, phase);
+  },
 };
 
 const genericInfoFeatureIds = [
