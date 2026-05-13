@@ -1,3 +1,5 @@
+import type { BoardLayout } from "./gameMode/types";
+
 /** Playing card suit. */
 export type Suit = "H" | "D" | "C" | "S";
 
@@ -29,7 +31,7 @@ export type CardMeta =
   | "trickster";
 
 /** A single playing card. */
-export type Card = { rank: Rank; suit: Suit; meta?: CardMeta; possibleIdentities?: Card[] };
+export type Card = { rank: Rank; suit: Suit; meta?: CardMeta; possibleIdentities?: Card[]; justCollapsed?: boolean };
 
 export type CardColor = "red" | "black";
 
@@ -40,13 +42,47 @@ export type DisplayedCard = {
   color?: CardColor;
   meta?: CardMeta;
   possibleIdentities?: Card[];
+  justCollapsed?: boolean;
 };
 
-export type ModeInfo = {
-  id: string;
-  label: string;
-  value: string;
-};
+export type ModeInfo =
+  | {
+      kind?: "fact";
+      id: string;
+      label: string;
+      value: string;
+      payload?: string;
+      phase?: Phase;
+    }
+  | {
+      kind: "announce";
+      id: string;
+      text: string;
+      audience: "table" | "player";
+      recipientId?: string;
+      phase: Phase;
+      label?: string;
+      value?: string;
+    }
+  | {
+      kind: "card";
+      id: string;
+      placement: string;
+      card: Card;
+      subjectId?: string;
+      phase: Phase;
+      label?: string;
+      value?: string;
+    }
+  | {
+      kind: "rat";
+      id: string;
+      aboutId: string;
+      text: string;
+      phase: Phase;
+      label?: string;
+      value?: string;
+    };
 
 /**
  * A single hand belonging to a player.
@@ -149,6 +185,8 @@ export type GameState = {
   gameStartedAt: number | null;
   /** Community cards revealed so far for this phase. */
   communityCards: Card[];
+  /** Display topology for the visible community cards. */
+  communityLayout?: BoardLayout;
   /** Mode-specific public information surfaced by the server. */
   modeInfo?: ModeInfo[];
   /**

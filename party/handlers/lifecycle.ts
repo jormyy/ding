@@ -12,6 +12,7 @@ import {
 import type { Handler } from "./types";
 import { inGamePhase } from "./types";
 import { applyModePhaseEffects } from "./phaseEffects";
+import { applyModeInfoFeatures } from "./infoFeatures";
 
 /**
  * If all connected players are ready, advance the phase. Returns true if the
@@ -40,7 +41,10 @@ export function advancePhaseIfAllReady(state: ServerGameState): boolean {
     const showdown = computeShowdownForMode(state.modeId, state.hands, state.allCommunityCards);
     for (const hand of state.hands) {
       hand.madeHandName = showdown.madeHandNames[hand.id];
+      hand.cards = collapsePossibleIdentities(hand.cards);
+      hand.publicCards = collapsePossibleIdentities(hand.publicCards ?? []);
     }
+    state.allCommunityCards = collapsePossibleIdentities(state.allCommunityCards);
     state.trueRanking = showdown.trueRanking;
     state.trueRanks = showdown.trueRanks;
     state.revealIndex = 0;
@@ -49,11 +53,21 @@ export function advancePhaseIfAllReady(state: ServerGameState): boolean {
   }
 
   state.phase = nextPhase;
+  state.modeInfo = applyModeInfoFeatures(state, nextPhase);
   state.phaseStartedAt = Date.now();
 
   for (const p of state.players) p.ready = false;
 
   return true;
+}
+
+function collapsePossibleIdentities<T extends { possibleIdentities?: unknown }>(cards: readonly T[]): T[] {
+  return cards.map((card) => {
+    const had = Array.isArray((card as { possibleIdentities?: unknown[] }).possibleIdentities)
+      && ((card as { possibleIdentities?: unknown[] }).possibleIdentities ?? []).length > 0;
+    const { possibleIdentities: _possibleIdentities, ...rest } = card;
+    return (had ? { ...rest, justCollapsed: true } : rest) as T;
+  });
 }
 
 function appendChaosEvents(state: ServerGameState, events: readonly ChaosEvent[]): void {
@@ -97,6 +111,7 @@ export const flip: Handler = (state, player, msg) => {
     state.revealIndex++;
     if (state.revealIndex >= totalHands) {
       state.score = countInversionsForRanks(state.ranking, state.trueRanks);
+      state.lastHandSummary = buildCompletedHandSummary(state);
     }
     return { kind: "broadcast" };
   }
@@ -112,10 +127,23 @@ export const flip: Handler = (state, player, msg) => {
 
   if (state.revealIndex === totalHands) {
     state.score = countInversionsForRanks(state.ranking, state.trueRanks);
+    state.lastHandSummary = buildCompletedHandSummary(state);
   }
 
   return { kind: "broadcast" };
 };
+
+function buildCompletedHandSummary(state: ServerGameState): ServerGameState["lastHandSummary"] {
+  return {
+    phase: "reveal",
+    ranking: state.ranking.slice(),
+    names: state.ranking.flatMap((handId) => {
+      if (!handId) return [];
+      const hand = state.hands.find((candidate) => candidate.id === handId);
+      return [hand?.madeHandName ?? handId];
+    }),
+  };
+}
 
 export const playAgain: Handler = (state, player, _msg, ctx) => {
   if (state.phase !== "reveal") return { kind: "ignore" };
@@ -129,6 +157,7 @@ export const playAgain: Handler = (state, player, _msg, ctx) => {
   newState.modeId = state.modeId ?? "ding";
   newState.gameTimerSeconds = state.gameTimerSeconds;
   newState.roundTimerSeconds = state.roundTimerSeconds;
+  newState.lastHandSummary = state.lastHandSummary;
   ctx.resetState(newState);
 
   return { kind: "broadcast" };
@@ -146,6 +175,7 @@ export const endGame: Handler = (state, player, _msg, ctx) => {
   newState.modeId = state.modeId ?? "ding";
   newState.gameTimerSeconds = state.gameTimerSeconds;
   newState.roundTimerSeconds = state.roundTimerSeconds;
+  newState.lastHandSummary = state.lastHandSummary;
   ctx.resetState(newState);
 
   return { kind: "broadcast" };

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type { DisplayedCard } from "@/lib/types";
 import { getSuitSymbol, getRankDisplay } from "@/lib/utils";
 
@@ -18,24 +19,45 @@ interface CardFaceProps {
 
 export function CardFace({ card, small = false, tiny = false }: CardFaceProps) {
   const isUncertain = (card.possibleIdentities?.length ?? 0) > 0;
+  const justCollapsed = card.justCollapsed === true;
+  const animationFiredRef = useRef(false);
+  const [collapsing, setCollapsing] = useState(false);
+
+  useEffect(() => {
+    if (justCollapsed && !animationFiredRef.current) {
+      animationFiredRef.current = true;
+      setCollapsing(true);
+      const t = setTimeout(() => setCollapsing(false), 460);
+      return () => clearTimeout(t);
+    }
+    return undefined;
+  }, [justCollapsed]);
+
+  const uncertaintyClass = isUncertain
+    ? "ring-2 ring-yellow-300/90 animate-uncertain"
+    : collapsing
+      ? "animate-card-collapse"
+      : "";
   const isSpecial = card.meta === "joker" || card.meta === "tarot";
   const symbol = isSpecial
     ? card.meta === "joker" ? "J" : "T"
     : isUncertain ? "?"
       : card.suit ? getSuitSymbol(card.suit) : card.color === "red" ? "●" : card.color === "black" ? "●" : "?";
-  const colorClass = card.suit
-    ? SUIT_COLOR[card.suit] ?? "text-gray-900"
-    : card.color === "red"
-      ? "text-red-500"
-      : card.color === "black"
-        ? "text-gray-900"
-        : "text-gray-500";
+  const colorClass = isUncertain
+    ? "text-yellow-600"
+    : card.suit
+      ? SUIT_COLOR[card.suit] ?? "text-gray-900"
+      : card.color === "red"
+        ? "text-red-500"
+        : card.color === "black"
+          ? "text-gray-900"
+          : "text-gray-500";
   const rankDisplay = isSpecial ? "W" : isUncertain ? "?" : card.rank ? getRankDisplay(card.rank) : "?";
 
   if (tiny) {
     return (
       <div
-        className="bg-white rounded-sm shadow-sm flex flex-col items-center justify-between px-px py-px select-none"
+        className={`bg-white rounded-sm shadow-sm flex flex-col items-center justify-between px-px py-px select-none ${uncertaintyClass}`}
         style={{ width: 26, height: 38 }}
       >
         <div className={`text-[8px] font-black leading-none ${colorClass}`}>
@@ -51,7 +73,7 @@ export function CardFace({ card, small = false, tiny = false }: CardFaceProps) {
 
   if (small) {
     return (
-      <div className="bg-white rounded-md shadow-sm flex flex-col items-center justify-between p-0.5 select-none"
+      <div className={`bg-white rounded-md shadow-sm flex flex-col items-center justify-between p-0.5 select-none ${uncertaintyClass}`}
         style={{ width: 36, height: 52 }}>
         <div className={`text-xs font-black leading-none ${colorClass}`}>
           {rankDisplay}
@@ -66,7 +88,7 @@ export function CardFace({ card, small = false, tiny = false }: CardFaceProps) {
 
   return (
     <div
-      className="bg-white rounded-lg shadow-md flex flex-col items-center justify-between p-1 select-none"
+      className={`bg-white rounded-lg shadow-md flex flex-col items-center justify-between p-1 select-none ${uncertaintyClass}`}
       style={{ width: 56, height: 80 }}
     >
       {/* Top rank + suit */}

@@ -90,6 +90,8 @@ export default function PokerTable({
       <TableFelt
         phase={gameState.phase}
         communityCards={gameState.communityCards}
+        communityLayout={gameState.communityLayout}
+        modeInfo={gameState.modeInfo ?? []}
         isMobile={isMobile}
         isLandscape={isLandscape}
         feltInset={feltInset}

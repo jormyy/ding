@@ -19,6 +19,27 @@
   .animate-fade-out {
     animation: fade-out 2.5s ease-in forwards;
   }
+
+  @keyframes card-collapse {
+    0%   { transform: scale(0.35) rotateY(120deg); opacity: 0.2; filter: blur(3px); }
+    55%  { transform: scale(1.08) rotateY(0deg);   opacity: 1;   filter: blur(0); }
+    100% { transform: scale(1)    rotateY(0deg);   opacity: 1;   filter: blur(0); }
+  }
+
+  .animate-card-collapse {
+    animation: card-collapse 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: center;
+    perspective: 600px;
+  }
+
+  @keyframes uncertain-shimmer {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.55), 0 0 8px 1px rgba(234, 179, 8, 0.35); }
+    50%      { box-shadow: 0 0 0 4px rgba(234, 179, 8, 0.0), 0 0 14px 3px rgba(234, 179, 8, 0.55); }
+  }
+
+  .animate-uncertain {
+    animation: uncertain-shimmer 1.8s ease-in-out infinite;
+  }
 }
 
 /* Prevent rubber-band scroll on iOS */

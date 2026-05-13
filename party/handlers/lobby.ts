@@ -9,6 +9,7 @@ import {
 } from "../../src/lib/gameMode";
 import type { Handler, HandlerResult } from "./types";
 import type { DealChoiceProgress } from "../../src/lib/types";
+import { applyModeInfoFeatures } from "./infoFeatures";
 
 export const configure: Handler = (state, player, msg) => {
   if (msg.type !== "configure") return { kind: "ignore" };
@@ -68,8 +69,10 @@ export const start: Handler = (state, player) => {
   state.dealDeck = remainingDeck;
   state.burnCards = burnCards;
   state.communityCards = [];
+  state.communityLayout = mode.deal.boardLayout ?? { kind: "linear", slots: mode.deal.communityCards };
   state.dealChoices = buildDealChoices(mode.deal.dealChoice, hands);
   state.phase = Object.keys(state.dealChoices).length > 0 ? "dealChoice" : "preflop";
+  state.modeInfo = applyModeInfoFeatures(state, state.phase);
   state.revealIndex = 0;
   state.trueRanking = null;
   state.trueRanks = null;

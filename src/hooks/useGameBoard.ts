@@ -104,7 +104,7 @@ export function useGameBoard(
   const allReady = gameState.players.every((p) => p.ready);
   const hasUnclaimedSlots = localRanking.some((slot) => slot === null);
 
-  // Spacebar toggles ready/unready
+  // Spacebar resolves the phase's primary action.
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.code !== "Space") return;
@@ -119,6 +119,15 @@ export function useGameBoard(
         return;
       }
       e.preventDefault();
+      if (gameState.phase === "reveal" && gameState.score === null) {
+        const nextHandId = gameState.ranking[gameState.ranking.length - 1 - gameState.revealIndex];
+        const hand = gameState.hands.find((candidate) => candidate.id === nextHandId);
+        const owner = gameState.players.find((player) => player.id === hand?.playerId);
+        if (hand && (hand.playerId === myId || !owner?.connected)) {
+          onSend({ type: "flip", handId: hand.id });
+        }
+        return;
+      }
       const ready = myPlayer?.ready ?? false;
       if (ready || !hasUnclaimedSlots) {
         handleReady(!ready);
@@ -126,7 +135,7 @@ export function useGameBoard(
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [myPlayer?.ready, hasUnclaimedSlots]);
+  }, [gameState.hands, gameState.phase, gameState.players, gameState.ranking, gameState.revealIndex, gameState.score, hasUnclaimedSlots, myId, myPlayer?.ready, onSend]);
 
   const rankMap = new Map<string, number>();
   localRanking.forEach((id, i) => { if (id !== null) rankMap.set(id, i + 1); });

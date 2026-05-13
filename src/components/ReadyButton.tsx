@@ -37,7 +37,10 @@ export default function ReadyButton({
             }
       }
     >
-      {isReady ? "✓ Ready!" : "READY →"}
+      <span className="inline-flex items-center gap-1.5">
+        <span>{isReady ? "✓ Ready!" : "READY →"}</span>
+        {!isReady && <span className="text-[9px] opacity-60">␣</span>}
+      </span>
     </button>
   );
 }

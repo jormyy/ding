@@ -70,6 +70,8 @@ function stripVersion(v: VersionedState): ServerGameState {
   state.dealChoices = state.dealChoices ?? {};
   state.dealDeck = state.dealDeck ?? [];
   state.burnCards = state.burnCards ?? [];
+  state.communityLayout = state.communityLayout ?? undefined;
+  state.modeInfo = state.modeInfo ?? [];
   state.pendingChaosEvents = [];
   for (const hand of state.hands ?? []) {
     hand.cardCount = hand.cardCount ?? hand.cards?.length ?? 0;

@@ -13,6 +13,28 @@ function cardKey(c: Card): string {
   return c.rank + c.suit;
 }
 
+const POKER_SUITS = ["h", "d", "c", "s"] as const;
+
+function normalizeSolverStrings(cards: readonly string[]): string[] {
+  const used = new Set<string>();
+  const out: string[] = [];
+  for (const raw of cards) {
+    if (!used.has(raw)) {
+      used.add(raw);
+      out.push(raw);
+      continue;
+    }
+    const rank = raw.slice(0, -1);
+    const replacement = POKER_SUITS
+      .map((suit) => `${rank}${suit}`)
+      .find((candidate) => !used.has(candidate));
+    if (!replacement) continue;
+    used.add(replacement);
+    out.push(replacement);
+  }
+  return out;
+}
+
 /**
  * Tier-based preflop scoring per the strategy guide.
  *
@@ -94,7 +116,7 @@ export function currentHandStrength(hole: Card[], board: Card[]): number {
 
   const all = [...hole, ...board];
   if (all.length < 5) return preflopTierStrength(hole);
-  const ph = PokerHand.solve(all.map(cardToPokersolverStr));
+  const ph = PokerHand.solve(normalizeSolverStrings(all.map(cardToPokersolverStr)));
   const rank = ph.rank;
 
   if (rank === 9) {
@@ -138,7 +160,7 @@ export function currentHandStrength(hole: Card[], board: Card[]): number {
   }
 
   // High card: scale by hole-card kicker, A=top.
-  const hiHole = Math.max(RANK_VALUE[hole[0].rank], RANK_VALUE[hole[1].rank]);
+  const hiHole = Math.max(...hole.map((c) => RANK_VALUE[c.rank]));
   return 0.10 + ((hiHole - 2) / 12) * 0.15;
 }
 

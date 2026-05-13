@@ -149,6 +149,19 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
   const roomUrl =
     typeof window !== "undefined" ? `${window.location.origin}/room/${code}` : `/room/${code}`;
 
+  useEffect(() => {
+    function onKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.code !== "Space") return;
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable)) return;
+      if (!isCreator || !canStart) return;
+      event.preventDefault();
+      onSend({ type: "start" });
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [canStart, isCreator, onSend]);
+
   function handleCopyLink() {
     navigator.clipboard.writeText(roomUrl).then(() => {
       setCopied(true);
@@ -507,15 +520,17 @@ function ModeSelector({
   const modeById = useMemo(() => new Map(modeOptions.map((mode) => [mode.id, mode])), [modeOptions]);
   const focusedMode = modeById.get(focusedId) ?? selectedMode;
   const selectedIndex = modeOptions.findIndex((mode) => mode.id === selectedMode.id);
+  const searchActive = query.trim().length > 0;
 
   const filteredTierModes = useMemo(
     () =>
       modeOptions.filter((mode) => {
+        if (searchActive) return modeMatchesQuery(mode, query);
         if (modeTier(mode) !== activeTier) return false;
         if (axisFilters.size > 0 && !axisFilters.has(modeAxis(mode))) return false;
         return modeMatchesQuery(mode, query);
       }),
-    [activeTier, axisFilters, modeOptions, query]
+    [activeTier, axisFilters, modeOptions, query, searchActive]
   );
 
   const recentModes = useMemo(
@@ -811,7 +826,7 @@ function ModeSelector({
                     disabled={disabled}
                   />
                   <ModeGridSection
-                    title={`${activeTier} modes`}
+                    title={searchActive ? "All sections" : `${activeTier} modes`}
                     modes={filteredTierModes}
                     selectedId={selectedMode.id}
                     focusedId={focusedId}
@@ -820,6 +835,7 @@ function ModeSelector({
                     onSelect={(modeId) => selectMode(modeId, true)}
                     onFavorite={toggleFavorite}
                     disabled={disabled}
+                    groupByTier={searchActive}
                     emptyLabel="No modes match the current filters."
                   />
                 </div>
@@ -880,6 +896,7 @@ function ModeGridSection({
   onSelect,
   onFavorite,
   disabled,
+  groupByTier = false,
   emptyLabel,
 }: {
   title: string;
@@ -891,6 +908,7 @@ function ModeGridSection({
   onSelect: (modeId: string) => void;
   onFavorite: (modeId: string) => void;
   disabled: boolean;
+  groupByTier?: boolean;
   emptyLabel?: string;
 }) {
   if (modes.length === 0) {
@@ -906,22 +924,61 @@ function ModeGridSection({
           {modes.length}
         </span>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
-        {modes.map((mode) => (
-          <ModeCard
-            key={`${title}-${mode.id}`}
-            mode={mode}
-            selected={mode.id === selectedId}
-            focused={mode.id === focusedId}
-            favorite={favoriteIds.includes(mode.id)}
-            disabled={disabled}
-            onFocus={() => onFocus(mode.id)}
-            onSelect={() => onSelect(mode.id)}
-            onFavorite={() => onFavorite(mode.id)}
-          />
-        ))}
-      </div>
+      {groupByTier ? (
+        MODE_TIERS.map((tier) => {
+          const tierModes = modes.filter((mode) => modeTier(mode) === tier);
+          if (tierModes.length === 0) return null;
+          return (
+            <div key={tier} className="mb-3">
+              <div className="mb-1 text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: D.muted }}>{tier}</div>
+              <ModeCardGrid modes={tierModes} selectedId={selectedId} focusedId={focusedId} favoriteIds={favoriteIds} onFocus={onFocus} onSelect={onSelect} onFavorite={onFavorite} disabled={disabled} title={title} />
+            </div>
+          );
+        })
+      ) : (
+        <ModeCardGrid modes={modes} selectedId={selectedId} focusedId={focusedId} favoriteIds={favoriteIds} onFocus={onFocus} onSelect={onSelect} onFavorite={onFavorite} disabled={disabled} title={title} />
+      )}
     </section>
+  );
+}
+
+function ModeCardGrid({
+  modes,
+  selectedId,
+  focusedId,
+  favoriteIds,
+  onFocus,
+  onSelect,
+  onFavorite,
+  disabled,
+  title,
+}: {
+  modes: readonly DingGameModeDefinition[];
+  selectedId: string;
+  focusedId: string;
+  favoriteIds: readonly string[];
+  onFocus: (modeId: string) => void;
+  onSelect: (modeId: string) => void;
+  onFavorite: (modeId: string) => void;
+  disabled: boolean;
+  title: string;
+}) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
+      {modes.map((mode) => (
+        <ModeCard
+          key={`${title}-${mode.id}`}
+          mode={mode}
+          selected={mode.id === selectedId}
+          focused={mode.id === focusedId}
+          favorite={favoriteIds.includes(mode.id)}
+          disabled={disabled}
+          onFocus={() => onFocus(mode.id)}
+          onSelect={() => onSelect(mode.id)}
+          onFavorite={() => onFavorite(mode.id)}
+        />
+      ))}
+    </div>
   );
 }
 

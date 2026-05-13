@@ -112,6 +112,20 @@ export function useRankingActions(
     setSelectedHandId(null);
   }, [selectedHandId, localRanking, gameState.hands, gameState.acquireRequests, myId, onSend, showToast]);
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (!/^[1-8]$/.test(e.key)) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable)) return;
+      const slotIndex = Number(e.key) - 1;
+      if (slotIndex >= localRanking.length || localRanking[slotIndex] !== null) return;
+      e.preventDefault();
+      handleSlotClick(slotIndex);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [handleSlotClick, localRanking]);
+
   const handleHandClick = useCallback((handId: string) => {
     const hand = gameState.hands.find((h) => h.id === handId);
     const currentSlotIdx = localRanking.indexOf(handId);

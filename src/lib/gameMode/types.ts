@@ -113,6 +113,8 @@ export interface GameModeDealRule {
   visibleHoleCardIndexes?: Partial<Record<Phase, number[]>>;
   /** Total community cards dealt for showdown. */
   communityCards: number;
+  /** Display topology for the community cards. Defaults to a five-slot linear row. */
+  boardLayout?: BoardLayout;
   /** Optional board grouping for modes that score hands against separate boards. */
   boards?: {
     count?: number;
@@ -139,6 +141,19 @@ export interface GameModeDealRule {
   /** Optional constrained hand construction before the board is dealt. */
   constraint?: DealConstraint;
 }
+
+export type BoardSlot = {
+  row: number;
+  col: number;
+  group?: string;
+  scoresAs?: "primary" | "mirror" | "decoy";
+};
+
+export type BoardLayout =
+  | { kind: "linear"; slots: number }
+  | { kind: "dual"; primary: number; secondary: number; secondaryRole: "mirror" | "decoy" | "vault" }
+  | { kind: "L"; arm: number; stem: number }
+  | { kind: "grid"; slots: BoardSlot[] };
 
 export type PhaseEffectId =
   | "randomReplaceVisibleCommunity"
@@ -184,6 +199,118 @@ export type PhaseEffectId =
   | "splitHandsAtReveal"
   | "schismDeckHighOnly";
 
+export type InfoFeatureId =
+  | "anti-memory"
+  | "aurora"
+  | "avalanche"
+  | "black-hole"
+  | "blessed-card-absolute"
+  | "burn-reveal"
+  | "card-cipher"
+  | "card-conscience"
+  | "card-constellation"
+  | "card-convergence"
+  | "card-decoy"
+  | "card-diaspora"
+  | "card-drift"
+  | "card-eclipse-total"
+  | "card-festival"
+  | "card-halo"
+  | "card-inheritance"
+  | "card-karma"
+  | "card-lunar"
+  | "card-madness"
+  | "card-marriage"
+  | "card-memorial"
+  | "card-multiverse"
+  | "card-pendulum"
+  | "card-pinball"
+  | "card-plague-spread"
+  | "card-rebellion"
+  | "card-resurrection"
+  | "card-schism"
+  | "card-singularity"
+  | "card-soup"
+  | "card-static"
+  | "card-theatre"
+  | "card-tide"
+  | "card-vortex"
+  | "card-whisper"
+  | "card-whisper-network"
+  | "cell-division"
+  | "cold-snap"
+  | "communal-glance"
+  | "deck-count"
+  | "decoy"
+  | "doomsday-card"
+  | "doppelganger-deck"
+  | "drought"
+  | "drunken-display"
+  | "earthquake"
+  | "flood"
+  | "fog-bank"
+  | "glitch-wars"
+  | "gravity-well"
+  | "group-mind"
+  | "half-lit-holes"
+  | "heat-map"
+  | "heat-wave"
+  | "hex-card"
+  | "hint-card"
+  | "holographic-card"
+  | "hurricane"
+  | "ice-age"
+  | "identity-crisis"
+  | "late-hand-reveal"
+  | "lightning"
+  | "lying-mirror"
+  | "memory-hole"
+  | "meteor"
+  | "mirror-hand"
+  | "mirror-hole"
+  | "mirror-universe"
+  | "mirror-world"
+  | "pandemonium"
+  | "past-trace"
+  | "periscope"
+  | "phantom-card"
+  | "photographic-memory"
+  | "photographic-negative"
+  | "plague"
+  | "probability-cloud"
+  | "quantum-flop"
+  | "quantum-shuffle"
+  | "rainstorm"
+  | "rank-census"
+  | "rank-whisper"
+  | "reality-skip"
+  | "reality-tear"
+  | "recursive-board"
+  | "reverse-universe"
+  | "sample-draw"
+  | "schrodingers-board"
+  | "schrodingers-hole"
+  | "shapeshifter"
+  | "smoke-hole"
+  | "solar-flare"
+  | "spotlight"
+  | "static"
+  | "storm-surge"
+  | "suit-census"
+  | "suit-heat"
+  | "suit-whisper"
+  | "synesthesia"
+  | "tag-team"
+  | "telepathic-river"
+  | "tell"
+  | "time-echo"
+  | "tornado"
+  | "twin-universes"
+  | "volcano"
+  | "whisper-chain"
+  | "wildfire"
+  | "wormhole";
+
 export interface DingGameModeDefinition {
   id: string;
   name: string;
@@ -205,7 +332,7 @@ export interface DingGameModeDefinition {
     last?: CardMeta;
   };
   identityResolution?: "bestPossible";
-  infoFeatures?: readonly string[];
+  infoFeatures?: readonly InfoFeatureId[];
   syntheticPair?: "adjacent" | "spread";
   rankTransform?: "inverted";
   suitTransform?: "color";
