@@ -115,14 +115,14 @@ function CommunityCardsLayout({
   }
 
   if (layout.kind === "L") {
-    const rows = [cards.slice(0, layout.arm)];
-    for (let i = 1; i < layout.stem; i++) rows.push([cards[layout.arm + i - 1]].filter(Boolean));
     return (
       <div className="grid gap-1 pointer-events-none" style={{ gridTemplateColumns: `repeat(${layout.arm}, minmax(0, max-content))` }}>
-        {rows[0].map((card, i) => <CardSlot key={i} card={card} cardProps={cardProps} emptySize={emptySize} />)}
-        {rows.slice(1).map((row, rowIndex) => (
-          <div key={rowIndex} style={{ gridColumn: 1 }}>
-            <CardSlot card={row[0]} cardProps={cardProps} emptySize={emptySize} />
+        {Array.from({ length: layout.arm }, (_, i) => (
+          <CardSlot key={`arm-${i}`} card={cards[i]} cardProps={cardProps} emptySize={emptySize} />
+        ))}
+        {Array.from({ length: Math.max(0, layout.stem - 1) }, (_, i) => (
+          <div key={`stem-${i}`} style={{ gridColumn: 1 }}>
+            <CardSlot card={cards[layout.arm + i]} cardProps={cardProps} emptySize={emptySize} />
           </div>
         ))}
       </div>

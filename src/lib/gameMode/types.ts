@@ -124,6 +124,9 @@ export interface GameModeDealRule {
   };
   /** Community cards visible in each phase. Reveal always shows all cards. */
   visibleCommunityCards?: Partial<Record<Phase, number>>;
+  /** Explicit community-card indexes visible per phase. When set, overrides `visibleCommunityCards`
+   *  and lets modes reveal non-contiguous positions (e.g. corner-symmetric L reveal). */
+  visibleCommunityIndexes?: Partial<Record<Phase, ReadonlyArray<number>>>;
   /** Optional canonical scoring prefix when display-only effects add non-scoring board slots. */
   scoreCommunityCards?: number;
   /** Which parts of visible community cards are shown before reveal. Defaults to full card identity. */

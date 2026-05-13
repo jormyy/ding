@@ -9,6 +9,10 @@ import {
 export function visibleCommunityCardCount(modeId: string | undefined, phase: Phase): number {
   const mode = getGameModeDefinition(modeId);
   const maxVisible = maxVisibleCommunityCards(mode);
+  const configuredIndexes = mode.deal.visibleCommunityIndexes?.[phase];
+  if (configuredIndexes !== undefined) {
+    return Math.max(0, Math.min(maxVisible, configuredIndexes.length));
+  }
   if (phase === "reveal") {
     const configuredReveal = mode.deal.visibleCommunityCards?.reveal;
     return Math.max(0, Math.min(maxVisible, configuredReveal ?? mode.deal.communityCards));
@@ -19,6 +23,11 @@ export function visibleCommunityCardCount(modeId: string | undefined, phase: Pha
   }
   const fallback = baseVisibleCommunity[phase] ?? 0;
   return Math.max(0, Math.min(maxVisible, fallback));
+}
+
+export function visibleCommunityCardIndexes(modeId: string | undefined, phase: Phase): ReadonlyArray<number> | null {
+  const mode = getGameModeDefinition(modeId);
+  return mode.deal.visibleCommunityIndexes?.[phase] ?? null;
 }
 
 export function visibleHoleCardCount(modeId: string | undefined, phase: Phase): number {
@@ -59,6 +68,7 @@ export function visibleCommunityCardDetails(
 }
 
 function maxVisibleCommunityCards(mode: DingGameModeDefinition): number {
-  const configured = Object.values(mode.deal.visibleCommunityCards ?? {});
-  return Math.max(mode.deal.communityCards, ...configured);
+  const counts = Object.values(mode.deal.visibleCommunityCards ?? {});
+  const indexLengths = Object.values(mode.deal.visibleCommunityIndexes ?? {}).map((idx) => idx.length);
+  return Math.max(mode.deal.communityCards, ...counts, ...indexLengths);
 }

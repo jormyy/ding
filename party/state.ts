@@ -13,6 +13,7 @@ import {
   visibleCommunityCardCount,
   visibleCommunityCardDetail,
   visibleCommunityCardDetails,
+  visibleCommunityCardIndexes,
   visibleHoleCardCount,
   visibleHoleCardDetail,
   visibleHoleCardIndexes,
@@ -161,9 +162,21 @@ function maskDealChoicesForPlayer(
  * - In reveal phase, shows cards for hands that have already been flipped.
  */
 export function buildClientState(state: ServerGameState, playerId: string): GameState {
-  const count = visibleCommunityCardCount(state.modeId, state.phase);
+  const indexes = visibleCommunityCardIndexes(state.modeId, state.phase);
+  let revealed: Card[];
+  if (indexes !== null) {
+    revealed = new Array(state.allCommunityCards.length);
+    for (const i of indexes) {
+      if (i >= 0 && i < state.allCommunityCards.length) {
+        revealed[i] = state.allCommunityCards[i];
+      }
+    }
+  } else {
+    const count = visibleCommunityCardCount(state.modeId, state.phase);
+    revealed = state.allCommunityCards.slice(0, count);
+  }
   const communityCardsToShow = buildVisibleCommunityCards(
-    state.allCommunityCards.slice(0, count),
+    revealed,
     visibleCommunityCardDetail(state.modeId, state.phase),
     visibleCommunityCardDetails(state.modeId, state.phase)
   );
