@@ -315,6 +315,8 @@ export type InfoFeatureId =
   | "wildfire"
   | "wormhole";
 
+export type ModeTier = "standard" | "twist" | "select" | "wild" | "chaos" | "insanity";
+
 export interface DingGameModeDefinition {
   id: string;
   name: string;
@@ -322,6 +324,8 @@ export interface DingGameModeDefinition {
   summary: string;
   detail: string;
   tags: readonly string[];
+  /** Curation tier shown in the lobby browser. Set explicitly per mode. */
+  tier: ModeTier;
   deal: GameModeDealRule;
   phaseEffects?: Partial<Record<Phase, readonly PhaseEffectId[]>>;
   wildCards?: {

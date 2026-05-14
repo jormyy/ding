@@ -8,6 +8,7 @@ import {
   getMaxHandsPerPlayerForMode,
   listGameModes,
   type DingGameModeDefinition,
+  type ModeTier,
 } from "@/lib/gameMode";
 import { D } from "@/lib/theme";
 
@@ -37,96 +38,15 @@ const ROUND_TIMER_OPTIONS = [
   { label: "5m", value: 300 },
 ];
 
-type ModeTier = "standard" | "wild" | "chaos" | "insanity";
-type ModeAxis = "Deal" | "Board" | "Identity" | "Visibility" | "Events";
+type ModeAxis = "Deal" | "Board" | "Identity" | "Visibility" | "Events" | "Info" | "Choice" | "Objective";
+type SelectSubTag = "peek-keep" | "mulligan" | "trade-up" | "inheritance" | "expose-choice";
 
-const MODE_TIERS: readonly ModeTier[] = ["standard", "wild", "chaos", "insanity"];
-const MODE_AXES: readonly ModeAxis[] = ["Deal", "Board", "Identity", "Visibility", "Events"];
+const MODE_TIERS: readonly ModeTier[] = ["standard", "twist", "select", "wild", "chaos", "insanity"];
+const MODE_AXES: readonly ModeAxis[] = ["Deal", "Board", "Identity", "Visibility", "Events", "Info", "Choice", "Objective"];
+const SELECT_SUB_TAGS: readonly SelectSubTag[] = ["peek-keep", "mulligan", "trade-up", "inheritance", "expose-choice"];
 const MODE_RECENT_KEY = "ding.recentModes.v1";
 const MODE_FAVORITES_KEY = "ding.favoriteModes.v1";
 const MODE_LAST_TIER_KEY = "ding.lastModeTier.v1";
-
-const STANDARD_MODE_IDS = new Set([
-  "ding",
-  "single-spark",
-  "triad",
-  "omaha-luxe",
-  "pent",
-  "solitaire-suite",
-  "one-up",
-  "open-book",
-  "late-light",
-  "double-river",
-  "big-sky",
-  "tiny-board",
-  "mini-board",
-  "slow-burn",
-  "turnpike",
-  "lowball",
-]);
-
-const INSANITY_MODE_IDS = new Set([
-  "schrodingers-hole",
-  "quantum-flop",
-  "probability-cloud",
-  "holographic-card",
-  "schrodingers-board",
-  "card-multiverse",
-  "reality-tear",
-  "identity-crisis",
-  "drunken-display",
-  "photographic-negative",
-  "synesthesia",
-  "shapeshifter",
-  "card-rebellion",
-  "card-theatre",
-  "card-whisper-network",
-  "card-conscience",
-  "card-festival",
-  "card-marriage",
-  "anti-memory",
-  "photographic-memory",
-  "memory-hole",
-  "time-echo",
-  "reality-skip",
-  "reverse-universe",
-  "card-singularity",
-  "glitch-wars",
-  "card-convergence",
-  "card-halo",
-  "card-vortex",
-  "card-eclipse-total",
-  "card-plague-spread",
-  "card-diaspora",
-  "card-soup",
-  "card-madness",
-  "card-tide",
-  "card-drift",
-  "recursive-board",
-  "mirror-hand",
-  "twin-universes",
-  "mirror-world",
-  "card-constellation",
-  "card-karma",
-  "card-resurrection",
-  "card-memorial",
-  "hex-card",
-  "blessed-card-absolute",
-  "doomsday-card",
-  "card-cipher",
-  "card-decoy",
-  "card-static",
-  "cell-division",
-  "card-schism",
-  "card-pendulum",
-  "card-pinball",
-  "card-inheritance",
-  "doppelganger-deck",
-  "telepathic-river",
-  "card-whisper",
-  "card-lunar",
-  "pandemonium",
-]);
 
 export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyProps) {
   const [copied, setCopied] = useState(false);
@@ -499,6 +419,7 @@ function ModeSelector({
   const [browserOpen, setBrowserOpen] = useState(false);
   const [activeTier, setActiveTier] = useState<ModeTier>(() => modeTier(selectedMode));
   const [axisFilters, setAxisFilters] = useState<Set<ModeAxis>>(() => new Set());
+  const [selectSubFilter, setSelectSubFilter] = useState<SelectSubTag | null>(null);
   const [query, setQuery] = useState("");
   const [focusedId, setFocusedId] = useState(selectedMode.id);
   const [recentIds, setRecentIds] = useState<string[]>([]);
@@ -521,15 +442,27 @@ function ModeSelector({
   const selectedIndex = modeOptions.findIndex((mode) => mode.id === selectedMode.id);
   const searchActive = query.trim().length > 0;
 
+  // Filter semantics:
+  //   tier: single-select (active tier tab).
+  //   axes: multi-select with OR — a mode matches if ANY checked axis applies.
+  //   selectSubFilter: optional sub-mechanic narrowing inside the Select tier.
+  //   search: when non-empty, ignores tier/axis filters and matches across all modes.
   const filteredTierModes = useMemo(
     () =>
       modeOptions.filter((mode) => {
         if (searchActive) return modeMatchesQuery(mode, query);
         if (modeTier(mode) !== activeTier) return false;
-        if (axisFilters.size > 0 && !axisFilters.has(modeAxis(mode))) return false;
+        if (axisFilters.size > 0) {
+          const axes = modeAxes(mode);
+          const hasAny = axes.some((axis) => axisFilters.has(axis));
+          if (!hasAny) return false;
+        }
+        if (activeTier === "select" && selectSubFilter && !mode.tags.includes(selectSubFilter)) {
+          return false;
+        }
         return modeMatchesQuery(mode, query);
       }),
-    [activeTier, axisFilters, modeOptions, query, searchActive]
+    [activeTier, axisFilters, modeOptions, query, searchActive, selectSubFilter]
   );
 
   const recentModes = useMemo(
@@ -801,6 +734,43 @@ function ModeSelector({
                   ))}
                 </div>
 
+                {activeTier === "select" && !searchActive && (
+                  <div
+                    className="flex flex-wrap gap-1 px-3 py-2"
+                    style={{ borderBottom: `1px solid ${D.panelBorder}` }}
+                  >
+                    <span className="self-center text-[9px] font-black uppercase tracking-[0.25em] mr-1" style={{ color: D.muted }}>
+                      Mechanic
+                    </span>
+                    {SELECT_SUB_TAGS.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => setSelectSubFilter((prev) => (prev === tag ? null : tag))}
+                        aria-pressed={selectSubFilter === tag}
+                        className="h-7 px-2 rounded-md text-[10px] font-black tracking-wide whitespace-nowrap"
+                        style={
+                          selectSubFilter === tag
+                            ? { background: D.accent, color: "#03150d", border: "none" }
+                            : { background: "rgba(255,255,255,0.05)", color: D.sub, border: "1px solid rgba(255,255,255,0.08)" }
+                        }
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                    {selectSubFilter && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectSubFilter(null)}
+                        className="h-7 px-2 rounded-md text-[10px] font-bold"
+                        style={{ background: "rgba(0,0,0,0.28)", color: D.muted, border: "1px solid rgba(255,255,255,0.08)" }}
+                      >
+                        clear
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex-1 min-h-0 overflow-y-auto p-3">
                   <ModeGridSection
                     title="Recent"
@@ -1000,7 +970,7 @@ function ModeCard({
   onSelect: () => void;
   onFavorite: () => void;
 }) {
-  const axis = modeAxis(mode);
+  const axes = modeAxes(mode);
   return (
     <div className="relative h-[132px]">
       <button
@@ -1017,20 +987,30 @@ function ModeCard({
             ? `1px solid ${D.accent}`
             : "1px solid rgba(255,255,255,0.08)",
         }}
-        aria-label={`${mode.name}, ${axis}, ${modeTier(mode)} tier`}
+        aria-label={`${mode.name}, ${axes.join(" ")}, ${modeTier(mode)} tier`}
       >
         <div className="font-black text-xs leading-tight line-clamp-2">{mode.name}</div>
         <div className="mt-1 text-[10px] leading-snug line-clamp-3" style={{ color: D.sub }}>
           {mode.summary}
         </div>
         <div className="mt-auto flex items-center justify-between gap-1">
-          <span
-            className="rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide"
-            style={{ background: "rgba(255,255,255,0.07)", color: D.sub }}
-          >
-            {axis}
-          </span>
-          <span className="text-[10px]" style={{ color: D.gold }}>
+          <div className="flex flex-wrap gap-0.5 min-w-0">
+            {axes.slice(0, 3).map((axis) => (
+              <span
+                key={axis}
+                className="rounded px-1 py-0.5 text-[8px] font-black uppercase tracking-wide"
+                style={{ background: "rgba(255,255,255,0.07)", color: D.sub }}
+              >
+                {axis}
+              </span>
+            ))}
+            {axes.length > 3 && (
+              <span className="text-[8px] self-center" style={{ color: D.muted }}>
+                +{axes.length - 3}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] flex-shrink-0" style={{ color: D.gold }}>
             {"●".repeat(modeChaosLevel(mode))}
           </span>
         </div>
@@ -1072,7 +1052,7 @@ function ModeDetail({
   onFavorite: () => void;
   onSelect: () => void;
 }) {
-  const axis = modeAxis(mode);
+  const axes = modeAxes(mode);
   return (
     <div className="flex flex-col min-h-0 h-full">
       <div className="text-[9px] font-black uppercase tracking-[0.25em]" style={{ color: D.sub }}>
@@ -1085,9 +1065,11 @@ function ModeDetail({
         <span className="rounded px-2 py-1 text-[10px] font-black uppercase" style={{ background: "rgba(255,255,255,0.07)", color: D.sub }}>
           {modeTier(mode)}
         </span>
-        <span className="rounded px-2 py-1 text-[10px] font-black uppercase" style={{ background: "rgba(255,255,255,0.07)", color: D.sub }}>
-          {axis}
-        </span>
+        {axes.map((axis) => (
+          <span key={axis} className="rounded px-2 py-1 text-[10px] font-black uppercase" style={{ background: "rgba(255,255,255,0.07)", color: D.sub }}>
+            {axis}
+          </span>
+        ))}
         <span className="rounded px-2 py-1 text-[10px] font-black" style={{ background: "rgba(201,165,74,0.14)", color: D.gold }}>
           {"●".repeat(modeChaosLevel(mode))}
         </span>
@@ -1149,26 +1131,25 @@ function ModeDetail({
 }
 
 function modeTier(mode: DingGameModeDefinition): ModeTier {
-  if (INSANITY_MODE_IDS.has(mode.id)) return "insanity";
-  if (STANDARD_MODE_IDS.has(mode.id)) return "standard";
-  if (mode.phaseEffects || mode.infoFeatures || modeAxis(mode) === "Visibility") return "chaos";
-  return "wild";
+  return mode.tier;
 }
 
-function modeAxis(mode: DingGameModeDefinition): ModeAxis {
-  if (mode.phaseEffects) return "Events";
+function modeAxes(mode: DingGameModeDefinition): readonly ModeAxis[] {
+  const axes: ModeAxis[] = [];
+  if (mode.phaseEffects) axes.push("Events");
+  if (mode.infoFeatures) axes.push("Info");
   if (
-    mode.infoFeatures ||
     mode.deal.visibleHoleCards ||
     mode.deal.visibleHoleCardDetail ||
     mode.deal.visibleCommunityCardDetail ||
     mode.deal.visibleCommunityCardDetails ||
-    mode.tags.some((tag) => ["information", "transparent", "hidden", "memory"].includes(tag))
+    mode.tags.includes("visibility")
   ) {
-    return "Visibility";
+    axes.push("Visibility");
   }
   if (
     mode.wildCards ||
+    mode.wildCardsByPhase ||
     mode.excludedRanks ||
     mode.excludedMetas ||
     mode.forceRankByMeta ||
@@ -1179,26 +1160,37 @@ function modeAxis(mode: DingGameModeDefinition): ModeAxis {
     mode.deal.possibleIdentities ||
     (mode.deal.deck && mode.deal.deck !== "standard")
   ) {
-    return "Identity";
+    axes.push("Identity");
   }
   if (
     mode.deal.boards ||
     mode.deal.communityCards !== 5 ||
     mode.deal.visibleCommunityCards ||
-    mode.deal.scoreCommunityCards
+    mode.deal.visibleCommunityIndexes ||
+    mode.deal.scoreCommunityCards ||
+    (mode.deal.boardLayout && mode.deal.boardLayout.kind !== "linear")
   ) {
-    return "Board";
+    axes.push("Board");
   }
-  return "Deal";
+  if (mode.deal.dealChoice?.selectionPhase || mode.deal.publicCardSelection === "playerChoice") {
+    axes.push("Choice");
+  }
+  if (mode.score !== "high") axes.push("Objective");
+  if (axes.length === 0) axes.push("Deal");
+  return axes;
 }
 
 function modeChaosLevel(mode: DingGameModeDefinition): number {
-  const tier = modeTier(mode);
-  if (tier === "insanity") return 4;
-  if (tier === "chaos") return 3;
-  if (tier === "wild") return 2;
-  return 1;
+  switch (mode.tier) {
+    case "insanity": return 5;
+    case "chaos": return 4;
+    case "wild": return 3;
+    case "select": return 2;
+    case "twist": return 2;
+    case "standard": return 1;
+  }
 }
+
 
 function modeMatchesQuery(mode: DingGameModeDefinition, query: string): boolean {
   const needle = query.trim().toLowerCase();
@@ -1210,7 +1202,7 @@ function modeMatchesQuery(mode: DingGameModeDefinition, query: string): boolean 
     mode.summary,
     mode.detail,
     modeTier(mode),
-    modeAxis(mode),
+    ...modeAxes(mode),
     ...mode.tags,
   ].join(" ").toLowerCase();
   return haystack.includes(needle);
