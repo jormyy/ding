@@ -109,10 +109,11 @@ export function dealCardsForMode(
   const discardedCommunityCards: Card[] = [];
   const publicCount = mode.deal.publicCards ?? 0;
   const publicCardSelection = mode.deal.publicCardSelection ?? "first";
+  const isExposeChoice = publicCardSelection === "playerChoice";
   for (const playerId of playerIds) {
     for (let handIndex = 0; handIndex < handsPerPlayer; handIndex++) {
       const dealt = dealtHands[playerId][handIndex] ?? [];
-      const cards = mode.deal.dealChoice?.selectionPhase
+      const cards = mode.deal.dealChoice?.selectionPhase || isExposeChoice
         ? dealt.slice()
         : keepBestCards(dealt, mode.deal.dealChoice?.keepCards ?? mode.deal.keepCards);
       markCounterfeitHoleCards(cards, mode.deal.counterfeitHoleCards);
@@ -124,7 +125,7 @@ export function dealCardsForMode(
         playerId,
         cards,
         cardCount: cards.length,
-        publicCards: selectPublicCards(cards, publicCount, publicCardSelection),
+        publicCards: isExposeChoice ? [] : selectPublicCards(cards, publicCount, publicCardSelection),
         flipped: false,
       });
     }
@@ -214,6 +215,7 @@ function selectPublicCards(
 ): Card[] {
   if (count <= 0) return [];
   if (selection === "first") return cards.slice(0, count);
+  if (selection === "playerChoice") return [];
 
   const sorted = cards.slice().sort((a, b) => {
     const delta = RANK_VALUE[b.rank] - RANK_VALUE[a.rank];

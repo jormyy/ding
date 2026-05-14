@@ -8,7 +8,8 @@ export const chooseDealCards: Handler = (state, player, msg) => {
 
   const mode = getGameModeDefinition(state.modeId);
   const dealChoice = mode.deal.dealChoice;
-  if (!dealChoice?.selectionPhase) return { kind: "ignore" };
+  const isExposeChoice = mode.deal.publicCardSelection === "playerChoice";
+  if (!dealChoice?.selectionPhase && !isExposeChoice) return { kind: "ignore" };
 
   const hand = state.hands.find((candidate) => candidate.id === msg.handId);
   if (!hand || hand.playerId !== player.id) return { kind: "ignore" };
@@ -80,7 +81,9 @@ function allDealChoicesReady(
 
 function finishDealChoicePhase(state: Parameters<Handler>[0]): void {
   const mode = getGameModeDefinition(state.modeId);
-  if (mode.deal.dealChoice?.inheritance) {
+  if (mode.deal.publicCardSelection === "playerChoice") {
+    applyExposeChoice(state);
+  } else if (mode.deal.dealChoice?.inheritance) {
     applyInheritance(state);
   } else if (mode.deal.dealChoice?.tradeUp) {
     applyTradeUp(state);
@@ -105,6 +108,18 @@ function finishDealChoicePhase(state: Parameters<Handler>[0]): void {
   state.phase = "preflop";
   state.phaseStartedAt = Date.now();
   for (const p of state.players) p.ready = false;
+}
+
+function applyExposeChoice(state: Parameters<Handler>[0]): void {
+  for (const hand of state.hands) {
+    const choice = state.dealChoices[hand.id];
+    if (!choice) continue;
+    const selectedIndexes = choice.selectedIndexes ?? fallbackExposeIndexes(choice.keepCards);
+    hand.publicCards = selectedIndexes
+      .map((index) => hand.cards[index])
+      .filter((card): card is Card => card !== undefined);
+    hand.cardCount = hand.cards.length;
+  }
 }
 
 function applyInheritance(state: Parameters<Handler>[0]): void {
@@ -207,6 +222,12 @@ function fallbackKeepIndexes(cards: readonly Card[], keepCards: number): number[
     }
   }
   return indexes.sort((a, b) => a - b);
+}
+
+function fallbackExposeIndexes(keepCards: number): number[] {
+  const indexes: number[] = [];
+  for (let index = 0; index < keepCards; index++) indexes.push(index);
+  return indexes;
 }
 
 function fallbackTradeUpIndexes(cards: readonly Card[], keepCards: number): number[] {

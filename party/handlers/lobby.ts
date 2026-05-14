@@ -70,7 +70,7 @@ export const start: Handler = (state, player) => {
   state.burnCards = burnCards;
   state.communityCards = [];
   state.communityLayout = mode.deal.boardLayout ?? { kind: "linear", slots: mode.deal.communityCards };
-  state.dealChoices = buildDealChoices(mode.deal.dealChoice, hands);
+  state.dealChoices = buildDealChoices(mode.deal, hands);
   state.phase = Object.keys(state.dealChoices).length > 0 ? "dealChoice" : "preflop";
   state.modeInfo = applyModeInfoFeatures(state, state.phase);
   state.revealIndex = 0;
@@ -86,20 +86,22 @@ export const start: Handler = (state, player) => {
 };
 
 function buildDealChoices(
-  dealChoice: ReturnType<typeof getGameModeDefinition>["deal"]["dealChoice"],
+  deal: ReturnType<typeof getGameModeDefinition>["deal"],
   hands: { id: string }[]
 ): Record<string, DealChoiceProgress> {
-  if (!dealChoice?.selectionPhase) return {};
+  const dealChoice = deal.dealChoice;
+  const isExposeChoice = deal.publicCardSelection === "playerChoice";
+  if (!dealChoice?.selectionPhase && !isExposeChoice) return {};
   const choices: Record<string, DealChoiceProgress> = {};
   for (const hand of hands) {
     choices[hand.id] = {
-      keepCards: dealChoice.keepCards,
+      keepCards: isExposeChoice ? (deal.publicCards ?? 1) : dealChoice!.keepCards,
       selectedIndexes: null,
       submitted: false,
-      canMulligan: dealChoice.mulligan,
+      canMulligan: dealChoice?.mulligan,
       mulliganUsed: false,
-      tradeUp: dealChoice.tradeUp,
-      inheritance: dealChoice.inheritance,
+      tradeUp: dealChoice?.tradeUp,
+      inheritance: dealChoice?.inheritance,
     };
   }
   return choices;

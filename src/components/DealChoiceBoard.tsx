@@ -24,6 +24,7 @@ export default function DealChoiceBoard({
   const choices = gameState.dealChoices ?? {};
   const isTradeUp = mode.deal.dealChoice?.tradeUp === true;
   const isInheritance = mode.deal.dealChoice?.inheritance === true;
+  const isExposeChoice = mode.deal.publicCardSelection === "playerChoice";
 
   return (
     <div className="h-[100dvh] flex flex-col" style={{ background: "#0a1813" }}>
@@ -95,7 +96,9 @@ export default function DealChoiceBoard({
                       ? "Trade one card left"
                       : isInheritance
                         ? "Keep one, inherit one"
-                        : "Keep your starting cards"}
+                        : isExposeChoice
+                          ? "Pick a card to expose"
+                          : "Keep your starting cards"}
                   </h1>
                 </div>
                 <div className="text-xs font-bold text-right" style={{ color: D.sub }}>
@@ -115,6 +118,7 @@ export default function DealChoiceBoard({
                     mulliganUsed={choices[hand.id]?.mulliganUsed ?? false}
                     tradeUp={choices[hand.id]?.tradeUp ?? false}
                     inheritance={choices[hand.id]?.inheritance ?? false}
+                    exposeChoice={isExposeChoice}
                     initialSelected={choices[hand.id]?.selectedIndexes ?? []}
                     onChoose={(indexes) => onSend({ type: "chooseDealCards", handId: hand.id, indexes })}
                     onMulligan={() => onSend({ type: "mulliganHand", handId: hand.id })}
@@ -169,6 +173,7 @@ function ChoiceHandRow({
   mulliganUsed,
   tradeUp,
   inheritance,
+  exposeChoice,
   initialSelected,
   onChoose,
   onMulligan,
@@ -181,6 +186,7 @@ function ChoiceHandRow({
   mulliganUsed: boolean;
   tradeUp: boolean;
   inheritance: boolean;
+  exposeChoice: boolean;
   initialSelected: readonly number[];
   onChoose: (indexes: number[]) => void;
   onMulligan: () => void;
@@ -213,7 +219,7 @@ function ChoiceHandRow({
           Hand #{handNumber}
         </div>
         <div className="text-sm font-black" style={{ color: D.goldBright }}>
-          {selected.size}/{keepCards} {tradeUp ? "picked" : "kept"}
+          {selected.size}/{keepCards} {tradeUp ? "picked" : exposeChoice ? "exposed" : "kept"}
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -269,7 +275,7 @@ function ChoiceHandRow({
             border: submitted ? "1px solid rgba(47,184,115,0.35)" : "none",
           }}
         >
-          {submitted ? "Locked" : tradeUp ? "Trade" : inheritance ? "Inherit" : "Keep"}
+          {submitted ? "Locked" : tradeUp ? "Trade" : inheritance ? "Inherit" : exposeChoice ? "Expose" : "Keep"}
         </button>
       </div>
     </div>

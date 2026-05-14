@@ -53,7 +53,6 @@ const STANDARD_MODE_IDS = new Set([
   "omaha-luxe",
   "pent",
   "solitaire-suite",
-  "draw-three",
   "one-up",
   "open-book",
   "late-light",

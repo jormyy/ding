@@ -62,7 +62,7 @@ export type DeckKind =
 
 export type HoleCardVisibilityDetail = "full" | "suit" | "rank" | "color" | "hidden";
 
-export type PublicHoleCardSelection = "first" | "highest" | "lowest";
+export type PublicHoleCardSelection = "first" | "highest" | "lowest" | "playerChoice";
 
 export type ScoreRule =
   | "high"
