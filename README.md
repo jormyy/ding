@@ -55,7 +55,7 @@ npm run party:deploy # deploy PartyKit
 ## Where to look next
 
 - **`AGENTS.md`** — full developer guide: pipeline, GameMode contract, AI internals, common tasks, troubleshooting.
-- **`src/lib/gameMode/`** — the GameMode contract, the 200-mode catalogue, and shared deal/showdown/visibility helpers.
+- **`src/lib/gameMode/`** — the GameMode contract, the 328-mode catalogue (declarative YAML + codegen), and shared deal/showdown/visibility helpers. The dealChoice variant registry lives at `src/lib/gameMode/dealChoices/`; per-mechanic phase-effect handlers live under `party/effects/`. `npm run modes:check` is the umbrella gate: codegen drift + handler-contract audit + `verify-mechanics --strict`.
 - **`src/modes/ding/`** — Ding-specific runtime implementation.
 
 ## Deployment

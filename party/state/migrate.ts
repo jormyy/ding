@@ -6,7 +6,10 @@
  * teach `migrateState` to convert older payloads forward.
  *
  * Pre-versioning: `state` was persisted without a `__version` field. Loading
- * an unversioned blob is treated as version 0 and migrated to 1 (current).
+ * an unversioned blob is treated as version 0 and migrated to current.
+ *
+ * Version 2: adds `modeExt: {}` baseline. Old blobs without the field get a
+ * fresh empty record; no other shape changes.
  *
  * Migration is best-effort. On unrecoverable shapes we return a fresh state
  * to keep the room alive — clients reconnect and the game restarts cleanly.
@@ -15,7 +18,7 @@
 import { createInitialState, type ServerGameState } from "../state";
 import { DEFAULT_GAME_MODE_ID, isGameModeId } from "../../src/lib/gameMode";
 
-export const STATE_VERSION = 1;
+export const STATE_VERSION = 2;
 
 type VersionedState = ServerGameState & { __version?: number };
 
@@ -52,9 +55,9 @@ export function migrateState(raw: unknown): ServerGameState {
     return createInitialState();
   }
 
-  // version === 0 → unversioned legacy state. The shape is identical to
-  // version 1; we just stamp it. Future migrations chain here.
-  if (version === 0) {
+  // version 0 (unversioned) and version 1 (pre-modeExt) both forward-migrate
+  // by stamping defaults — `stripVersion` adds the `modeExt: {}` baseline.
+  if (version === 0 || version === 1) {
     return stripVersion(v);
   }
 
@@ -73,6 +76,7 @@ function stripVersion(v: VersionedState): ServerGameState {
   state.communityLayout = state.communityLayout ?? undefined;
   state.modeInfo = state.modeInfo ?? [];
   state.pendingChaosEvents = [];
+  state.modeExt = state.modeExt ?? {};
   for (const hand of state.hands ?? []) {
     hand.cardCount = hand.cardCount ?? hand.cards?.length ?? 0;
     hand.publicCards = hand.publicCards ?? [];

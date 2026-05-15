@@ -4,7 +4,12 @@
  *
  *   npm run modes:gen           # writes catalog.generated.ts
  *   npm run modes:check         # exits 1 if regenerating would change it
+ *
+ * After the codegen step finishes, this script invokes the contract audit
+ * (`scripts/audit-handlers.ts --strict`) so a YAML id without a registered
+ * runtime handler aborts the build.
  */
+import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -163,6 +168,19 @@ function buildOutput(modes: readonly DingGameModeDefinition[]): string {
   return `${header}\n${body},\n];\n`;
 }
 
+function runStrictAudit(): void {
+  // Run the contract audit as a subprocess so its registry-import side effects
+  // don't bleed into this codegen run. Its `--strict` exit code propagates.
+  const script = resolve(HERE, "..", "..", "..", "scripts", "audit-handlers.ts");
+  try {
+    execFileSync("npx", ["tsx", script, "--strict"], { stdio: "inherit" });
+  } catch (err) {
+    const e = err as { status?: number };
+    const status = typeof e.status === "number" ? e.status : 1;
+    process.exit(status);
+  }
+}
+
 function main(): void {
   const checkOnly = process.argv.includes("--check");
   const ordered = loadManifest();
@@ -186,11 +204,13 @@ function main(): void {
       process.exit(1);
     }
     console.log(`modes:check ok (${modes.length} modes).`);
+    runStrictAudit();
     return;
   }
 
   writeFileSync(OUT_PATH, output, "utf8");
   console.log(`Wrote ${OUT_PATH} (${modes.length} modes).`);
+  runStrictAudit();
 }
 
 main();

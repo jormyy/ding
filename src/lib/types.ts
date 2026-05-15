@@ -292,6 +292,15 @@ export type GameState = {
   };
   /** Hand IDs that opted into the 3rd hole at deal-choice (drives the reveal penalty). */
   optedHandIds?: string[];
+
+  /**
+   * Per-feature extension slot keyed by stable feature id (e.g. "auction",
+   * "bridge-bid"). New mode-specific state opts in here instead of growing
+   * `GameState` proper. Visibility is feature-controlled — features that
+   * need to expose anything register a masker via `registerModeExtMasker`.
+   * Anything without a registered masker is omitted from the broadcast.
+   */
+  modeExt?: Record<string, unknown>;
 };
 
 /** The three kinds of chip moves between players. */

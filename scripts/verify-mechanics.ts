@@ -115,6 +115,7 @@ function makeServerState(modeId: string): ServerGameState | null {
       pendingChaosEvents: [],
       gen: 0,
       mutationVersion: 0,
+      modeExt: {},
     } as ServerGameState;
   } catch (err) {
     return null;
@@ -360,6 +361,18 @@ function main() {
   } else {
     console.log(`Property tests: ${totalPropFails} failure(s)`);
     for (const l of propLines) console.log(`  ${l}`);
+  }
+
+  // -------- Strict CI gate --------
+  // With `--strict`, exit non-zero on any mode failure or property-test
+  // failure. Used by `npm run modes:verify` as a deployment gate.
+  if (process.argv.includes("--strict")) {
+    if (fails.length > 0 || totalPropFails > 0) {
+      console.error(
+        `verify-mechanics --strict: ${fails.length} mode failure(s), ${totalPropFails} property failure(s)`,
+      );
+      process.exit(1);
+    }
   }
 }
 

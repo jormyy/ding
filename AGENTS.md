@@ -35,6 +35,8 @@ There are no unit tests or CI test workflows in this repo. Validate changes by r
 - `party/pipeline/dispatch.ts` — The single funnel for state mutations.
 - `party/server/` — Extracted server modules (ConnectionManager, RoomStorage, AlarmScheduler, LobbySweeper).
 - `party/state/` — Invariants + state migration (`STATE_VERSION`, `migrateState`).
+- `party/effects/` — Per-mechanic phase-effect handlers. One file per `PhaseEffectId`; each calls `registerPhaseEffect`. `index.ts` side-effect imports them so the registry is populated before dispatch. Shared helpers in `shared.ts`.
+- `src/lib/gameMode/dealChoices/` — Per-variant dealChoice finalize handlers. One file per `DealChoiceVariant`; each calls `registerDealChoiceVariant`. The message-side handlers (chooseDealCards, auctionClaim, …) stay in `party/handlers/dealChoice.ts` because they're keyed by ClientMessage type, not variant.
 
 ### Naming
 
@@ -238,11 +240,44 @@ The offline simulator + parity harness has been removed. To validate bot behavio
 
 ### Adding a New GameMode
 
-Most mode variants in the 230-mode catalogue are declarative YAML files in `src/lib/gameMode/modes/` and need no per-mode code. To add one:
+Most mode variants in the 328-mode catalogue are declarative YAML files in `src/lib/gameMode/modes/` and need no per-mode code. To add one:
 
 1. Create `src/lib/gameMode/modes/<id>.yaml` mirroring an existing mode's shape (see `ding.yaml` for the simple form, `card-multiverse.yaml` for the full deal grammar). Validated by the zod schema in `src/lib/gameMode/schema.ts`.
 2. Append the new id to `src/lib/gameMode/modes/_manifest.yaml` so codegen emits it in catalog order.
-3. Run `npm run modes:gen` to regenerate `src/lib/gameMode/catalog.generated.ts`. Both files are checked into git; CI runs `modes:check` to fail on drift.
+3. Run `npm run modes:gen` to regenerate `src/lib/gameMode/catalog.generated.ts`. Codegen invokes `scripts/audit-handlers.ts --strict` at the end, so any YAML id that lacks a registered runtime handler fails the build with a single-line error naming the YAML and the missing handler.
+
+### Adding a New Phase-Effect Mechanic
+
+1. Add the id to `PhaseEffectId` in `src/lib/gameMode/types.ts`.
+2. Create `party/effects/<id>.ts` and call `registerPhaseEffect("<id>", (state, phase) => …)`. Pull shared helpers (RANKS, copyCard, mapAllCards, etc.) from `party/effects/shared.ts`.
+3. Add one side-effect import line in `party/effects/index.ts`.
+4. Reference the id from any YAML's `phaseEffects` block.
+
+Codegen's contract audit verifies the handler-YAML pairing. New mechanics no longer touch `party/handlers/phaseEffects.ts`.
+
+### Adding a New DealChoice Variant
+
+1. Add the id to `DealChoiceVariant` in `src/lib/gameMode/dealChoiceVariant.ts` and to `FLAG_BY_VARIANT` / `PRIORITY`.
+2. Create `src/lib/gameMode/dealChoices/<id>.ts` and call `registerDealChoiceVariant("<id>", { apply: (state) => … })`. Use helpers from `./shared` (refreshHandVisibility, fallbackKeepIndexes, etc.).
+3. Add one side-effect import line in `src/lib/gameMode/dealChoices/index.ts`.
+4. If the variant introduces a new ClientMessage, follow the "Adding a New Client Message Type" recipe; the message handler stays in `party/handlers/dealChoice.ts` but the variant's finalize lives in the dealChoices/ file.
+
+### Adding Mode-Specific State (`modeExt`)
+
+Per-feature state that doesn't apply to vanilla Ding lives in `state.modeExt`, keyed by stable feature id. New mode features should NOT add fields to `ServerGameState` directly.
+
+```ts
+import { getModeExt, registerModeExtMasker } from "@/lib/gameMode/modeExt";
+
+// Lazy-init the feature's pocket.
+const log = getModeExt(state, "bridge-bid", () => ({ entries: [] as Bid[] }));
+log.entries.push(bid);
+
+// Expose to clients (default: omitted from broadcast).
+registerModeExtMasker("bridge-bid", (value, viewerId) => publicView(value, viewerId));
+```
+
+The persisted state migration handles `modeExt` baseline for old blobs.
 
 For a mode with genuinely new runtime behavior:
 
@@ -298,6 +333,7 @@ When the persisted state shape changes incompatibly:
 Before deploying:
 
 - [ ] `npm run build` passes
+- [ ] `npm run modes:check` passes (codegen drift + handler-contract audit + `verify-mechanics --strict` over all catalogue modes)
 - [ ] `npx tsc --noEmit` passes (catches strictness regressions)
 - [ ] Agent-browser smoke: create a room, add bots, play one full hand through to reveal. Repeat on at least one non-default catalogue mode.
 - [ ] PartyKit host is configured in production environment (`NEXT_PUBLIC_PARTYKIT_HOST`)

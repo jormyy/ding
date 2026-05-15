@@ -10,7 +10,8 @@
     "party:dev": "partykit dev",
     "party:deploy": "partykit deploy",
     "modes:gen": "tsx src/lib/gameMode/generate.ts",
-    "modes:check": "tsx src/lib/gameMode/generate.ts --check",
+    "modes:check": "tsx src/lib/gameMode/generate.ts --check && tsx scripts/verify-mechanics.ts --strict",
+    "modes:verify": "tsx scripts/verify-mechanics.ts --strict",
     "predev": "npm run modes:gen",
     "prebuild": "npm run modes:gen && npm run modes:check"
   },

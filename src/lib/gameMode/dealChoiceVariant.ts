@@ -58,24 +58,3 @@ export function resolveDealChoiceVariant(mode: DingGameModeDefinition): DealChoi
   }
   return "peekKeep";
 }
-
-const VARIANTS_IMPLEMENTED: ReadonlySet<DealChoiceVariant> = new Set([
-  "peekKeep",
-  "mulligan",
-  "tradeUp",
-  "inheritance",
-  "exposeChoice",
-  "auction",
-  "blindPool",
-  "peekBoard",
-  "sacrificeForPeek",
-  "recruit",
-  "solomon",
-  "tablePicks",
-  "optInHole3WithPenalty",
-  "draftFromFlop",
-]);
-
-export function dealChoiceVariantIsImplemented(variant: DealChoiceVariant): boolean {
-  return VARIANTS_IMPLEMENTED.has(variant);
-}

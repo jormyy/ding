@@ -22,6 +22,7 @@ import {
   type HoleCardVisibilityDetail,
 } from "../src/lib/gameMode";
 import { applyModeInfoFeatures } from "./handlers/infoFeatures";
+import { maskModeExt } from "../src/lib/gameMode/modeExt";
 
 /**
  * Server-side game state. Extends the client-visible `GameState` with
@@ -71,6 +72,13 @@ export interface ServerGameState extends GameState {
    * before reordering the trueRanking.
    */
   pendingOptedTierPenalty?: boolean;
+
+  /**
+   * Per-feature extension namespace. Keyed by stable feature id; values are
+   * opaque to the engine and only visible to clients via maskers registered
+   * through `registerModeExtMasker`. See `src/lib/gameMode/modeExt.ts`.
+   */
+  modeExt: Record<string, unknown>;
 }
 
 /** Create a fresh empty server state for a new room. */
@@ -105,6 +113,7 @@ export function createInitialState(): ServerGameState {
     pendingChaosEvents: [],
     gen: 0,
     mutationVersion: 0,
+    modeExt: {},
   };
 }
 
@@ -253,6 +262,7 @@ export function buildClientState(state: ServerGameState, playerId: string): Game
     auctionPool: state.auctionPool,
     flopDraftPool: state.flopDraftPool,
     optedHandIds: state.optedHandIds,
+    modeExt: maskModeExt(state.modeExt, playerId),
   };
 }
 

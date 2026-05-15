@@ -1,6 +1,23 @@
-import { getGameModeDefinition, keepBestCards } from "../../src/lib/gameMode";
+/**
+ * Deal-choice message handlers + finalization dispatcher.
+ *
+ * Each ClientMessage handler validates and pre-mutates `state.dealChoices`
+ * for one specific protocol action. When `allDealChoicesReady` is true,
+ * `finishDealChoicePhase` hands off to the variant registry under
+ * `src/lib/gameMode/dealChoices/` — that file owns the variant's actual
+ * finalization mutation (combining selections into final hands, applying
+ * trade-up rotations, etc.). Adding a new variant: add a file under
+ * `src/lib/gameMode/dealChoices/` and one import line in `index.ts` there;
+ * this file only changes when a new ClientMessage type is added.
+ */
+import { getGameModeDefinition } from "../../src/lib/gameMode";
+import {
+  dealChoiceVariantRegistry,
+  fallbackKeepIndexes,
+  applyStandardKeep,
+} from "../../src/lib/gameMode/dealChoices";
+import "../../src/lib/gameMode/dealChoices"; // populate variant registry
 import { resolveDealChoiceVariant } from "../../src/lib/gameMode/dealChoiceVariant";
-import { shuffleDeck } from "../../src/lib/deckUtils";
 import { handIndexFromId } from "../../src/lib/handId";
 import type { Card } from "../../src/lib/types";
 import type { ServerGameState } from "../state";
@@ -482,36 +499,11 @@ function finishDealChoicePhase(state: ServerGameState): void {
   const mode = getGameModeDefinition(state.modeId);
   const variant = resolveDealChoiceVariant(mode);
 
-  switch (variant) {
-    case "exposeChoice":
-      applyExposeChoice(state);
-      break;
-    case "inheritance":
-      applyInheritance(state);
-      break;
-    case "tradeUp":
-      applyTradeUp(state);
-      break;
-    case "blindPool":
-      applyBlindPool(state);
-      break;
-    case "auction":
-      applyAuction(state);
-      break;
-    case "recruit":
-      applyRecruit(state);
-      break;
-    case "solomon":
-    case "tablePicks":
-    case "peekBoard":
-    case "sacrificeForPeek":
-    case "optInHole3WithPenalty":
-    case "mulligan":
-    case "peekKeep":
-    default:
-      applyStandardKeep(state);
-      break;
-  }
+  // Dispatch the per-variant finalize via the registry; falls back to the
+  // standard keep behaviour if a variant somehow slipped past registration.
+  const handler = dealChoiceVariantRegistry[variant];
+  if (handler) handler.apply(state);
+  else applyStandardKeep(state);
 
   // Capture opted hands before `state.dealChoices` is wiped — the reveal-phase
   // penalty reads `state.optedHandIds` to know which hands to bump.
@@ -532,194 +524,4 @@ function finishDealChoicePhase(state: ServerGameState): void {
   state.phase = "preflop";
   state.phaseStartedAt = Date.now();
   for (const p of state.players) p.ready = false;
-}
-
-function applyStandardKeep(state: ServerGameState): void {
-  const mode = getGameModeDefinition(state.modeId);
-  for (const hand of state.hands) {
-    const choice = state.dealChoices[hand.id];
-    if (!choice) continue;
-    const selectedIndexes = choice.selectedIndexes ?? fallbackKeepIndexes(hand.cards, choice.keepCards);
-    hand.cards = selectedIndexes
-      .map((index) => hand.cards[index])
-      .filter((card): card is Card => card !== undefined);
-    refreshHandVisibility(hand, mode.deal.publicCards ?? 0);
-  }
-}
-
-function applyExposeChoice(state: ServerGameState): void {
-  for (const hand of state.hands) {
-    const choice = state.dealChoices[hand.id];
-    if (!choice) continue;
-    const selectedIndexes = choice.selectedIndexes ?? fallbackExposeIndexes(choice.keepCards);
-    hand.publicCards = selectedIndexes
-      .map((index) => hand.cards[index])
-      .filter((card): card is Card => card !== undefined);
-    hand.cardCount = hand.cards.length;
-  }
-}
-
-function applyInheritance(state: ServerGameState): void {
-  const publicCount = getGameModeDefinition(state.modeId).deal.publicCards ?? 0;
-  const playerIds = state.players.map((player) => player.id);
-  const handByOwnerAndIndex = new Map<string, StateHand>();
-  for (const hand of state.hands) {
-    handByOwnerAndIndex.set(`${hand.playerId}:${handIndexFromId(hand.id)}`, hand);
-  }
-
-  const planByOwnerAndIndex = new Map<string, { keptCards: Card[]; discardedCard: Card | null }>();
-  for (const hand of state.hands) {
-    const choice = state.dealChoices[hand.id];
-    if (!choice) continue;
-    const handIndex = handIndexFromId(hand.id);
-    const selectedIndexes = choice.selectedIndexes ?? fallbackKeepIndexes(hand.cards, choice.keepCards);
-    const selectedSet = new Set(selectedIndexes);
-    const keptCards = selectedIndexes
-      .map((index) => hand.cards[index])
-      .filter((card): card is Card => card !== undefined);
-    const discardedCard =
-      hand.cards.find((_card, index) => !selectedSet.has(index)) ?? null;
-    planByOwnerAndIndex.set(`${hand.playerId}:${handIndex}`, { keptCards, discardedCard });
-  }
-
-  for (let playerIndex = 0; playerIndex < playerIds.length; playerIndex++) {
-    const targetPlayerId = playerIds[playerIndex];
-    const rightPlayerId = playerIds[(playerIndex + playerIds.length - 1) % playerIds.length];
-    for (let handIndex = 0; handIndex < state.handsPerPlayer; handIndex++) {
-      const targetHand = handByOwnerAndIndex.get(`${targetPlayerId}:${handIndex}`);
-      const targetPlan = planByOwnerAndIndex.get(`${targetPlayerId}:${handIndex}`);
-      const rightPlan = planByOwnerAndIndex.get(`${rightPlayerId}:${handIndex}`);
-      if (!targetHand || !targetPlan || !rightPlan?.discardedCard) continue;
-      targetHand.cards = [...targetPlan.keptCards, rightPlan.discardedCard];
-    }
-  }
-
-  for (const hand of state.hands) {
-    refreshHandVisibility(hand, publicCount);
-  }
-}
-
-function applyTradeUp(state: ServerGameState): void {
-  const publicCount = getGameModeDefinition(state.modeId).deal.publicCards ?? 0;
-  const playerIds = state.players.map((player) => player.id);
-  const handByOwnerAndIndex = new Map<string, StateHand>();
-  for (const hand of state.hands) {
-    handByOwnerAndIndex.set(`${hand.playerId}:${handIndexFromId(hand.id)}`, hand);
-  }
-
-  const selectedByOwnerAndIndex = new Map<string, { targetIndex: number; card: Card }>();
-  for (const hand of state.hands) {
-    const choice = state.dealChoices[hand.id];
-    if (!choice) continue;
-    const handIndex = handIndexFromId(hand.id);
-    const selectedIndexes = choice.selectedIndexes ?? fallbackTradeUpIndexes(hand.cards, choice.keepCards);
-    const targetIndex = selectedIndexes[0] ?? 0;
-    const card = hand.cards[targetIndex];
-    if (!card) continue;
-    selectedByOwnerAndIndex.set(`${hand.playerId}:${handIndex}`, { targetIndex, card });
-  }
-
-  for (let playerIndex = 0; playerIndex < playerIds.length; playerIndex++) {
-    const sourcePlayerId = playerIds[playerIndex];
-    const leftPlayerId = playerIds[(playerIndex + 1) % playerIds.length];
-    for (let handIndex = 0; handIndex < state.handsPerPlayer; handIndex++) {
-      const source = selectedByOwnerAndIndex.get(`${sourcePlayerId}:${handIndex}`);
-      const target = selectedByOwnerAndIndex.get(`${leftPlayerId}:${handIndex}`);
-      const targetHand = handByOwnerAndIndex.get(`${leftPlayerId}:${handIndex}`);
-      if (!source || !target || !targetHand) continue;
-      targetHand.cards[target.targetIndex] = source.card;
-    }
-  }
-
-  for (const hand of state.hands) {
-    refreshHandVisibility(hand, publicCount);
-  }
-}
-
-function applyBlindPool(state: ServerGameState): void {
-  const mode = getGameModeDefinition(state.modeId);
-  const publicCount = mode.deal.publicCards ?? 0;
-  type Contribution = { hand: StateHand; slot: number; card: Card };
-  const contributions: Contribution[] = [];
-  for (const hand of state.hands) {
-    const choice = state.dealChoices[hand.id];
-    if (!choice) continue;
-    const slot = choice.blindPoolContribution
-      ?? fallbackKeepIndexes(hand.cards, 1)[0]
-      ?? 0;
-    const card = hand.cards[slot];
-    if (!card) continue;
-    contributions.push({ hand, slot, card });
-  }
-
-  if (contributions.length === 0) return;
-
-  const shuffled = shuffleDeck(contributions.map((c) => ({ ...c.card })));
-  contributions.forEach((entry, i) => {
-    entry.hand.cards[entry.slot] = shuffled[i];
-  });
-  for (const hand of state.hands) {
-    refreshHandVisibility(hand, publicCount);
-  }
-}
-
-function applyAuction(state: ServerGameState): void {
-  // Cards were pushed onto hands as claims fired; just refresh visibility.
-  const publicCount = getGameModeDefinition(state.modeId).deal.publicCards ?? 0;
-  for (const hand of state.hands) {
-    refreshHandVisibility(hand, publicCount);
-  }
-}
-
-function applyRecruit(state: ServerGameState): void {
-  const mode = getGameModeDefinition(state.modeId);
-  const publicCount = mode.deal.publicCards ?? 0;
-  // Hands that completed both stages already had their card appended by
-  // `recruitFromNeighbor`; only fall back here for stalled ones.
-  for (const hand of state.hands) {
-    const choice = state.dealChoices[hand.id];
-    if (!choice) continue;
-    if (choice.recruitStage !== "done") {
-      const selectedIndexes = choice.selectedIndexes ?? fallbackKeepIndexes(hand.cards, choice.keepCards);
-      hand.cards = selectedIndexes
-        .map((index) => hand.cards[index])
-        .filter((card): card is Card => card !== undefined);
-    }
-    refreshHandVisibility(hand, publicCount);
-  }
-}
-
-function refreshHandVisibility(hand: StateHand, publicCount: number): void {
-  hand.cardCount = hand.cards.length;
-  hand.publicCards = hand.cards.slice(0, publicCount);
-}
-
-function fallbackKeepIndexes(cards: readonly Card[], keepCards: number): number[] {
-  const kept = keepBestCards(cards, keepCards);
-  const used = new Set<number>();
-  const indexes: number[] = [];
-  for (const keptCard of kept) {
-    const index = cards.findIndex((candidate, i) => !used.has(i) && candidate === keptCard);
-    if (index !== -1) {
-      used.add(index);
-      indexes.push(index);
-    }
-  }
-  return indexes.sort((a, b) => a - b);
-}
-
-function fallbackExposeIndexes(keepCards: number): number[] {
-  const indexes: number[] = [];
-  for (let index = 0; index < keepCards; index++) indexes.push(index);
-  return indexes;
-}
-
-function fallbackTradeUpIndexes(cards: readonly Card[], keepCards: number): number[] {
-  if (cards.length === 0 || keepCards <= 0) return [];
-  const best = new Set(fallbackKeepIndexes(cards, Math.max(0, cards.length - keepCards)));
-  const indexes: number[] = [];
-  for (let index = 0; index < cards.length && indexes.length < keepCards; index++) {
-    if (!best.has(index)) indexes.push(index);
-  }
-  return indexes.length > 0 ? indexes : [0];
 }
