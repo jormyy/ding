@@ -4,8 +4,8 @@ shortName: Tear
 summary: One reality-torn card has multiple possible identities.
 detail: Cards can carry alternate identities and reveal scoring resolves the strongest possible version.
 tags:
+  - identity-token
   - insanity
-  - identity
 tier: insanity
 deal:
   extends: standard

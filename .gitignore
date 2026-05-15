@@ -10,3 +10,4 @@ TEST_CASES.md
 tmp/
 .vscode
 .claude
+*.png

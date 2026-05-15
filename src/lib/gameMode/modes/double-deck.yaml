@@ -4,8 +4,7 @@ shortName: Double
 summary: Two full decks are merged before the deal.
 detail: Duplicate identities can appear, increasing rank collisions and strange shared-outs.
 tags:
-  - deck
-  - duplicates
+  - deck-swap
 tier: standard
 deal:
   extends: standard

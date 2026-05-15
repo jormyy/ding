@@ -5,7 +5,7 @@ summary: Hearts wax full and play as wild cards at showdown.
 detail: Every heart in a hand or on the board can stand in for whichever rank or suit completes the strongest reveal hand.
 tags:
   - insanity
-  - suits
+  - wild
 tier: insanity
 deal:
   extends: standard

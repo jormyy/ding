@@ -4,8 +4,11 @@ shortName: M World
 summary: Two realities are visible before reveal picks a ranking.
 detail: Two five-card boards are shown, with hands scored against their better reality.
 tags:
+  - big-hands
   - insanity
-  - board
+  - multi-board
+  - phase-tempo
+  - visibility
 tier: insanity
 deal:
   extends: standard

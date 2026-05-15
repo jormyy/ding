@@ -4,8 +4,8 @@ shortName: S Board
 summary: The board exists in two possible versions.
 detail: Every community card carries a second possible identity; reveal scoring picks the strongest coherent version per hand.
 tags:
+  - identity-token
   - insanity
-  - board
 tier: insanity
 deal:
   extends: standard

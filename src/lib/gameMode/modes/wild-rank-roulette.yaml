@@ -5,7 +5,6 @@ summary: A new rank becomes wild each street; whichever is wild at reveal counts
 detail: Fives, sixes, sevens, and eights take turns as the wild rank across flop, turn, river, and reveal; only the reveal-phase rank substitutes for scoring.
 tags:
   - wild
-  - ranks
 tier: wild
 deal:
   extends: standard

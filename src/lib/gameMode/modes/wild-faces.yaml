@@ -5,7 +5,6 @@ summary: Jacks, queens, and kings are wild.
 detail: Face cards can substitute into stronger identities at reveal, creating volatile high-card and made-hand swings.
 tags:
   - wild
-  - ranks
 tier: twist
 deal:
   extends: standard

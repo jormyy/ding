@@ -1,0 +1,22 @@
+id: double-down
+name: Double Down
+shortName: Dbl Down
+summary: Opt for 3 holes instead of 2 — accept a +1 tier penalty.
+detail: At deal each player can take a third hole card; their final ranking is bumped down one tier as the cost of the extra information.
+tags:
+  - late-detonation
+  - select-stage
+tier: select
+deal:
+  extends: standard
+  dealChoice:
+    dealtCards: 3
+    keepCards: 2
+    selectionPhase: true
+    optInHole3WithPenalty: true
+phaseEffects:
+  reveal:
+    - optedTierPenalty
+infoFeatures:
+  - double-down
+score: high

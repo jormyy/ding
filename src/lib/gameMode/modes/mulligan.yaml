@@ -4,8 +4,8 @@ shortName: Mulligan
 summary: Every hand may refuse its first two cards once and redraw before ranking starts.
 detail: A deal-choice phase lets each hand either lock its original two-card start or spend a one-time full redraw.
 tags:
-  - choice
   - mulligan
+  - select-stage
 tier: select
 deal:
   extends: standard

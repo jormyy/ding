@@ -4,8 +4,7 @@ shortName: Suit Heat
 summary: The table is told which suit is over-represented.
 detail: A public chip names whichever suit has the most remaining cards in the deck, refreshing every street.
 tags:
-  - info
-  - suits
+  - info-overlay
 tier: chaos
 deal:
   extends: standard

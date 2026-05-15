@@ -1,9 +1,11 @@
 import type { Card, Hand, Rank, Suit } from "../types";
 import { getGameModeDefinition } from "./registry";
-import type { ScoreRule, SolvedHand } from "./types";
+import type { HierarchyId, QualifierId, ScoreRule, SolvedHand } from "./types";
 import { dingEvaluator } from "../../modes/ding/evaluator";
 import { Hand as PokerHand } from "pokersolver";
 import { cardToPokersolverStr } from "../utils";
+import { QUALIFIERS, type QualifierResult } from "./qualifiers";
+import { HIERARCHIES } from "./hierarchies";
 
 const RANK_VALUE: Record<Rank, number> = {
   "2": 2,
@@ -47,6 +49,11 @@ export interface ModeShowdown {
   trueRanking: string[];
   trueRanks: Record<string, number>;
   madeHandNames: Record<string, string>;
+  qualifierResult?: {
+    ok: boolean;
+    qualifierId: QualifierId;
+    failedReason?: string;
+  };
 }
 
 interface RuleScore {
@@ -54,16 +61,37 @@ interface RuleScore {
   label: string;
 }
 
+/**
+ * Extra runtime context plumbed in from the engine — phase-effect overrides
+ * captured before showdown runs. Every field is optional so non-effect modes
+ * stay on their existing happy paths.
+ */
+export interface ShowdownContext {
+  scoreRuleOverride?: ScoreRule;
+  pendingQualifier?: QualifierId;
+  handHierarchyId?: HierarchyId;
+}
+
 export function computeShowdownForMode(
   modeId: string | undefined,
   hands: readonly Hand[],
-  board: readonly Card[]
+  board: readonly Card[],
+  ctx: ShowdownContext = {}
 ): ModeShowdown {
-  const mode = resolveEffectiveMode(getGameModeDefinition(modeId));
+  const baseMode = resolveEffectiveMode(getGameModeDefinition(modeId));
+  const mode = ctx.scoreRuleOverride
+    ? applyScoreOverride(baseMode, ctx.scoreRuleOverride)
+    : baseMode;
   const mutableHands = hands.slice();
   const mutableBoard = board.slice();
   if (mode.score === "high" && mode.deal.boards?.scoring === "best") {
-    return computeBestBoardHighShowdown(mode.id, mutableHands, mutableBoard);
+    return finalizeWithCtx(
+      computeBestBoardHighShowdown(mode.id, mutableHands, mutableBoard),
+      mode,
+      mutableHands,
+      mutableBoard,
+      ctx,
+    );
   }
   const scoringBoard = mode.deal.scoreCommunityCards === undefined
     ? mutableBoard
@@ -75,7 +103,13 @@ export function computeShowdownForMode(
     mode.score === "high" &&
     (mode.wildCards || mode.rankTransform || mode.syntheticPair || mode.suitTransform || mode.identityResolution)
   ) {
-    return computeConfiguredHighShowdown(mode, evaluatedHands, evaluatedBoard);
+    return finalizeWithCtx(
+      computeConfiguredHighShowdown(mode, evaluatedHands, evaluatedBoard),
+      mode,
+      evaluatedHands,
+      evaluatedBoard,
+      ctx,
+    );
   }
 
   const highRanking = dingEvaluator.trueRanking(evaluatedHands, evaluatedBoard);
@@ -84,14 +118,20 @@ export function computeShowdownForMode(
 
   if (mode.score === "high") {
     const trueRanking = applyMetaRankForces(mode, highRanking, evaluatedHands);
-    return {
-      trueRanking,
-      trueRanks: ranksFromOrdered(trueRanking, (a, b) => {
-        return metaForceBucket(mode, a, evaluatedHands) === metaForceBucket(mode, b, evaluatedHands) &&
-          highRanks[a] === highRanks[b];
-      }),
-      madeHandNames: describeHighHands(evaluatedHands, solved),
-    };
+    return finalizeWithCtx(
+      {
+        trueRanking,
+        trueRanks: ranksFromOrdered(trueRanking, (a, b) => {
+          return metaForceBucket(mode, a, evaluatedHands) === metaForceBucket(mode, b, evaluatedHands) &&
+            highRanks[a] === highRanks[b];
+        }),
+        madeHandNames: describeHighHands(evaluatedHands, solved),
+      },
+      mode,
+      evaluatedHands,
+      evaluatedBoard,
+      ctx,
+    );
   }
 
   if (mode.score === "lowball") {
@@ -100,17 +140,23 @@ export function computeShowdownForMode(
       if (highRankDelta !== 0) return highRankDelta;
       return highRanking.indexOf(a) - highRanking.indexOf(b);
     });
-    return {
-      trueRanking,
-      trueRanks: ranksFromOrdered(trueRanking, (a, b) => highRanks[a] === highRanks[b]),
-      madeHandNames: Object.fromEntries(
-        evaluatedHands.map((hand) => {
-          const high = solved.get(hand.id);
-          const description = high ? dingEvaluator.describe(high) : "Incomplete";
-          return [hand.id, `Lowball: ${description}`];
-        })
-      ),
-    };
+    return finalizeWithCtx(
+      {
+        trueRanking,
+        trueRanks: ranksFromOrdered(trueRanking, (a, b) => highRanks[a] === highRanks[b]),
+        madeHandNames: Object.fromEntries(
+          evaluatedHands.map((hand) => {
+            const high = solved.get(hand.id);
+            const description = high ? dingEvaluator.describe(high) : "Incomplete";
+            return [hand.id, `Lowball: ${description}`];
+          })
+        ),
+      },
+      mode,
+      evaluatedHands,
+      evaluatedBoard,
+      ctx,
+    );
   }
 
   const ruleScores = new Map<string, RuleScore>();
@@ -128,15 +174,83 @@ export function computeShowdownForMode(
       return highRanking.indexOf(a) - highRanking.indexOf(b);
     });
 
+  return finalizeWithCtx(
+    {
+      trueRanking,
+      trueRanks: ranksFromOrdered(trueRanking, (a, b) => {
+        return compareScore(ruleScores.get(a)!, ruleScores.get(b)!) === 0 && highRanks[a] === highRanks[b];
+      }),
+      madeHandNames: Object.fromEntries(
+        evaluatedHands.map((hand) => [hand.id, ruleScores.get(hand.id)!.label])
+      ),
+    },
+    mode,
+    evaluatedHands,
+    evaluatedBoard,
+    ctx,
+  );
+}
+
+/**
+ * Apply hierarchy reordering and qualifier evaluation as the last step. Both
+ * are no-ops when their respective ctx fields are unset.
+ */
+function finalizeWithCtx(
+  result: ModeShowdown,
+  mode: ReturnType<typeof getGameModeDefinition>,
+  hands: readonly Hand[],
+  board: readonly Card[],
+  ctx: ShowdownContext,
+): ModeShowdown {
+  let ranking = result.trueRanking;
+  if (ctx.handHierarchyId) {
+    const hierarchy = HIERARCHIES[ctx.handHierarchyId];
+    if (hierarchy) {
+      ranking = hierarchy({ ranking, hands, board, mode });
+    }
+  }
+
+  let qualifierResult: ModeShowdown["qualifierResult"];
+  if (ctx.pendingQualifier) {
+    const qualifier = QUALIFIERS[ctx.pendingQualifier];
+    if (qualifier) {
+      const verdict: QualifierResult = qualifier({ ranking, hands, board });
+      qualifierResult = {
+        ok: verdict.ok,
+        qualifierId: ctx.pendingQualifier,
+        failedReason: verdict.ok ? undefined : verdict.reason,
+      };
+    }
+  }
+
+  // Rebuild ranks against the reordered ranking; preserve tie-grouping by
+  // recomputing ranks per the reordered position. We approximate tie equality
+  // by checking whether two adjacent hands shared a rank in the input ranks.
+  const trueRanks = ranking === result.trueRanking
+    ? result.trueRanks
+    : ranksFromOrdered(ranking, (a, b) => result.trueRanks[a] === result.trueRanks[b]);
+
   return {
-    trueRanking,
-    trueRanks: ranksFromOrdered(trueRanking, (a, b) => {
-      return compareScore(ruleScores.get(a)!, ruleScores.get(b)!) === 0 && highRanks[a] === highRanks[b];
-    }),
-    madeHandNames: Object.fromEntries(
-      evaluatedHands.map((hand) => [hand.id, ruleScores.get(hand.id)!.label])
-    ),
+    trueRanking: ranking,
+    trueRanks,
+    madeHandNames: result.madeHandNames,
+    ...(qualifierResult ? { qualifierResult } : {}),
   };
+}
+
+/**
+ * Map a phase-effect ScoreRule override onto a concrete scoring-shaped mode
+ * the existing showdown machinery understands. `invertedHigh` flips into
+ * `rankTransform: "inverted"` so the configured-high path takes over.
+ */
+function applyScoreOverride(
+  baseMode: ReturnType<typeof getGameModeDefinition>,
+  override: ScoreRule,
+): ReturnType<typeof getGameModeDefinition> {
+  if (override === "invertedHigh") {
+    return { ...baseMode, score: "high" as ScoreRule, rankTransform: "inverted" };
+  }
+  return { ...baseMode, score: override };
 }
 
 function computeConfiguredHighShowdown(
@@ -161,6 +275,7 @@ function computeConfiguredHighShowdown(
   });
 
   const label = mode.wildCards ? "Wild" : mode.identityResolution ? "Identity" : "Inverted";
+  const describe = mode.rankTransform === "inverted" ? describeInvertedRaw : describeRaw;
   return {
     trueRanking,
     trueRanks: ranksFromOrdered(trueRanking, (a, b) => {
@@ -172,7 +287,7 @@ function computeConfiguredHighShowdown(
     madeHandNames: Object.fromEntries(
       hands.map((hand) => {
         const solved = solvedByHand.get(hand.id);
-        return [hand.id, solved ? `${label}: ${describeRaw(solved)}` : "Incomplete"];
+        return [hand.id, solved ? `${label}: ${describe(solved)}` : "Incomplete"];
       })
     ),
   };
@@ -369,6 +484,37 @@ function normalizeSolverStrings(cards: readonly string[]): string[] {
 function describeRaw(raw: RawPokerSolved): string {
   const solved = raw as { descr?: string; name?: string };
   return solved.descr ?? solved.name ?? "";
+}
+
+/** Map an inverted rank string back to the player-facing original rank label. */
+function inverseRankLabel(invertedRank: Rank): Rank {
+  // INVERTED_RANK is its own inverse — A↔2, K↔3, etc.
+  return INVERTED_RANK[invertedRank];
+}
+
+/**
+ * For modes with `rankTransform: "inverted"`, pokersolver's "K High" describes
+ * the post-transform rank — confusing because the player saw the original card.
+ * Prefix the label with the corresponding *original* rank so the chip aligns
+ * with what the player observed at deal time.
+ */
+function describeInvertedRaw(raw: RawPokerSolved): string {
+  const solved = raw as { descr?: string; name?: string; cards?: { value?: string }[] };
+  const base = solved.descr ?? solved.name ?? "";
+  if (!solved.cards || solved.cards.length === 0) return base;
+  // Find the highest *original* rank in the made hand — pokersolver's card
+  // values are post-transform, so "K" in solved.cards corresponds to original
+  // "3" (inverse-mapped). We want the lowest post-transform rank = highest
+  // original rank to lead the label, since that's the card the player saw.
+  const originalRanks = solved.cards
+    .map((card) => card.value as Rank | undefined)
+    .filter((rank): rank is Rank => rank !== undefined)
+    .map((rank) => inverseRankLabel(rank));
+  if (originalRanks.length === 0) return base;
+  const highestOriginal = originalRanks.reduce((best, rank) =>
+    RANK_VALUE[rank] > RANK_VALUE[best] ? rank : best,
+  );
+  return `${highestOriginal} High — ${base}`;
 }
 
 function filterHandsForMode(
@@ -584,6 +730,10 @@ function scoreForRule(rule: ScoreRule, hand: Hand, board: readonly Card[]): Rule
       return colorScore(cards, BLACK_SUITS, "black");
     case "high":
     case "lowball":
+    case "invertedHigh":
+      // `invertedHigh` is folded into the configured-high path via
+      // applyScoreOverride before reaching this function — but handle it
+      // here to keep the union exhaustive.
       return { values: [0], label: "" };
   }
 }

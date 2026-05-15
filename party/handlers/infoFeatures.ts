@@ -71,6 +71,22 @@ const featureHandlers: Partial<Record<InfoFeatureId, InfoFeatureHandler>> = {
       : "No wild rank this street";
     return fact("wild-rank-roulette", "Roulette", value, phase);
   },
+  "meta-legend": (state, phase) => {
+    // Surface the target meta card identity so players can preflop-track who's
+    // holding it. Identity is computed once at deal time and stored on state;
+    // the chip just reads it back.
+    const card = state.metaTargetCard;
+    const kind = state.metaKind;
+    if (!card || !kind) {
+      return fact("meta-legend", "Watch for", `a ${kind ?? "special"} card`, phase);
+    }
+    return fact(
+      "meta-legend",
+      "Watch for",
+      `${card.rank}${card.suit} (${kind})`,
+      phase,
+    );
+  },
 };
 
 /**

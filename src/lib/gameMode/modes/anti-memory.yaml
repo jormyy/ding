@@ -5,7 +5,8 @@ summary: Seen cards fade while unseen cards surface.
 detail: The board starts fully visible, then progressively hides through river before reveal restores truth.
 tags:
   - insanity
-  - memory
+  - phase-tempo
+  - visibility
 tier: insanity
 deal:
   extends: standard

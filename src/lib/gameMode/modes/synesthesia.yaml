@@ -5,7 +5,6 @@ summary: Each street shows the community cards through a different sensory filte
 detail: Flop shows ranks only, turn shows suits only, and river shows colors only; the full board lands at reveal for scoring.
 tags:
   - visibility
-  - board
 tier: chaos
 deal:
   extends: standard

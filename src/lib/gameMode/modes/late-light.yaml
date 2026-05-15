@@ -5,7 +5,6 @@ summary: Hole cards become public at the river.
 detail: Hands stay private through turn, then every hole card is exposed at river before the final ranking.
 tags:
   - visibility
-  - river
 tier: standard
 deal:
   extends: standard

@@ -1,0 +1,16 @@
+id: mirror-match-jr
+name: Mirror Match Jr.
+shortName: Mirror Jr
+summary: Two adjacent hands always tie; rank everyone else around them.
+detail: A pair of adjacent seats are forced into a tie, so the table's job is to slot the remaining hands above or below the locked pair.
+tags:
+  - relational
+tier: twist
+deal:
+  extends: standard
+phaseEffects:
+  preflop:
+    - forceAdjacentTie
+infoFeatures:
+  - mirror-match-jr
+score: high

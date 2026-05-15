@@ -4,8 +4,7 @@ shortName: Straight
 summary: Hands rank by their longest rank run first.
 detail: Poker strength breaks ties, but connected cards define the table order.
 tags:
-  - objective
-  - ranks
+  - mission
 tier: twist
 deal:
   extends: standard

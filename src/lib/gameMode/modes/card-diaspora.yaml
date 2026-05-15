@@ -5,7 +5,7 @@ summary: At turn, every hand gives one card away.
 detail: The first hole card in each hand rotates to the next hand when turn begins.
 tags:
   - insanity
-  - holes
+  - positional
 tier: insanity
 deal:
   extends: standard

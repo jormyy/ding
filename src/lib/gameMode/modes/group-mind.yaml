@@ -5,7 +5,6 @@ summary: Everyone sees one shared hole card from every hand.
 detail: One public hole-card anchor per hand rotates as shared table knowledge across phases.
 tags:
   - visibility
-  - holes
 tier: chaos
 deal:
   extends: standard

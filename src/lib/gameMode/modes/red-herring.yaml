@@ -1,0 +1,13 @@
+id: red-herring
+name: Red Herring
+shortName: Red Herr
+summary: At flop the table is told a confidently-wrong fact about the board.
+detail: A loud and certain statement about the flop arrives in the info chip — and it's a lie. Players must catch the deception or rank by it.
+tags:
+  - info-overlay
+tier: chaos
+deal:
+  extends: standard
+infoFeatures:
+  - red-herring
+score: high

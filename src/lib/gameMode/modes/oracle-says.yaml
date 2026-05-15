@@ -1,0 +1,13 @@
+id: oracle-says
+name: Oracle Says
+shortName: Oracle
+summary: Once per round the table can ask one yes/no question of the oracle.
+detail: A deterministic oracle answers a single yes/no query the table coordinates on; the answer is durable across the rest of the round.
+tags:
+  - info-overlay
+tier: wild
+deal:
+  extends: standard
+infoFeatures:
+  - oracle-says
+score: high

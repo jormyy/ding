@@ -1,0 +1,20 @@
+id: pickpocket
+name: Pickpocket
+shortName: Pickpocket
+summary: A trickster card swaps with the right neighbor's leftmost hole at river.
+detail: At river the trickster jumps seats — its holder gives it up to the next seat and inherits that seat's leftmost hole in exchange.
+tags:
+  - identity-token
+  - late-detonation
+  - positional
+tier: chaos
+deal:
+  extends: standard
+  deck: trickster
+phaseEffects:
+  river:
+    - tricksterSwapRight
+infoFeatures:
+  - pickpocket
+  - meta-legend
+score: high

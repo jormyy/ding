@@ -5,7 +5,6 @@ summary: Twos and aces are wild.
 detail: Both deck edges can substitute into the strongest available reveal identity.
 tags:
   - wild
-  - ranks
 tier: twist
 deal:
   extends: standard

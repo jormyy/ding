@@ -4,8 +4,7 @@ shortName: Light
 summary: Hearts are trimmed to six cards in the deck, making heart flushes scarce.
 detail: Most hearts are removed before the deal so red flush draws rarely materialize while the other suits stay intact.
 tags:
-  - deck
-  - suits
+  - deck-swap
 tier: twist
 deal:
   extends: standard

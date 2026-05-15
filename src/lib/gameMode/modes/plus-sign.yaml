@@ -1,0 +1,29 @@
+id: plus-sign
+name: Plus Sign
+shortName: Plus
+summary: 5-slot cross — center card forced into every read.
+detail: The board is a cross; the center sits in every scoring path so its identity dominates flush and straight reads alike.
+tags:
+  - multi-board
+tier: twist
+deal:
+  extends: standard
+  communityCards: 5
+  boardLayout:
+    kind: grid
+    slots:
+      - { row: 0, col: 1 }
+      - { row: 1, col: 0 }
+      - { row: 1, col: 1, group: "core" }
+      - { row: 1, col: 2 }
+      - { row: 2, col: 1 }
+  boards:
+    count: 2
+    cardsPerBoard: 3
+    cardIndexes:
+      - [0, 2, 4]
+      - [1, 2, 3]
+    scoring: best
+infoFeatures:
+  - plus-sign
+score: high

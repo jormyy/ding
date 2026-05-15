@@ -5,7 +5,8 @@ summary: At turn, one community card is forgotten.
 detail: One visible community card is replaced at turn and then masked through river.
 tags:
   - insanity
-  - memory
+  - visibility
+  - weather
 tier: insanity
 deal:
   extends: standard

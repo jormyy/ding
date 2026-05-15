@@ -28,6 +28,15 @@ import { reduceAddBot } from "./addBot";
 import { reduceStart } from "./start";
 import { reduceChooseDealCards } from "./chooseDealCards";
 import { reduceMulliganHand } from "./mulliganHand";
+import { reduceSacrificeHole } from "./sacrificeHole";
+import { reduceOptInThirdHole } from "./optInThirdHole";
+import { reduceContributeToBlindPool } from "./contributeToBlindPool";
+import { reduceAuctionClaim } from "./auctionClaim";
+import { reduceRecruitFromNeighbor } from "./recruitFromNeighbor";
+import { reduceSolomonSplit } from "./solomonSplit";
+import { reduceSolomonChoose } from "./solomonChoose";
+import { reduceTablePicksVote } from "./tablePicksVote";
+import { reduceDraftFlopCard } from "./draftFlopCard";
 import { reduceKick } from "./kick";
 import { reduceLeave } from "./leave";
 import { reduceDing } from "./ding";
@@ -44,6 +53,15 @@ export const dingReducers: Record<ClientMessage["type"], Reducer> = {
   start: reduceStart,
   chooseDealCards: reduceChooseDealCards,
   mulliganHand: reduceMulliganHand,
+  sacrificeHole: reduceSacrificeHole,
+  optInThirdHole: reduceOptInThirdHole,
+  contributeToBlindPool: reduceContributeToBlindPool,
+  auctionClaim: reduceAuctionClaim,
+  recruitFromNeighbor: reduceRecruitFromNeighbor,
+  solomonSplit: reduceSolomonSplit,
+  solomonChoose: reduceSolomonChoose,
+  tablePicksVote: reduceTablePicksVote,
+  draftFlopCard: reduceDraftFlopCard,
   kick: reduceKick,
   leave: reduceLeave,
   move: reduceMove,

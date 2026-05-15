@@ -1,0 +1,17 @@
+id: crab-bucket
+name: Crab Bucket
+shortName: Crab Bucket
+summary: Top hand drops a tier for every neighbor within a tier of it.
+detail: At reveal the highest hand pays a crowdedness penalty — every hand near it in tier pulls it down one rank-tier.
+tags:
+  - late-detonation
+  - relational
+tier: chaos
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - crowdedRankPenalty
+infoFeatures:
+  - crab-bucket
+score: high

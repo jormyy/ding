@@ -1,0 +1,23 @@
+id: pair-summit
+name: Pair Summit
+shortName: Pair Summit
+summary: Pairs scoring on a 7-card board — collisions everywhere.
+detail: The board grows to seven cards and pair-only scoring rewards every coincidence; expect trips, two pair, and accidental boats stacking up.
+tags:
+  - big-hands
+  - mission
+  - phase-tempo
+  - visibility
+tier: twist
+deal:
+  extends: standard
+  communityCards: 7
+  visibleCommunityCards:
+    preflop: 0
+    flop: 3
+    turn: 5
+    river: 7
+    reveal: 7
+infoFeatures:
+  - pair-summit
+score: pairs

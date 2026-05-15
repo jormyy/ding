@@ -1,0 +1,18 @@
+id: encore
+name: Encore
+shortName: Encore
+summary: After reveal, hands shuffle to neighbors for a bonus ranking pass.
+detail: Reveal gives the table one extra shot — every hand passes one seat over and a second ranking decides the round.
+tags:
+  - insanity
+  - late-detonation
+  - positional
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - shuffleHandAssignment
+infoFeatures:
+  - encore
+score: high

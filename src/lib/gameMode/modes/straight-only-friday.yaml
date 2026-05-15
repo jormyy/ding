@@ -1,0 +1,18 @@
+id: straight-only-friday
+name: Straight Only
+shortName: Straight Only
+summary: Straight scoring; board pairs are stripped at river.
+detail: Any rank duplicated on the board is removed at river, leaving a thinner board where straight runs are the only viable read.
+tags:
+  - late-detonation
+  - mission
+  - weather
+tier: twist
+deal:
+  extends: standard
+phaseEffects:
+  river:
+    - breakBoardPairs
+infoFeatures:
+  - straight-only
+score: straight

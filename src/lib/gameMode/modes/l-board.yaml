@@ -4,8 +4,9 @@ shortName: L-Board
 summary: Nine community cards form an L with five-card arms; every hand scores on its best five-card path.
 detail: Both arms of the L run five cards long and share a corner, creating overlapping five-card paths that include the pure arm, the pure stem, and the bend between them.
 tags:
-  - board
-  - topology
+  - big-hands
+  - phase-tempo
+  - visibility
 tier: chaos
 deal:
   extends: standard

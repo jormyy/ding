@@ -70,7 +70,11 @@ export const start: Handler = (state, player) => {
   state.burnCards = burnCards;
   state.communityCards = [];
   state.communityLayout = mode.deal.boardLayout ?? { kind: "linear", slots: mode.deal.communityCards };
-  state.dealChoices = buildDealChoices(mode.deal, hands);
+  installMetaTargetCard(state, mode);
+  state.dealChoices = buildDealChoices(mode.deal, hands, state.allCommunityCards);
+  state.auctionPool = buildAuctionPool(state, mode);
+  state.flopDraftPool = undefined;
+  state.optedHandIds = undefined;
   state.phase = Object.keys(state.dealChoices).length > 0 ? "dealChoice" : "preflop";
   state.modeInfo = applyModeInfoFeatures(state, state.phase);
   state.revealIndex = 0;
@@ -85,26 +89,106 @@ export const start: Handler = (state, player) => {
   return { kind: "broadcast" };
 };
 
+/**
+ * For meta-deck modes (cursed/blessed/marked/etc.), scan the dealt hands and
+ * community board for the first card with a target meta and surface it as
+ * `state.metaTargetCard`. Feeds the meta-legend info-chip so players know
+ * which exact card is the round's wild/curse/hex.
+ */
+function installMetaTargetCard(
+  state: import("../state").ServerGameState,
+  mode: ReturnType<typeof getGameModeDefinition>,
+): void {
+  const wantedMeta = inferTargetMeta(mode);
+  if (!wantedMeta) return;
+  const allCards = [
+    ...state.allCommunityCards,
+    ...state.hands.flatMap((hand) => hand.cards),
+    ...state.dealDeck,
+    ...state.burnCards,
+  ];
+  const target = allCards.find((card) => card.meta === wantedMeta);
+  if (!target) return;
+  state.metaTargetCard = { rank: target.rank, suit: target.suit };
+  state.metaKind = wantedMeta;
+}
+
+function inferTargetMeta(
+  mode: ReturnType<typeof getGameModeDefinition>,
+): import("../../src/lib/types").CardMeta | undefined {
+  switch (mode.deal.deck) {
+    case "cursed": return "cursed";
+    case "blessed": return "blessed";
+    case "tarot": return "tarot";
+    case "jokers": return "joker";
+    case "glitch": return "glitched";
+    case "twoSuited": return "twoSuited";
+    case "marked": return "marked";
+    case "trickster": return "trickster";
+  }
+  if (mode.wildCards?.metas?.length) return mode.wildCards.metas[0];
+  if (mode.forceRankByMeta?.first) return mode.forceRankByMeta.first;
+  if (mode.forceRankByMeta?.last) return mode.forceRankByMeta.last;
+  return undefined;
+}
+
 function buildDealChoices(
   deal: ReturnType<typeof getGameModeDefinition>["deal"],
-  hands: { id: string }[]
+  hands: { id: string }[],
+  allCommunityCards: import("../../src/lib/types").Card[],
 ): Record<string, DealChoiceProgress> {
   const dealChoice = deal.dealChoice;
   const isExposeChoice = deal.publicCardSelection === "playerChoice";
   if (!dealChoice?.selectionPhase && !isExposeChoice) return {};
+  const peekBoardCount = typeof dealChoice?.peekBoard === "number" ? dealChoice.peekBoard : 0;
   const choices: Record<string, DealChoiceProgress> = {};
   for (const hand of hands) {
+    const baseKeep = isExposeChoice ? (deal.publicCards ?? 1) : dealChoice!.keepCards;
     choices[hand.id] = {
-      keepCards: isExposeChoice ? (deal.publicCards ?? 1) : dealChoice!.keepCards,
+      keepCards: baseKeep,
       selectedIndexes: null,
       submitted: false,
       canMulligan: dealChoice?.mulligan,
       mulliganUsed: false,
       tradeUp: dealChoice?.tradeUp,
       inheritance: dealChoice?.inheritance,
+      recruitStage: dealChoice?.recruit ? "keep" : undefined,
+      privatePeekCards: peekBoardCount > 0 ? allCommunityCards.slice(0, peekBoardCount) : undefined,
     };
   }
   return choices;
+}
+
+function buildAuctionPool(
+  state: import("../state").ServerGameState,
+  mode: ReturnType<typeof getGameModeDefinition>,
+): import("../../src/lib/types").GameState["auctionPool"] {
+  if (!mode.deal.dealChoice?.auction) return undefined;
+  // Cards dealt into hands by `dealCardsForMode` become the auction pool.
+  // Strip them OUT of hands so the deal-choice UI sees a public pool to claim.
+  const pooledCards: import("../../src/lib/types").Card[] = [];
+  for (const hand of state.hands) {
+    pooledCards.push(...hand.cards);
+    hand.cards = [];
+    hand.cardCount = 0;
+    hand.publicCards = [];
+  }
+  // Auto-submit deal-choice progress for empty hands until claims happen; the
+  // auction handler flips `submitted=true` for each hand once filled.
+  // Per-pass queue: pass 1 = each player in seat order, pass 2 = same.
+  // Total picks per player = handsPerPlayer * keepCards.
+  const ids = state.players.map((p) => p.id);
+  const passes = state.handsPerPlayer * mode.deal.dealChoice.keepCards;
+  const queue: string[] = [];
+  for (let pass = 0; pass < passes; pass++) {
+    for (const id of ids) queue.push(id);
+  }
+  return {
+    cards: pooledCards,
+    remainingIndexes: pooledCards.map((_card, i) => i),
+    claimQueue: queue,
+    claimsPerPlayer: {},
+  };
 }
 
 export const kick: Handler = (state, player, msg, ctx): HandlerResult => {

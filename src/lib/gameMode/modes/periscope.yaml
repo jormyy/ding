@@ -4,8 +4,7 @@ shortName: Scope
 summary: At the river, each player privately sees one of a neighbor's hole cards.
 detail: Only on the river street does each player receive a private peek at a single hole card belonging to another hand; the chip is invisible to everyone else.
 tags:
-  - info
-  - holes
+  - visibility
 tier: chaos
 deal:
   extends: standard

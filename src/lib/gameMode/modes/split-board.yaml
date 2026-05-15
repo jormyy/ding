@@ -4,8 +4,10 @@ shortName: Split
 summary: Six community cards form two three-card halves; every hand scores on its better half.
 detail: The whole split board lands together, but each hand only combines with one side at showdown.
 tags:
-  - board
+  - big-hands
   - multi-board
+  - phase-tempo
+  - visibility
 tier: chaos
 deal:
   extends: standard

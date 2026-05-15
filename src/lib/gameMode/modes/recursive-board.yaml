@@ -5,7 +5,10 @@ summary: At turn, the board duplicates itself.
 detail: The board recursively mirrors into ten displayed cards at turn.
 tags:
   - insanity
-  - board
+  - multi-board
+  - phase-tempo
+  - visibility
+  - weather
 tier: insanity
 deal:
   extends: standard

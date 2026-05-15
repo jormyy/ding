@@ -5,7 +5,7 @@ summary: At turn, each hand's cards collapse together.
 detail: The first two hole cards in each hand merge into one averaged-rank card when turn begins.
 tags:
   - insanity
-  - holes
+  - weather
 tier: insanity
 deal:
   extends: standard

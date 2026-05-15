@@ -4,8 +4,7 @@ shortName: Tornado
 summary: At the turn, every hand's hole cards rotate clockwise around the table.
 detail: When turn begins, each player loses their two cards to the next seat and inherits the previous seat's hand for the rest of the showdown.
 tags:
-  - event
-  - holes
+  - positional
 tier: wild
 deal:
   extends: standard

@@ -4,8 +4,8 @@ shortName: Tower
 summary: A five-card stack shows only its top three cards until river.
 detail: The table reads a stable three-card board through turn, then the hidden bottom of the stack appears at river.
 tags:
+  - phase-tempo
   - visibility
-  - board
 tier: chaos
 deal:
   extends: standard

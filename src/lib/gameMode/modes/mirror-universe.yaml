@@ -4,8 +4,8 @@ shortName: Mirror U
 summary: At the river, every rank flips across the deck's spine.
 detail: When river begins, every rank inverts so aces become twos, kings become threes, and so on across hands and board before reveal.
 tags:
-  - event
-  - ranks
+  - late-detonation
+  - weather
 tier: wild
 deal:
   extends: standard

@@ -4,8 +4,7 @@ shortName: Hex
 summary: One hex card is shuffled in; whichever hand holds it finishes last.
 detail: The hex marker overrides poker strength at reveal, dropping the hexed hand below every non-hexed hand regardless of made-hand quality.
 tags:
-  - identity
-  - marked
+  - identity-token
 tier: wild
 deal:
   extends: standard
@@ -14,4 +13,5 @@ forceRankByMeta:
   last: cursed
 infoFeatures:
   - hex-card
+  - meta-legend
 score: high

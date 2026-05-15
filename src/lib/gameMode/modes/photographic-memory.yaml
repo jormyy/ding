@@ -5,7 +5,8 @@ summary: The flop disappears after you see it.
 detail: Flop is visible, then the board goes dark at turn and only partial river information returns.
 tags:
   - insanity
-  - memory
+  - phase-tempo
+  - visibility
 tier: insanity
 deal:
   extends: standard

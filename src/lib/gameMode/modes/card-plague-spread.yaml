@@ -5,7 +5,8 @@ summary: A plague rank infects more cards each phase.
 detail: One additional card converts to seven at flop, turn, and river.
 tags:
   - insanity
-  - ranks
+  - late-detonation
+  - weather
 tier: insanity
 deal:
   extends: standard

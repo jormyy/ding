@@ -1,0 +1,17 @@
+id: last-word
+name: Last Word
+shortName: Last Word
+summary: River overwrites every same-suit board card.
+detail: At reveal, the river card's identity rewrites every board card sharing its suit, collapsing flush draws into a single rank.
+tags:
+  - late-detonation
+  - weather
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - riverOverwritesSuit
+infoFeatures:
+  - last-word
+score: high

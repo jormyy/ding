@@ -4,8 +4,11 @@ shortName: Twin U
 summary: Two board universes play out side-by-side.
 detail: Ten community cards form two five-card boards; each hand scores against its better universe.
 tags:
+  - big-hands
   - insanity
-  - board
+  - multi-board
+  - phase-tempo
+  - visibility
 tier: insanity
 deal:
   extends: standard

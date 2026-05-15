@@ -4,8 +4,8 @@ shortName: Crawl
 summary: The board crawls out slowly before completing at river.
 detail: One card is visible preflop, then the board inches forward before the final two cards arrive at river.
 tags:
-  - tempo
-  - board
+  - phase-tempo
+  - visibility
 tier: twist
 deal:
   extends: standard

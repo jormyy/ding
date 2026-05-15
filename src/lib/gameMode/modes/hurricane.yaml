@@ -4,8 +4,8 @@ shortName: Hurricane
 summary: At river, every player loses one hole card.
 detail: Each hand loses its final hole card when river begins.
 tags:
-  - event
-  - holes
+  - late-detonation
+  - weather
 tier: wild
 deal:
   extends: standard

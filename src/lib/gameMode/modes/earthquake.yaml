@@ -4,8 +4,7 @@ shortName: Quake
 summary: At the turn, the community cards shake into a new order.
 detail: The board scrambles in place when the turn begins, keeping the same five cards but resetting any positional reads the table had built.
 tags:
-  - event
-  - board
+  - weather
 tier: wild
 deal:
   extends: standard

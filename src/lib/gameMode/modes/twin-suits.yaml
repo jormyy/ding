@@ -4,8 +4,7 @@ shortName: Twins
 summary: Hearts/diamonds and clubs/spades merge for flushes.
 detail: Red suits evaluate as one suit and black suits evaluate as one suit for showdown.
 tags:
-  - identity
-  - suits
+  - wild
 tier: twist
 deal:
   extends: standard

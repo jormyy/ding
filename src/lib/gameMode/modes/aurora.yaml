@@ -4,8 +4,8 @@ shortName: Aurora
 summary: At river, suits swap within color pairs.
 detail: When river begins, suits reassign across hands and board on a fixed cycle, scrambling flush draws while ranks stay intact.
 tags:
-  - event
-  - suits
+  - late-detonation
+  - weather
 tier: wild
 deal:
   extends: standard

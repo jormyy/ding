@@ -1,0 +1,18 @@
+id: time-loop
+name: Time Loop
+shortName: Time Loop
+summary: After reveal, rewind to turn and re-rank with reveal info known.
+detail: Reveal happens, then the table is sent back to turn for one final ranking pass with everything they just learned; the average of both rankings scores.
+tags:
+  - insanity
+  - late-detonation
+  - phase-tempo
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - rewindToTurnAfterReveal
+infoFeatures:
+  - time-loop
+score: high

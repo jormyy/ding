@@ -5,7 +5,8 @@ summary: A community card bounces into a hole slot.
 detail: The first community card swaps with the first hole card at flop, turn, and river.
 tags:
   - insanity
-  - board
+  - late-detonation
+  - weather
 tier: insanity
 deal:
   extends: standard

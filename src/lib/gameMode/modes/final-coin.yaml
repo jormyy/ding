@@ -1,0 +1,17 @@
+id: final-coin
+name: Final Coin
+shortName: Final Coin
+summary: Coin flip at reveal decides high vs lowball.
+detail: Players rank with high in mind through the river; reveal flips a public coin to choose between high and lowball as the live scoring rule.
+tags:
+  - late-detonation
+  - score-pivot
+tier: chaos
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - coinflipScoreRule
+infoFeatures:
+  - final-coin
+score: high

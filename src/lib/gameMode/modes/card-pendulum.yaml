@@ -5,7 +5,6 @@ summary: Every seven plays as a wild card at showdown.
 detail: The pendulum locks sevens as the wild rank for the hand, letting every seven substitute for whichever rank or suit improves the made hand at reveal.
 tags:
   - wild
-  - ranks
 tier: wild
 deal:
   extends: standard

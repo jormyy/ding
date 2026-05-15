@@ -1,0 +1,20 @@
+id: judgment-day
+name: Judgment Day
+shortName: Judgment
+summary: Blessed cards override at reveal; if none exist, cursed do.
+detail: At reveal the table searches for blessed metas to dictate the winner; absent any, cursed cards take over the hierarchy.
+tags:
+  - identity-token
+  - late-detonation
+  - relational
+tier: wild
+deal:
+  extends: standard
+  deck: blessed
+phaseEffects:
+  reveal:
+    - hierarchyByMeta
+infoFeatures:
+  - judgment-day
+  - meta-legend
+score: high

@@ -4,8 +4,7 @@ shortName: Theatre
 summary: Each street, a rotating hand is described in words instead of shown as cards.
 detail: A public clue narrates one hand's contents every phase, giving the table a flavorful read while the actual cards stay hidden until reveal.
 tags:
-  - info
-  - holes
+  - info-overlay
 tier: chaos
 deal:
   extends: standard

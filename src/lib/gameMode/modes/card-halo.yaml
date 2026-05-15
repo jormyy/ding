@@ -5,7 +5,7 @@ summary: Neighboring ranks gain a pair aura.
 detail: Adjacent ranks can create a synthetic pair during showdown.
 tags:
   - insanity
-  - ranks
+  - wild
 tier: insanity
 deal:
   extends: standard

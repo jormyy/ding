@@ -4,8 +4,7 @@ shortName: Jokers
 summary: Two jokers are added to the deck as wild cards.
 detail: Each joker can become the best possible card identity for the hand holding it at showdown.
 tags:
-  - deck
-  - wild
+  - identity-token
 tier: standard
 deal:
   extends: standard
@@ -13,4 +12,6 @@ deal:
 wildCards:
   metas:
     - joker
+infoFeatures:
+  - meta-legend
 score: high

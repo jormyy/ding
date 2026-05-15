@@ -4,8 +4,8 @@ shortName: Static
 summary: Each street, the community-card suits scramble while ranks stay fixed.
 detail: The board ranks lock in once dealt, but every new street reshuffles which suit each board card carries, breaking flush reads as the hand progresses.
 tags:
-  - event
-  - suits
+  - late-detonation
+  - weather
 tier: wild
 deal:
   extends: standard

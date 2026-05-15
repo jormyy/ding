@@ -5,7 +5,8 @@ summary: At river, the board returns to the flop.
 detail: The river phase truncates the board back to its first three community cards.
 tags:
   - insanity
-  - time
+  - late-detonation
+  - phase-tempo
 tier: insanity
 deal:
   extends: standard

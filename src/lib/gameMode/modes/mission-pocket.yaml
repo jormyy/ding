@@ -1,0 +1,18 @@
+id: mission-pocket
+name: Mission Pocket
+shortName: M Pocket
+summary: Win only if rank-1 hand's strength is entirely pocket-sourced.
+detail: The leading hand's scoring read must come purely from its hole cards — no top-five contribution from the board.
+tags:
+  - late-detonation
+  - mission
+  - relational
+tier: chaos
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - requirePocketSourceTop
+infoFeatures:
+  - mission-pocket
+score: high

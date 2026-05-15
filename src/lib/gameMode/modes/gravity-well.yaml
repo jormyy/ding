@@ -4,8 +4,8 @@ shortName: Gravity
 summary: At the river, every hand's highest hole card climbs one rank.
 detail: When river begins, each hand's top card is pulled up a single rank, sharpening high-card and made-hand pressure across the final showdown.
 tags:
-  - event
-  - ranks
+  - late-detonation
+  - weather
 tier: wild
 deal:
   extends: standard

@@ -1,0 +1,13 @@
+id: weather-report
+name: Weather Report
+shortName: Weather
+summary: A forecast at preflop predicts which phase will deal the highest card.
+detail: At preflop the chip predicts which street will land the round's highest card, biasing how the table values future visibility.
+tags:
+  - info-overlay
+tier: twist
+deal:
+  extends: standard
+infoFeatures:
+  - weather-report
+score: high

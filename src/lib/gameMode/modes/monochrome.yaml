@@ -1,0 +1,14 @@
+id: monochrome
+name: Monochrome
+shortName: Monochrome
+summary: Every hand's holes are the same color.
+detail: Each seat is dealt two cards of matching color — every hand is either all-red or all-black before the board lands.
+tags:
+  - constrained-deal
+tier: twist
+deal:
+  extends: standard
+  constraint: monochrome
+infoFeatures:
+  - monochrome
+score: high

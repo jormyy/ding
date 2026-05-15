@@ -4,9 +4,8 @@ shortName: Pent+
 summary: Peek six deal cards and keep any five before ranking starts.
 detail: "A select-stage Pent: each hand sees six private candidates and sculpts a five-card start."
 tags:
-  - choice
   - peek-keep
-  - big-hands
+  - select-stage
 tier: select
 deal:
   extends: standard

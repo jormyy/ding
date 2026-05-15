@@ -1,0 +1,17 @@
+id: mission-loud
+name: Mission Loud
+shortName: M Loud
+summary: Win only if every hand contains a face card.
+detail: A face-card distribution problem — every hand needs at least one J/Q/K from holes or board to qualify the round.
+tags:
+  - late-detonation
+  - mission
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - requireAllHandsHaveFace
+infoFeatures:
+  - mission-loud
+score: high

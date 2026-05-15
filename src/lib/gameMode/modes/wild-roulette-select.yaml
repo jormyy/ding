@@ -4,10 +4,9 @@ shortName: Roul+
 summary: Peek 3 cards before the rotating wild rank locks in for showdown.
 detail: "A select-stage Wild Rank Roulette: each hand sees three private candidates and sculpts a two-card start knowing fives, sixes, sevens, and eights rotate as the wild rank through the streets."
 tags:
-  - choice
   - peek-keep
+  - select-stage
   - wild
-  - ranks
 tier: select
 deal:
   extends: standard

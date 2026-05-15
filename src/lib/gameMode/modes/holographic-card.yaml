@@ -4,8 +4,8 @@ shortName: Holo
 summary: Every community card carries multiple possible identities until reveal.
 detail: Each board card displays as uncertain through flop, turn, and river; reveal collapses every slot to whichever identity makes the strongest hand.
 tags:
+  - identity-token
   - insanity
-  - identity
 tier: insanity
 deal:
   extends: standard

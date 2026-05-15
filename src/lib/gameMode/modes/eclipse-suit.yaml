@@ -5,7 +5,6 @@ summary: Community cards show suits only until reveal.
 detail: The board's suit texture is visible, but ranks stay hidden until the final reveal.
 tags:
   - visibility
-  - suits
 tier: twist
 deal:
   extends: standard

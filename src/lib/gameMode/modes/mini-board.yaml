@@ -4,8 +4,8 @@ shortName: Mini
 summary: Four community cards are dealt.
 detail: The board gets a normal flop and one turn card, then stays fixed through river.
 tags:
-  - board
-  - community
+  - big-hands
+  - visibility
 tier: standard
 deal:
   extends: standard

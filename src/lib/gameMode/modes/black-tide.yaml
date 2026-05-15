@@ -1,0 +1,17 @@
+id: black-tide
+name: Black Tide
+shortName: Black Tide
+summary: Plays as high; switches to black-card scoring at reveal.
+detail: A mirror of Red Tide. Players rank assuming high-card scoring, then the rule pivots at reveal to count only black cards.
+tags:
+  - late-detonation
+  - score-pivot
+tier: chaos
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - adoptBlackScoring
+infoFeatures:
+  - black-tide
+score: high

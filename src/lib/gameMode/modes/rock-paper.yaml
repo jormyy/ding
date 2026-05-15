@@ -1,0 +1,18 @@
+id: rock-paper
+name: Rock Paper
+shortName: Rock Paper
+summary: Pairs beat trips beat quads beat pairs (cyclic dominance).
+detail: At reveal the pair-trip-quad hierarchy becomes a cycle, and standing tall depends on whether the table also went tall.
+tags:
+  - insanity
+  - late-detonation
+  - relational
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - cyclicHandHierarchy
+infoFeatures:
+  - rock-paper
+score: high

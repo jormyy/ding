@@ -4,8 +4,8 @@ shortName: Hidden T
 summary: The turn card stays hidden until river.
 detail: The flop is visible, but the fourth board card is withheld until the river reveal catches up.
 tags:
+  - phase-tempo
   - visibility
-  - tempo
 tier: twist
 deal:
   extends: standard

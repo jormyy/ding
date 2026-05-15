@@ -1,0 +1,14 @@
+id: royal-deal
+name: Royal Deal
+shortName: Royal
+summary: Every hand starts with at least one face card.
+detail: Hole-card distribution is constrained so every seat enters preflop holding at least one face card; the early read is a paint-heavy table.
+tags:
+  - constrained-deal
+tier: twist
+deal:
+  extends: standard
+  constraint: atLeastOneFace
+infoFeatures:
+  - royal-deal
+score: high

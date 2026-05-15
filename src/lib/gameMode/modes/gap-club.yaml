@@ -1,0 +1,14 @@
+id: gap-club
+name: Gap Club
+shortName: Gap Club
+summary: Every hand's holes are exactly 5 ranks apart.
+detail: A fixed-gap deal — every seat opens with two holes precisely five ranks apart, framing every read around mid-range straights.
+tags:
+  - constrained-deal
+tier: twist
+deal:
+  extends: standard
+  constraint: fixedGap5
+infoFeatures:
+  - gap-club
+score: high

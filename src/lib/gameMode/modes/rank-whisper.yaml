@@ -4,8 +4,7 @@ shortName: R-Whisper
 summary: A public chip names one hand and a rank that hand does not hold.
 detail: The whisper narrows reads on a single hand by telling the table one rank it is missing, without ever exposing which cards it actually has.
 tags:
-  - info
-  - ranks
+  - info-overlay
 tier: chaos
 deal:
   extends: standard

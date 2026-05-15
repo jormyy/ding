@@ -4,8 +4,7 @@ shortName: Network
 summary: A public chip names one community card's true identity from the start.
 detail: From preflop onward, a network whisper exposes one community-card slot's rank and suit, giving every seat the same guaranteed anchor.
 tags:
-  - info
-  - board
+  - info-overlay
 tier: chaos
 deal:
   extends: standard

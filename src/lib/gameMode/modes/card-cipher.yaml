@@ -5,7 +5,8 @@ summary: At river, values are encoded through the river card.
 detail: Every rank shifts by the river card's rank index when river begins.
 tags:
   - insanity
-  - ranks
+  - late-detonation
+  - weather
 tier: insanity
 deal:
   extends: standard

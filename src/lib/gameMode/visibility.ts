@@ -15,7 +15,12 @@ export function visibleCommunityCardCount(modeId: string | undefined, phase: Pha
   }
   if (phase === "reveal") {
     const configuredReveal = mode.deal.visibleCommunityCards?.reveal;
-    return Math.max(0, Math.min(maxVisible, configuredReveal ?? mode.deal.communityCards));
+    if (configuredReveal !== undefined) return configuredReveal;
+    // Reveal returns a very large slot count so the caller's slice (sliced
+    // against `state.allCommunityCards`) yields every card on the board —
+    // including any absorbed onto it by phase effects (last-rites). Clamping
+    // here would hide absorbed cards even though the engine has placed them.
+    return Number.MAX_SAFE_INTEGER;
   }
   const configured = mode.deal.visibleCommunityCards?.[phase];
   if (configured !== undefined) {
@@ -23,6 +28,32 @@ export function visibleCommunityCardCount(modeId: string | undefined, phase: Pha
   }
   const fallback = baseVisibleCommunity[phase] ?? 0;
   return Math.max(0, Math.min(maxVisible, fallback));
+}
+
+/**
+ * Phase-substep-aware count override. When a phase-effect sets a substep on
+ * state, the renderer can call this from the broadcast wrapper to override
+ * the static count from `visibleCommunityCardCount` — e.g. flopOneAtATime
+ * exposes 1, then 2, then 3 cards across consecutive ticks.
+ *
+ * Returns null when no override applies — the renderer should use the
+ * static count in that case.
+ */
+export function visibleCommunityCardCountForSubstep(
+  _modeId: string | undefined,
+  phase: Phase,
+  substep: string | undefined,
+): number | null {
+  if (phase !== "flop") return null;
+  switch (substep) {
+    case "flop1": return 1;
+    case "flop2": return 2;
+    case "flop3": return 3;
+    case "flopRevert": return 3;
+    // flopDraftPending: 6 cards laid out face-up so each seat picks one
+    case "flopDraftPending": return 6;
+    default: return null;
+  }
 }
 
 export function visibleCommunityCardIndexes(modeId: string | undefined, phase: Phase): ReadonlyArray<number> | null {

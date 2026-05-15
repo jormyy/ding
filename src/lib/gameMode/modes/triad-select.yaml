@@ -4,9 +4,8 @@ shortName: Triad+
 summary: Peek four deal cards and keep any three before ranking starts.
 detail: "A select-stage Triad: each hand sees four private candidates and sculpts a three-card start."
 tags:
-  - choice
   - peek-keep
-  - big-hands
+  - select-stage
 tier: select
 deal:
   extends: standard

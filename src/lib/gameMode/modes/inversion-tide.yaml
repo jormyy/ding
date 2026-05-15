@@ -1,0 +1,18 @@
+id: inversion-tide
+name: Inversion Tide
+shortName: Inv Tide
+summary: All ranks invert at river — Aces become weakest.
+detail: Players rank toward the river expecting high to win, but the rank order flips when the river lands and the reveal scores against the inverted order.
+tags:
+  - late-detonation
+  - score-pivot
+tier: chaos
+deal:
+  extends: standard
+phaseEffects:
+  river:
+    - invertScoringNow
+rankTransform: inverted
+infoFeatures:
+  - inversion-tide
+score: high

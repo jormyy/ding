@@ -1,0 +1,78 @@
+"use client";
+
+import type { ClientMessage, GameState } from "@/lib/types";
+import { D } from "@/lib/theme";
+import { CardFace } from "../CardFace";
+import { CommunityPreviewStrip, VariantStatusBar } from "./SharedAffordances";
+
+interface Props {
+  gameState: GameState;
+  myId: string;
+  onSend: (msg: ClientMessage) => void;
+}
+
+export default function SacrificeBoard({ gameState, myId, onSend }: Props) {
+  const myHands = gameState.hands.filter((h) => h.playerId === myId);
+  const choices = gameState.dealChoices ?? {};
+  return (
+    <div className="grid gap-3">
+      {myHands.map((hand, idx) => {
+        const choice = choices[hand.id];
+        const sacrificedIndex = choice?.sacrificedHoleIndex ?? null;
+        const submitted = choice?.submitted ?? false;
+        return (
+          <div
+            key={hand.id}
+            className="grid gap-3 rounded-lg p-3"
+            style={{ background: "rgba(10,40,22,0.9)", border: "1px solid rgba(255,255,255,0.08)" }}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <VariantStatusBar
+                label={`Hand #${idx + 1}`}
+                value={submitted ? "Locked" : sacrificedIndex !== null ? "Sacrificed" : "Pick one to sacrifice"}
+                tone={submitted ? "accent" : "warning"}
+              />
+              {choice?.privatePeekCards && choice.privatePeekCards.length > 0 && (
+                <CommunityPreviewStrip cards={choice.privatePeekCards} label="Flop peek" />
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {hand.cards.map((card, i) => {
+                const isSacrificed = i === sacrificedIndex;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    disabled={submitted}
+                    onClick={() => {
+                      if (submitted) return;
+                      onSend({
+                        type: "sacrificeHole",
+                        handId: hand.id,
+                        cardIndex: isSacrificed ? null : i,
+                      });
+                    }}
+                    className="rounded-lg p-1 transition-all disabled:cursor-default"
+                    style={{
+                      background: isSacrificed ? "rgba(240,138,108,0.18)" : "rgba(0,0,0,0.22)",
+                      border: isSacrificed ? "2px solid #f08a6c" : "2px solid rgba(255,255,255,0.08)",
+                      opacity: isSacrificed ? 0.55 : 1,
+                    }}
+                    aria-pressed={isSacrificed}
+                  >
+                    <CardFace card={card} small />
+                  </button>
+                );
+              })}
+            </div>
+            {!submitted && (
+              <div className="text-[11px]" style={{ color: D.sub }}>
+                Tap a card to discard it for a flop peek. Keep the other.
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

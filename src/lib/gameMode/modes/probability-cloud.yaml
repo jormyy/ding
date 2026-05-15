@@ -4,8 +4,8 @@ shortName: Cloud
 summary: Community cards carry unresolved alternate ranks.
 detail: Board cards have alternate identities before reveal; scoring resolves to the strongest possible version.
 tags:
+  - identity-token
   - insanity
-  - identity
 tier: insanity
 deal:
   extends: standard

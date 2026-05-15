@@ -4,8 +4,8 @@ shortName: Flash
 summary: The flop is visible before anyone ranks a hand.
 detail: Players start with real board context, so early rankings are less random.
 tags:
-  - tempo
-  - flop
+  - phase-tempo
+  - visibility
 tier: twist
 deal:
   extends: standard

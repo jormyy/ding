@@ -4,10 +4,9 @@ shortName: Pick Tell
 summary: Each hand picks which hole card to expose to the table.
 detail: After the deal, every hand chooses one of its two hole cards to make public; the other stays hidden.
 tags:
-  - choice
   - expose-choice
+  - select-stage
   - visibility
-  - holes
 tier: select
 deal:
   extends: standard

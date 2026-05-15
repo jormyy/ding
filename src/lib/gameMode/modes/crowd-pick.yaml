@@ -1,0 +1,19 @@
+id: crowd-pick
+name: Crowd Pick
+shortName: Crowd
+summary: Other players pick which 2 of your 4 holes you keep.
+detail: Each seat is dealt four candidates face-up; the rest of the table votes on which two stay, removing personal agency from hand construction.
+tags:
+  - relational
+  - select-stage
+tier: select
+deal:
+  extends: standard
+  dealChoice:
+    dealtCards: 4
+    keepCards: 2
+    selectionPhase: true
+    tablePicks: true
+infoFeatures:
+  - crowd-pick
+score: high

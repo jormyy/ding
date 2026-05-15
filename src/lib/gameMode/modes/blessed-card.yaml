@@ -4,12 +4,13 @@ shortName: Blessed
 summary: One blessed card is shuffled in; whichever hand holds it finishes first.
 detail: The blessed marker overrides poker strength at reveal, lifting the blessed hand above every unblessed hand regardless of made-hand quality.
 tags:
-  - identity
-  - marked
+  - identity-token
 tier: wild
 deal:
   extends: standard
   deck: blessed
 forceRankByMeta:
   first: blessed
+infoFeatures:
+  - meta-legend
 score: high

@@ -4,8 +4,7 @@ shortName: Pinochle
 summary: Ranks nine through ace appear twice in each suit.
 detail: A duplicated high-card deck creates compact, collision-heavy boards and hands.
 tags:
-  - deck
-  - duplicates
+  - deck-swap
 tier: standard
 deal:
   extends: standard

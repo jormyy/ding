@@ -4,8 +4,7 @@ shortName: Connect
 summary: Adjacent ranks can behave like a pair.
 detail: A connected rank pair creates a synthetic pair during showdown evaluation.
 tags:
-  - identity
-  - ranks
+  - wild
 tier: twist
 deal:
   extends: standard

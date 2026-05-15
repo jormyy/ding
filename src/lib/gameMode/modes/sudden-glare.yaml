@@ -1,0 +1,17 @@
+id: sudden-glare
+name: Sudden Glare
+shortName: Glare
+summary: One revealed board card retro-marks as wild at reveal.
+detail: At reveal a single previously-shown board card flips to wild, retroactively scrambling the reads players already locked in.
+tags:
+  - late-detonation
+  - weather
+tier: chaos
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - markOneBoardWild
+infoFeatures:
+  - sudden-glare
+score: high

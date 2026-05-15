@@ -1,0 +1,20 @@
+id: instant-river
+name: Instant River
+shortName: Instant
+summary: All 5 community cards visible from preflop.
+detail: The board lands instantly at preflop; the only secrecy left is hole cards, and every street is just a re-ranking pass.
+tags:
+  - phase-tempo
+  - visibility
+tier: twist
+deal:
+  extends: standard
+  visibleCommunityCards:
+    preflop: 5
+    flop: 5
+    turn: 5
+    river: 5
+    reveal: 5
+infoFeatures:
+  - instant-river
+score: high

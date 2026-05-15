@@ -4,10 +4,10 @@ shortName: MU M
 summary: Mulligan against the river-rank flip — redraw if you mispredict the inversion.
 detail: "A select-stage Mirror Universe: each hand can lock its dealt pair or burn a one-time mulligan, then river inverts every rank so aces become twos and kings become threes before reveal."
 tags:
-  - choice
+  - late-detonation
   - mulligan
-  - event
-  - ranks
+  - select-stage
+  - weather
 tier: select
 deal:
   extends: standard

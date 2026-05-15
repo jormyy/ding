@@ -5,7 +5,6 @@ summary: Four private cards per hand, best five-card poker hand wins.
 detail: More private information creates bigger late-street reversals and tougher negotiation.
 tags:
   - big-hands
-  - dense
 tier: standard
 deal:
   extends: standard

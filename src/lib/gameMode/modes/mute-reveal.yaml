@@ -1,0 +1,17 @@
+id: mute-reveal
+name: Mute Reveal
+shortName: Mute
+summary: Suits strip from the board at reveal — ranks-only scoring.
+detail: At reveal the board's suits are erased; flushes evaporate and only rank-based hands resolve.
+tags:
+  - late-detonation
+  - weather
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - stripBoardSuits
+infoFeatures:
+  - mute-reveal
+score: high

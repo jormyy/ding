@@ -1,0 +1,13 @@
+id: dossier
+name: Dossier
+shortName: Dossier
+summary: Each hand gets a one-line personality blurb hinting at its strength.
+detail: The info chip writes a short character sketch for each hand — sometimes flattering, sometimes flat — letting the table guess strength from voice.
+tags:
+  - info-overlay
+tier: twist
+deal:
+  extends: standard
+infoFeatures:
+  - dossier
+score: high

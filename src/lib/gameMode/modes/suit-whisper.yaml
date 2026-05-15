@@ -4,8 +4,7 @@ shortName: S-Whisper
 summary: A public chip names one hand and a suit that hand does not hold.
 detail: The whisper narrows reads on a single hand by telling the table one suit it is missing, without ever exposing which cards it actually has.
 tags:
-  - info
-  - suits
+  - info-overlay
 tier: chaos
 deal:
   extends: standard

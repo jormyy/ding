@@ -1,0 +1,17 @@
+id: red-tide
+name: Red Tide
+shortName: Red Tide
+summary: Plays as high; switches to red-card scoring at reveal.
+detail: Players rank as if scoring high cards all hand, but the rule pivots at reveal — only red cards count toward the final winner.
+tags:
+  - late-detonation
+  - score-pivot
+tier: chaos
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - adoptRedScoring
+infoFeatures:
+  - red-tide
+score: high

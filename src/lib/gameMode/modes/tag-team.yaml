@@ -4,8 +4,7 @@ shortName: Tag
 summary: Each player privately sees a neighbor's full two-card hand.
 detail: Every player is tagged with another hand's complete hole cards as a private hint that persists from preflop through reveal.
 tags:
-  - info
-  - holes
+  - visibility
 tier: chaos
 deal:
   extends: standard

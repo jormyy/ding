@@ -4,8 +4,7 @@ shortName: Anti
 summary: One announced rank is banned from scoring.
 detail: Sevens are ignored by the showdown evaluator, shrinking hands and boards before hand comparison.
 tags:
-  - wild
-  - ranks
+  - deck-swap
 tier: twist
 deal:
   extends: standard

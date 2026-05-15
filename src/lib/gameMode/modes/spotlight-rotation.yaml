@@ -5,7 +5,6 @@ summary: A rotating hand is fully face-up to the table each street.
 detail: Every street, a different hand takes the spotlight and exposes both its hole cards while the other hands stay private until reveal.
 tags:
   - visibility
-  - holes
 tier: chaos
 deal:
   extends: standard

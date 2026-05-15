@@ -5,7 +5,6 @@ summary: Each hand gets one private card instead of two.
 detail: Tiny private edges make public-board reading and player confidence matter more.
 tags:
   - big-hands
-  - solo
 tier: standard
 deal:
   extends: standard

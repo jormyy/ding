@@ -5,7 +5,7 @@ summary: At turn, a hole card and board card swap identities.
 detail: The first hand's first hole card swaps with the first community card when turn begins.
 tags:
   - insanity
-  - identity
+  - weather
 tier: insanity
 deal:
   extends: standard

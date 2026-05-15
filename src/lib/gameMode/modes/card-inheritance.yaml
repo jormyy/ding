@@ -4,8 +4,9 @@ shortName: Inherit
 summary: Keep one hole card; the other is inherited from your right neighbor's discard.
 detail: Every owner picks one of two dealt cards to keep. The other is discarded left, so each final hand pairs one kept card with the right neighbor's discard while a public inheritance hint tracks the rule.
 tags:
-  - choice
   - inheritance
+  - relational
+  - select-stage
 tier: select
 deal:
   extends: standard

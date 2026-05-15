@@ -1,0 +1,13 @@
+id: second-place-cup
+name: Second Place Cup
+shortName: 2nd Place
+summary: The rank-2 hand wins; rank-1 is out.
+detail: Hands rank normally for high, but the runner-up actually takes the round and the strongest hand drops out of contention entirely.
+tags:
+  - insanity
+tier: insanity
+deal:
+  extends: standard
+infoFeatures:
+  - second-place-cup
+score: high

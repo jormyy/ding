@@ -4,8 +4,7 @@ shortName: Counter
 summary: One face-down hole card per hand is value zero.
 detail: The first kept hole card in every hand is marked counterfeit and ignored by showdown scoring.
 tags:
-  - identity
-  - holes
+  - identity-token
 tier: twist
 deal:
   extends: standard

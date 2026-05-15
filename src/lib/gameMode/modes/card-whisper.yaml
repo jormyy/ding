@@ -4,8 +4,7 @@ shortName: Whisper
 summary: At the river, a public whisper names one community card's true identity.
 detail: The chip stays silent through preflop, flop, and turn, then reveals one board slot's rank and suit on river street as a late-stage anchor.
 tags:
-  - info
-  - river
+  - info-overlay
 tier: chaos
 deal:
   extends: standard

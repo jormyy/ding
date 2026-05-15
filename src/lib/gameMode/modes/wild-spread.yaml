@@ -4,8 +4,7 @@ shortName: Spread
 summary: Far-apart ranks can behave like a pair.
 detail: A wide rank spread creates a synthetic pair during showdown evaluation.
 tags:
-  - identity
-  - ranks
+  - wild
 tier: twist
 deal:
   extends: standard

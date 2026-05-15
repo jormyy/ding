@@ -1,0 +1,19 @@
+id: omen
+name: Omen
+shortName: Omen
+summary: A cursed hole card demotes the hand by one tier.
+detail: A cursed card in your hand drops your hand class one step at reveal — the omen weighs you down regardless of strength.
+tags:
+  - identity-token
+  - late-detonation
+tier: wild
+deal:
+  extends: standard
+  deck: cursed
+phaseEffects:
+  reveal:
+    - cursedTierDemote
+infoFeatures:
+  - omen
+  - meta-legend
+score: high

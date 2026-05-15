@@ -1,0 +1,16 @@
+id: two-faced
+name: Two-Faced
+shortName: Two-Faced
+summary: A two-suited card scores under whichever suit benefits the hand.
+detail: At reveal, two-suited cards collapse to whichever suit improves their hand's read — flushes everywhere become possible.
+tags:
+  - identity-token
+tier: wild
+deal:
+  extends: standard
+  deck: twoSuited
+identityResolution: bestPossible
+infoFeatures:
+  - two-faced
+  - meta-legend
+score: high

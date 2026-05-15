@@ -5,7 +5,7 @@ summary: Sevens form a constellation across the table and play as wild cards.
 detail: Every seven, in hands or on the board, can substitute for whichever rank or suit completes the strongest reveal hand.
 tags:
   - insanity
-  - ranks
+  - wild
 tier: insanity
 deal:
   extends: standard

@@ -1,0 +1,13 @@
+id: rumor-mill
+name: Rumor Mill
+shortName: Rumor
+summary: Each phase tells the table a rumor — sometimes true, sometimes false.
+detail: Every street the info chip whispers a fact about a hand; some are true, some are not, and the table can't tell which is which.
+tags:
+  - info-overlay
+tier: wild
+deal:
+  extends: standard
+infoFeatures:
+  - rumor-mill
+score: high

@@ -1,0 +1,17 @@
+id: mission-rainbow
+name: Mission Rainbow
+shortName: M Rainbow
+summary: Win only if every suit appears in the rank-1 hand's read.
+detail: The leading hand's five-card read must include all four suits — flush draws don't count, painted hands do.
+tags:
+  - late-detonation
+  - mission
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - requireTopHandRainbow
+infoFeatures:
+  - mission-rainbow
+score: high

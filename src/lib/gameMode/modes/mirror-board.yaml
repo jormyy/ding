@@ -4,8 +4,11 @@ shortName: Mirror
 summary: At the river, the board doubles into a primary row and a mirrored row.
 detail: Ten community slots fan out on river street, but scoring still uses the five primary cards — the mirror row is read-only theatrics.
 tags:
-  - board
-  - mirror
+  - late-detonation
+  - multi-board
+  - phase-tempo
+  - visibility
+  - weather
 tier: wild
 deal:
   extends: standard

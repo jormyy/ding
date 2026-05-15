@@ -4,10 +4,11 @@ shortName: Sky+
 summary: Peek 3 cards and sculpt your start for the seven-card Big Sky board.
 detail: "A select-stage Big Sky: each hand sees three private candidates and sculpts a two-card start before the board grows to four on flop, five on turn, and seven on river."
 tags:
-  - choice
+  - big-hands
   - peek-keep
-  - board
-  - community
+  - phase-tempo
+  - select-stage
+  - visibility
 tier: select
 deal:
   extends: standard

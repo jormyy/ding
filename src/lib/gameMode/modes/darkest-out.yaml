@@ -5,7 +5,6 @@ summary: The lowest hole card in every hand is public from the start.
 detail: Each hand exposes its darkest private card, giving the table a low-card anchor while the higher card stays hidden until reveal.
 tags:
   - visibility
-  - holes
 tier: twist
 deal:
   extends: standard

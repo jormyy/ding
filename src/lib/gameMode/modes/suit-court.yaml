@@ -1,0 +1,18 @@
+id: suit-court
+name: Suit Court
+shortName: Suit Court
+summary: Flush scoring, but only the board's majority color counts.
+detail: At river, every card whose color does not match the board's majority is stripped from play, leaving flush draws to fight over a single chromatic court.
+tags:
+  - late-detonation
+  - mission
+  - weather
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  river:
+    - lockMajorityColor
+infoFeatures:
+  - suit-court
+score: flush

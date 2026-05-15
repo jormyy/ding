@@ -4,8 +4,7 @@ shortName: Ice
 summary: Even ranks are frozen out of scoring.
 detail: Even-ranked cards are skipped by the reveal evaluator.
 tags:
-  - event
-  - ranks
+  - deck-swap
 tier: wild
 deal:
   extends: standard

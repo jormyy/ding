@@ -1,0 +1,19 @@
+id: recruit
+name: Recruit
+shortName: Recruit
+summary: Steal one card from the next player's discard pile at deal.
+detail: After deal-choice, each player can grab a card their right-neighbor just discarded, inverting the inheritance flow.
+tags:
+  - relational
+  - select-stage
+tier: select
+deal:
+  extends: standard
+  dealChoice:
+    dealtCards: 3
+    keepCards: 2
+    selectionPhase: true
+    recruit: true
+infoFeatures:
+  - recruit
+score: high

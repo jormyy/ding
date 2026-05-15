@@ -5,7 +5,8 @@ summary: Every street, all ranks drift upward.
 detail: All ranks shift +1 at flop, turn, and river.
 tags:
   - insanity
-  - ranks
+  - late-detonation
+  - weather
 tier: insanity
 deal:
   extends: standard

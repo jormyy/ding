@@ -4,8 +4,7 @@ shortName: Heat W
 summary: At turn, all face cards become aces.
 detail: Jacks, queens, and kings in hands and board convert to aces when turn begins.
 tags:
-  - event
-  - ranks
+  - weather
 tier: wild
 deal:
   extends: standard

@@ -1,0 +1,16 @@
+id: flop-loop
+name: Flop Loop
+shortName: Flop Loop
+summary: After turn, the visible board reverts to flop briefly before river.
+detail: Turn arrives, then the board temporarily drops back to its flop visibility for one re-rank, then river restores everything.
+tags:
+  - phase-tempo
+tier: chaos
+deal:
+  extends: standard
+phaseEffects:
+  turn:
+    - revertToFlopBriefly
+infoFeatures:
+  - flop-loop
+score: high

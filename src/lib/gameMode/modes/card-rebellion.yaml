@@ -5,7 +5,7 @@ summary: At the turn, every hand rotates one seat clockwise around the table.
 detail: When turn begins, each player passes their two-card hand to the next seat and inherits the previous seat's hand for the rest of the showdown.
 tags:
   - insanity
-  - holes
+  - positional
 tier: insanity
 deal:
   extends: standard

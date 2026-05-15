@@ -4,8 +4,11 @@ shortName: Q Flop
 summary: Three possible flops exist at once.
 detail: Nine community cards form three flop boards; each hand scores against its best quantum board.
 tags:
+  - big-hands
   - insanity
-  - board
+  - multi-board
+  - phase-tempo
+  - visibility
 tier: insanity
 deal:
   extends: standard

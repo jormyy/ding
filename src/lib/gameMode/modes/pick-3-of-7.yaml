@@ -4,8 +4,8 @@ shortName: Pick 3
 summary: Every hand is dealt seven cards; the owner keeps any three before ranking starts.
 detail: A heavy deal-choice phase gives each player seven private candidates and asks them to sculpt a three-card start.
 tags:
-  - choice
   - peek-keep
+  - select-stage
 tier: select
 deal:
   extends: standard

@@ -1,0 +1,24 @@
+id: tarot-tower
+name: Tarot Tower
+shortName: Tarot Twr
+summary: A tarot card on the board shifts every rank +1 each phase.
+detail: Each street, the tarot tower advances every rank in play by one — a slow climb that detonates by reveal into wholly different reads.
+tags:
+  - identity-token
+  - insanity
+  - late-detonation
+tier: insanity
+deal:
+  extends: standard
+  deck: tarot
+phaseEffects:
+  flop:
+    - tarotRankShift
+  turn:
+    - tarotRankShift
+  river:
+    - tarotRankShift
+infoFeatures:
+  - tarot-tower
+  - meta-legend
+score: high

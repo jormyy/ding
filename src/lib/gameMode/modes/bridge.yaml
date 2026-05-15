@@ -1,0 +1,31 @@
+id: bridge
+name: Bridge
+shortName: Bridge
+summary: Two boards share a single bridging card that votes a side at reveal.
+detail: Nine community cards form two boards joined by one shared bridge; at reveal the bridge picks the side it'll score for and gives that board the win.
+tags:
+  - big-hands
+  - late-detonation
+  - multi-board
+tier: chaos
+deal:
+  extends: standard
+  communityCards: 9
+  boardLayout:
+    kind: dual
+    primary: 5
+    secondary: 5
+    secondaryRole: mirror
+  boards:
+    count: 2
+    cardsPerBoard: 5
+    cardIndexes:
+      - [0, 1, 2, 3, 4]
+      - [4, 5, 6, 7, 8]
+    scoring: best
+phaseEffects:
+  reveal:
+    - bridgeCardChoice
+infoFeatures:
+  - bridge
+score: high

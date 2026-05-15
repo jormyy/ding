@@ -5,7 +5,8 @@ summary: Cards flicker into new ranks as the hand progresses.
 detail: The first hole card and first board card shift upward each street.
 tags:
   - insanity
-  - ranks
+  - late-detonation
+  - weather
 tier: insanity
 deal:
   extends: standard

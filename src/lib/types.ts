@@ -1,4 +1,11 @@
-import type { BoardLayout } from "./gameMode/types";
+import type {
+  BoardLayout,
+  HierarchyId,
+  MetaKind,
+  PhaseSubstep,
+  QualifierId,
+  ScoreRule,
+} from "./gameMode/types";
 
 /** Playing card suit. */
 export type Suit = "H" | "D" | "C" | "S";
@@ -122,6 +129,24 @@ export type DealChoiceProgress = {
   tradeUp?: boolean;
   /** True when the unselected card will be passed left and replaced by the right neighbor's discard. */
   inheritance?: boolean;
+  /** peekBoard / sacrificeForPeek: server-revealed peeked community cards (owner-only). */
+  privatePeekCards?: Card[];
+  /** sacrificeForPeek: which hole this hand sacrificed (null = none). */
+  sacrificedHoleIndex?: number | null;
+  /** optInHole3WithPenalty: true once the player opted to keep all 3. */
+  optedThirdHole?: boolean;
+  /** blindPool: index in `cards` of the contributed card. */
+  blindPoolContribution?: number;
+  /** recruit: which card was taken from the right neighbor's discard pile. */
+  recruitedFromNeighborIndex?: number | null;
+  /** recruit: phase-1 keep is locked; awaiting phase-2 steal. */
+  recruitStage?: "keep" | "steal" | "done";
+  /** solomon: the splitter's pair-1 / pair-2 proposal (indexes into dealt cards). */
+  solomonSplit?: { pair1: number[]; pair2: number[] };
+  /** solomon: 0 or 1 — chosen pair index. */
+  solomonChosenPair?: 0 | 1;
+  /** tablePicks: per-voter ballots; key = voter player id, value = preferred 2 indexes. */
+  tablePicksVotes?: Record<string, number[]>;
 };
 
 /** A player (human or bot) in the room. */
@@ -223,6 +248,50 @@ export type GameState = {
   dingLog: SocialSignal[];
   /** Recent fuckoff events, newest last. Capped server-side at ~20. */
   fuckoffLog: SocialSignal[];
+
+  // -------- Phase-effect runtime overrides (broadcast to all clients) --------
+
+  /** Replaces `mode.score` for this round when set by a phase effect. */
+  scoreRuleOverride?: ScoreRule;
+  /** Qualifier outcome evaluated at reveal; UI surfaces a VOIDED badge when ok is false. */
+  qualifierResult?: {
+    ok: boolean;
+    qualifierId: QualifierId;
+    failedReason?: string;
+  };
+  /** Active hierarchy effect; reveal UI uses this to label the active ordering. */
+  handHierarchyId?: HierarchyId;
+  /** Hand IDs whose cards moved onto the board (e.g. last-rites absorb). */
+  absorbedHandIds?: string[];
+  /** Wild rank picked at runtime (e.g. hostageRankBecomesWild — designated hand's first card rank). */
+  wildRankByEffect?: Rank;
+  /** Hands frozen at the flop and excluded from later phase-effect mutations. */
+  lockedHandIds?: string[];
+  /** True when board suits are hidden for scoring (stripBoardSuits). */
+  suitsStripped?: boolean;
+  /** Index of a community card marked wild by markOneBoardWild. */
+  markedBoardWildIndex?: number;
+  /** Active phase-tempo substep (flopOneAtATime, revertToFlopBriefly, etc.). */
+  phaseSubstep?: PhaseSubstep;
+  /** Meta-deck target card identity, surfaced via the meta-legend info chip. */
+  metaTargetCard?: Card;
+  /** Meta-deck flavour identifier for the legend chip. */
+  metaKind?: MetaKind;
+  /** Auction-row pool of remaining dealt-but-unclaimed cards (only set for auction modes). */
+  auctionPool?: {
+    cards: Card[];
+    remainingIndexes: number[];
+    claimQueue: string[];
+    claimsPerPlayer: Record<string, number>;
+  };
+  /** Flop-draft pool of face-up flop cards mid-draft (only set during flopDraftPending substep). */
+  flopDraftPool?: {
+    cards: Card[];
+    remainingIndexes: number[];
+    draftedBy: Record<string, number[]>;
+  };
+  /** Hand IDs that opted into the 3rd hole at deal-choice (drives the reveal penalty). */
+  optedHandIds?: string[];
 };
 
 /** The three kinds of chip moves between players. */
@@ -288,6 +357,15 @@ export type ClientMessage =
   | { type: "start" }
   | { type: "chooseDealCards"; handId: string; indexes: number[] }
   | { type: "mulliganHand"; handId: string }
+  | { type: "auctionClaim"; poolCardIndex: number }
+  | { type: "contributeToBlindPool"; handId: string; cardIndex: number }
+  | { type: "sacrificeHole"; handId: string; cardIndex: number | null }
+  | { type: "optInThirdHole"; handId: string; optIn: boolean }
+  | { type: "recruitFromNeighbor"; handId: string; neighborDiscardIndex: number }
+  | { type: "solomonSplit"; handId: string; pair1: number[]; pair2: number[] }
+  | { type: "solomonChoose"; targetHandId: string; chosenPair: 0 | 1 }
+  | { type: "tablePicksVote"; targetHandId: string; indexes: number[] }
+  | { type: "draftFlopCard"; poolCardIndex: number }
   | { type: "move"; handId: string; toIndex: number }
   | { type: "swap"; handIdA: string; handIdB: string }
   | { type: "transferOwnChip"; fromHandId: string; toHandId: string }

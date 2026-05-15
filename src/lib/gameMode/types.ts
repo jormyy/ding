@@ -71,7 +71,59 @@ export type ScoreRule =
   | "straight"
   | "pairs"
   | "red"
-  | "black";
+  | "black"
+  | "invertedHigh";
+
+/** A qualifier evaluated at reveal; failure marks the round VOIDED. */
+export type QualifierId =
+  | "requireTopHandIsFlush"
+  | "requireAllHandsPaired"
+  | "requireTopHandNoFaceCards"
+  | "requireAllHandsHaveFace"
+  | "requireTopHandRainbow"
+  | "requireAdjacentTie"
+  | "requireTightSpread"
+  | "requireWideSpread"
+  | "requireRedRiver"
+  | "requirePocketSourceTop"
+  | "requirePairToQualify"
+  | "excludePairTier";
+
+/** A ranking re-orderer applied at showdown after the base sort. */
+export type HierarchyId =
+  | "hierarchyByMeta"
+  | "cyclicHandHierarchy"
+  | "pactMergeFirstLast"
+  | "colorTeamAssign"
+  | "adjacentRankBonus"
+  | "matchRankInherit"
+  | "forceAdjacentTie"
+  | "crowdedRankPenalty"
+  | "enforceOneCardPerBoardRow"
+  | "bridgeCardChoice"
+  | "uniqueHandClassRequired";
+
+/** Active sub-phase within an outer phase (phase-tempo theatre effects). */
+export type PhaseSubstep =
+  | "flop1"
+  | "flop2"
+  | "flop3"
+  | "flopRevert"
+  | "flopDuplicate"
+  | "rewindToTurn"
+  | "flopDraftPending";
+
+/** Meta-deck flavour identifier shown in the legend info-chip. */
+export type MetaKind =
+  | "cursed"
+  | "blessed"
+  | "marked"
+  | "trickster"
+  | "glitched"
+  | "counterfeit"
+  | "twoSuited"
+  | "tarot"
+  | "joker";
 
 export type DealConstraint =
   | "pocketPair"
@@ -82,7 +134,11 @@ export type DealConstraint =
   | "gappedRanks"
   | "polarRanks"
   | "lowRanks"
-  | "highRanks";
+  | "highRanks"
+  | "atLeastOneFace"
+  | "bichrome"
+  | "monochrome"
+  | "fixedGap5";
 
 export interface GameModeDealRule {
   /** Cards consumed per hand before any automatic keep/discard rule. */
@@ -100,6 +156,22 @@ export interface GameModeDealRule {
     tradeUp?: boolean;
     /** Keeps one local card and inherits the right neighbor's discarded card. */
     inheritance?: boolean;
+    /** Open auction over a public row of dealt cards. */
+    auction?: boolean;
+    /** Each player contributes one hole to a face-down center pool, draws back blind. */
+    blindPool?: boolean;
+    /** Allows peeking at N community cards before locking the hand. */
+    peekBoard?: number;
+    /** Discard one hole to peek the flop one phase early. */
+    sacrificeForPeek?: boolean;
+    /** Steal one card from the next player's discard pile. */
+    recruit?: boolean;
+    /** Split four cards into two pairs and another player chooses which pair you keep. */
+    solomon?: boolean;
+    /** Other players choose which of your dealt cards you keep. */
+    tablePicks?: boolean;
+    /** Opt to receive an extra hole in exchange for a tier penalty at reveal. */
+    optInHole3WithPenalty?: boolean;
   };
   /** Cards from each hand shown to every player before reveal. */
   publicCards?: number;
@@ -156,7 +228,15 @@ export type BoardLayout =
   | { kind: "linear"; slots: number }
   | { kind: "dual"; primary: number; secondary: number; secondaryRole: "mirror" | "decoy" | "vault" }
   | { kind: "L"; arm: number; stem: number }
-  | { kind: "grid"; slots: BoardSlot[] };
+  | { kind: "grid"; slots: BoardSlot[] }
+  /** Four cardinal positions (N/E/S/W). `slots` defaults to 4 if omitted. */
+  | { kind: "compass"; slots?: number }
+  /** Circular ring of N community cards. */
+  | { kind: "wheel"; slots: number }
+  /** N steps where each step is offset diagonally. */
+  | { kind: "staircase"; slots: number }
+  /** Five cards forming a plus sign (center + 4 arms). */
+  | { kind: "plus" };
 
 export type PhaseEffectId =
   | "randomReplaceVisibleCommunity"
@@ -178,7 +258,6 @@ export type PhaseEffectId =
   | "faceCardsToAces"
   | "faceCardsToTwos"
   | "removeOneHolePerHand"
-  | "removeEvenRanks"
   | "removeFirstHolePerHand"
   | "shuffleAllHoleCards"
   | "swapFirstHoleWithFirstCommunity"
@@ -200,7 +279,64 @@ export type PhaseEffectId =
   | "cipherRanksWithRiver"
   | "staticFlickerFirstCards"
   | "splitHandsAtReveal"
-  | "schismDeckHighOnly";
+  | "schismDeckHighOnly"
+  | "lockMajorityColor"
+  | "zeroHighRanks"
+  | "breakBoardPairs"
+  | "adoptRedScoring"
+  | "adoptBlackScoring"
+  | "invertScoringNow"
+  | "requirePairToQualify"
+  | "armRankInvert"
+  | "executeRankInvert"
+  | "riverOverwritesSuit"
+  | "coinflipScoreRule"
+  | "stripBoardSuits"
+  | "markOneBoardWild"
+  | "shuffleHandAssignment"
+  | "crossHandCardSwap"
+  | "absorbLastHandToBoard"
+  | "hierarchyByMeta"
+  | "enforceOneCardPerBoardRow"
+  | "bridgeCardChoice"
+  | "cyclicHandHierarchy"
+  | "adjacentRankBonus"
+  | "uniqueHandClassRequired"
+  | "matchRankInherit"
+  | "pactMergeFirstLast"
+  | "colorTeamAssign"
+  | "hostageRankBecomesWild"
+  | "bestCardClockwise"
+  | "forceAdjacentTie"
+  | "crowdedRankPenalty"
+  | "requireTopHandIsFlush"
+  | "requireAllHandsPaired"
+  | "requireTopHandNoFaceCards"
+  | "requireAllHandsHaveFace"
+  | "requireTopHandRainbow"
+  | "requireAdjacentTie"
+  | "requireTightSpread"
+  | "requireWideSpread"
+  | "requireRedRiver"
+  | "requirePocketSourceTop"
+  | "rerollFlopAtTurn"
+  | "revertToFlopBriefly"
+  | "flopOneAtATime"
+  | "duplicateFlopPhase"
+  | "rewindToTurnAfterReveal"
+  | "lockTopHalfAtFlop"
+  | "markFirstBoard"
+  | "blessedTierBump"
+  | "cursedTierDemote"
+  | "tricksterSwapRight"
+  | "glitchCopyNeighbor"
+  | "tarotRankShift"
+  | "counterfeitInversion"
+  | "chosenJokerImprint"
+  | "markedTwinWild"
+  | "excludePairTier"
+  | "optedTierPenalty"
+  | "draftFromFlop";
 
 export type InfoFeatureId =
   | "anti-memory"
@@ -313,7 +449,108 @@ export type InfoFeatureId =
   | "whisper-chain"
   | "wild-rank-roulette"
   | "wildfire"
-  | "wormhole";
+  | "wormhole"
+  | "audit-trail"
+  | "auction-row"
+  | "back-room"
+  | "bipolar-judge"
+  | "black-tide"
+  | "book-spread"
+  | "bookends"
+  | "bridge"
+  | "chessboard"
+  | "chosen-one"
+  | "chromatic"
+  | "civil-war"
+  | "clergy"
+  | "clock"
+  | "color-lock"
+  | "commit-flop"
+  | "compass"
+  | "confession"
+  | "counter-cuff"
+  | "crab-bucket"
+  | "crowd-pick"
+  | "decoys"
+  | "dossier"
+  | "double-down"
+  | "double-flop"
+  | "effigy"
+  | "encore"
+  | "final-coin"
+  | "flop-draft"
+  | "flop-loop"
+  | "flopless"
+  | "gap-club"
+  | "hostage"
+  | "instant-river"
+  | "inversion-tide"
+  | "island-chain"
+  | "judgment-day"
+  | "keystone"
+  | "last-rites"
+  | "last-word"
+  | "late-flop"
+  | "low-noon"
+  | "match-game"
+  | "mirror-match-jr"
+  | "mirror-meta"
+  | "mission-flush"
+  | "mission-loud"
+  | "mission-low-spread"
+  | "mission-pair"
+  | "mission-pocket"
+  | "mission-quiet"
+  | "mission-rainbow"
+  | "mission-red-river"
+  | "mission-twins"
+  | "mission-wide"
+  | "monochrome"
+  | "mute-reveal"
+  | "neighbor-bonus"
+  | "omen"
+  | "oracle-peek"
+  | "oracle-says"
+  | "pact"
+  | "pair-summit"
+  | "pause-flop"
+  | "peasant-deal"
+  | "pickpocket"
+  | "plus-sign"
+  | "prophecy"
+  | "prophets"
+  | "pulled-rug"
+  | "pyramid"
+  | "recruit"
+  | "red-herring"
+  | "red-tide"
+  | "relay-baton"
+  | "relic"
+  | "reverse-stream"
+  | "rock-paper"
+  | "royal-deal"
+  | "rumor-mill"
+  | "runners"
+  | "sacrifice"
+  | "same-rank"
+  | "second-place-cup"
+  | "secret-trade"
+  | "seismograph"
+  | "slow-flop"
+  | "solo-act"
+  | "solomon-cut"
+  | "staircase"
+  | "straight-only"
+  | "sudden-glare"
+  | "suit-court"
+  | "tarot-tower"
+  | "time-loop"
+  | "tomorrow"
+  | "two-faced"
+  | "weather-report"
+  | "wheel"
+  | "worst-of-all"
+  | "meta-legend";
 
 export type ModeTier = "standard" | "twist" | "select" | "wild" | "chaos" | "insanity";
 

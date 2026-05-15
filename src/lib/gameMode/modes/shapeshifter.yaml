@@ -5,7 +5,8 @@ summary: One community card changes identity each street.
 detail: The first community card upgrades one rank at flop, turn, and river.
 tags:
   - insanity
-  - identity
+  - late-detonation
+  - weather
 tier: insanity
 deal:
   extends: standard

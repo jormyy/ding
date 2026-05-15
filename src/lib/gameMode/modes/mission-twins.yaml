@@ -1,0 +1,17 @@
+id: mission-twins
+name: Mission Twins
+shortName: M Twins
+summary: Win only if two adjacent hands tie at reveal.
+detail: At least one adjacent pair of hands must end up tied — the table coordinates to deliver a tie somewhere among the seats.
+tags:
+  - late-detonation
+  - mission
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - requireAdjacentTie
+infoFeatures:
+  - mission-twins
+score: high

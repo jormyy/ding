@@ -1,0 +1,13 @@
+id: audit-trail
+name: Audit Trail
+shortName: Audit
+summary: Every ranking change is logged with a public attribution chip.
+detail: Each rank movement on the table is publicly logged with the player who made it, encouraging explicit reasoning and post-hoc reads.
+tags:
+  - info-overlay
+tier: twist
+deal:
+  extends: standard
+infoFeatures:
+  - audit-trail
+score: high

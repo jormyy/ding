@@ -4,8 +4,8 @@ shortName: 2 River
 summary: The river reveals two final community cards.
 detail: Six-card boards create dramatic final re-sorts without changing the core loop.
 tags:
-  - board
-  - river
+  - big-hands
+  - visibility
 tier: standard
 deal:
   extends: standard

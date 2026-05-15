@@ -4,8 +4,7 @@ shortName: Tarot
 summary: Two arcana cards are shuffled into the deck and play as wild cards.
 detail: Whichever hand or board picks up an arcana card can read it as the strongest identity available at reveal.
 tags:
-  - deck
-  - wild
+  - identity-token
 tier: standard
 deal:
   extends: standard
@@ -13,4 +12,6 @@ deal:
 wildCards:
   metas:
     - tarot
+infoFeatures:
+  - meta-legend
 score: high

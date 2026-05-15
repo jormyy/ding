@@ -1,0 +1,18 @@
+id: relay-baton
+name: Relay Baton
+shortName: Relay
+summary: At reveal each hand passes its best card clockwise.
+detail: Reveal triggers a clockwise relay — every hand sends its best card to the next seat and scores using whatever arrives in its place.
+tags:
+  - insanity
+  - late-detonation
+  - positional
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - bestCardClockwise
+infoFeatures:
+  - relay-baton
+score: high

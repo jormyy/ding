@@ -1,0 +1,18 @@
+id: low-noon
+name: Low Noon
+shortName: Low Noon
+summary: Lowball, but ranks 6 and above are scoring-invisible.
+detail: At river the high cards are stripped from play and only ranks 2–5 remain, condensing the lowball race into a four-rank brawl.
+tags:
+  - late-detonation
+  - mission
+  - weather
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  river:
+    - zeroHighRanks
+infoFeatures:
+  - low-noon
+score: lowball

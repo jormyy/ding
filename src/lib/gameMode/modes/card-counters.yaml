@@ -4,8 +4,7 @@ shortName: Counters
 summary: A public chip counts the cards still left in the deck.
 detail: The chip updates each street so the table can track how many cards remain undealt; scoring still uses the standard five-card board.
 tags:
-  - info
-  - deck
+  - info-overlay
 tier: chaos
 deal:
   extends: standard

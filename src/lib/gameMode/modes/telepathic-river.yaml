@@ -4,8 +4,7 @@ shortName: Telepathy
 summary: At the river, the table picks up a vague hint about a neighboring hand.
 detail: On river street, a public broadcast carries a fuzzy clue about a nearby hand's cards while the underlying scoring stays unchanged.
 tags:
-  - info
-  - river
+  - info-overlay
 tier: chaos
 deal:
   extends: standard

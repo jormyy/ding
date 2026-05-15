@@ -1,0 +1,18 @@
+id: mirror-meta
+name: Mirror Meta
+shortName: Mirror M
+summary: A glitched card copies its board neighbor's identity at turn.
+detail: The glitch on the board mimics the card sitting next to it when turn lands; effectively the board duplicates one of its own.
+tags:
+  - identity-token
+tier: chaos
+deal:
+  extends: standard
+  deck: glitch
+phaseEffects:
+  turn:
+    - glitchCopyNeighbor
+infoFeatures:
+  - mirror-meta
+  - meta-legend
+score: high

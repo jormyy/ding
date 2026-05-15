@@ -4,10 +4,9 @@ shortName: Quake+
 summary: Peek 3 cards and sculpt your start before the turn-shuffle scrambles the board.
 detail: "A select-stage Earthquake: each hand sees three private candidates and sculpts a two-card start, knowing the community cards will shake into a new order when the turn arrives."
 tags:
-  - choice
   - peek-keep
-  - event
-  - board
+  - select-stage
+  - weather
 tier: select
 deal:
   extends: standard

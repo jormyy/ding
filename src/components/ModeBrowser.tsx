@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 
 import {
   MODE_AXES,
@@ -110,6 +110,7 @@ export default function ModeBrowser({
 }: ModeBrowserProps) {
   const disabled = !isCreator;
   const searchRef = useRef<HTMLInputElement>(null);
+  const lastSelectAtRef = useRef<Map<string, number>>(new Map());
   const storage = useModeBrowserStorage(modeOptions);
   const [browserOpen, setBrowserOpen] = useState(false);
   const [activeTier, setActiveTier] = useState<ModeTier>(selectedMode.tier);
@@ -195,12 +196,23 @@ export default function ModeBrowser({
     });
   }
 
-  function selectMode(modeId: string, closeBrowser: boolean) {
+  const selectMode = useCallback((modeId: string, closeBrowser: boolean) => {
     if (disabled) return;
+    // Debounce: ignore rapid repeat clicks for the same mode within 300 ms.
+    // Try-It buttons were flaky because clicking the same mode twice in quick
+    // succession would race the broadcast and leave the selection in an
+    // inconsistent state. Tracking last-click time per mode prevents that.
+    const now = Date.now();
+    const last = lastSelectAtRef.current.get(modeId) ?? 0;
+    if (now - last < 300) return;
+    lastSelectAtRef.current.set(modeId, now);
+    // Optimistically update local focus so the user gets immediate visual
+    // feedback even before the broadcast confirms.
+    setFocusedId(modeId);
     storage.rememberRecent(modeId);
     onSelectMode(modeId);
     if (closeBrowser) setBrowserOpen(false);
-  }
+  }, [disabled, onSelectMode]);
 
   function surpriseMe() {
     const pool = filteredTierModes.length > 0

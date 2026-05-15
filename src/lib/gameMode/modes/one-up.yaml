@@ -5,7 +5,6 @@ summary: One card from every hand is public from the start.
 detail: The exposed card gives the table shared anchors without revealing the full hand.
 tags:
   - visibility
-  - holes
 tier: standard
 deal:
   extends: standard

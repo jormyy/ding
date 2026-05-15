@@ -1,0 +1,17 @@
+id: mission-red-river
+name: Mission Red River
+shortName: M Red Riv
+summary: Win only if all river-revealed community cards are red.
+detail: Every community card revealed at river must be red — a single black card down the river kills the round.
+tags:
+  - late-detonation
+  - mission
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - requireRedRiver
+infoFeatures:
+  - mission-red-river
+score: high

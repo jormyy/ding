@@ -5,6 +5,15 @@ import type { ClientMessage, GameState, Hand } from "@/lib/types";
 import { getGameModeDefinition } from "@/lib/gameMode";
 import { D } from "@/lib/theme";
 import { CardFace } from "./CardFace";
+import { resolveDealChoiceVariant } from "@/lib/gameMode/dealChoiceVariant";
+import PeekBoardBoard from "./dealChoice/PeekBoardBoard";
+import SacrificeBoard from "./dealChoice/SacrificeBoard";
+import OptInHole3Board from "./dealChoice/OptInHole3Board";
+import BlindPoolBoard from "./dealChoice/BlindPoolBoard";
+import AuctionBoard from "./dealChoice/AuctionBoard";
+import RecruitBoard from "./dealChoice/RecruitBoard";
+import SolomonBoard from "./dealChoice/SolomonBoard";
+import TablePicksBoard from "./dealChoice/TablePicksBoard";
 
 interface DealChoiceBoardProps {
   gameState: GameState;
@@ -25,6 +34,7 @@ export default function DealChoiceBoard({
   const isTradeUp = mode.deal.dealChoice?.tradeUp === true;
   const isInheritance = mode.deal.dealChoice?.inheritance === true;
   const isExposeChoice = mode.deal.publicCardSelection === "playerChoice";
+  const variant = resolveDealChoiceVariant(mode);
 
   return (
     <div className="h-[100dvh] flex flex-col" style={{ background: "#0a1813" }}>
@@ -92,13 +102,7 @@ export default function DealChoiceBoard({
                     Deal choice
                   </div>
                   <h1 className="font-serif font-black text-2xl leading-tight">
-                    {isTradeUp
-                      ? "Trade one card left"
-                      : isInheritance
-                        ? "Keep one, inherit one"
-                        : isExposeChoice
-                          ? "Pick a card to expose"
-                          : "Keep your starting cards"}
+                    {variantHeadline(variant, { isTradeUp, isInheritance, isExposeChoice })}
                   </h1>
                 </div>
                 <div className="text-xs font-bold text-right" style={{ color: D.sub }}>
@@ -106,25 +110,52 @@ export default function DealChoiceBoard({
                 </div>
               </div>
 
-              <div className="grid gap-3">
-                {myHands.map((hand, index) => (
-                  <ChoiceHandRow
-                    key={`${hand.id}-${hand.cards.map((card) => `${card.rank}${card.suit}`).join("-")}`}
-                    hand={hand}
-                    handNumber={index + 1}
-                    keepCards={choices[hand.id]?.keepCards ?? 0}
-                    submitted={choices[hand.id]?.submitted ?? false}
-                    canMulligan={choices[hand.id]?.canMulligan ?? false}
-                    mulliganUsed={choices[hand.id]?.mulliganUsed ?? false}
-                    tradeUp={choices[hand.id]?.tradeUp ?? false}
-                    inheritance={choices[hand.id]?.inheritance ?? false}
-                    exposeChoice={isExposeChoice}
-                    initialSelected={choices[hand.id]?.selectedIndexes ?? []}
-                    onChoose={(indexes) => onSend({ type: "chooseDealCards", handId: hand.id, indexes })}
-                    onMulligan={() => onSend({ type: "mulliganHand", handId: hand.id })}
-                  />
-                ))}
-              </div>
+              {variant === "peekBoard" && (
+                <PeekBoardBoard gameState={gameState} myId={myId} onSend={onSend} />
+              )}
+              {variant === "sacrificeForPeek" && (
+                <SacrificeBoard gameState={gameState} myId={myId} onSend={onSend} />
+              )}
+              {variant === "optInHole3WithPenalty" && (
+                <OptInHole3Board gameState={gameState} myId={myId} onSend={onSend} />
+              )}
+              {variant === "blindPool" && (
+                <BlindPoolBoard gameState={gameState} myId={myId} onSend={onSend} />
+              )}
+              {variant === "auction" && (
+                <AuctionBoard gameState={gameState} myId={myId} onSend={onSend} />
+              )}
+              {variant === "recruit" && (
+                <RecruitBoard gameState={gameState} myId={myId} onSend={onSend} />
+              )}
+              {variant === "solomon" && (
+                <SolomonBoard gameState={gameState} myId={myId} onSend={onSend} />
+              )}
+              {variant === "tablePicks" && (
+                <TablePicksBoard gameState={gameState} myId={myId} onSend={onSend} />
+              )}
+              {(variant === "peekKeep" || variant === "mulligan" || variant === "tradeUp" ||
+                variant === "inheritance" || variant === "exposeChoice") && (
+                <div className="grid gap-3">
+                  {myHands.map((hand, index) => (
+                    <ChoiceHandRow
+                      key={`${hand.id}-${hand.cards.map((card) => `${card.rank}${card.suit}`).join("-")}`}
+                      hand={hand}
+                      handNumber={index + 1}
+                      keepCards={choices[hand.id]?.keepCards ?? 0}
+                      submitted={choices[hand.id]?.submitted ?? false}
+                      canMulligan={choices[hand.id]?.canMulligan ?? false}
+                      mulliganUsed={choices[hand.id]?.mulliganUsed ?? false}
+                      tradeUp={choices[hand.id]?.tradeUp ?? false}
+                      inheritance={choices[hand.id]?.inheritance ?? false}
+                      exposeChoice={isExposeChoice}
+                      initialSelected={choices[hand.id]?.selectedIndexes ?? []}
+                      onChoose={(indexes) => onSend({ type: "chooseDealCards", handId: hand.id, indexes })}
+                      onMulligan={() => onSend({ type: "mulliganHand", handId: hand.id })}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             <div
@@ -284,4 +315,31 @@ function ChoiceHandRow({
 
 function readyCount(gameState: GameState): number {
   return Object.values(gameState.dealChoices ?? {}).filter((choice) => choice.submitted).length;
+}
+
+function variantHeadline(
+  variant: ReturnType<typeof resolveDealChoiceVariant>,
+  flags: { isTradeUp: boolean; isInheritance: boolean; isExposeChoice: boolean },
+): string {
+  switch (variant) {
+    case "tradeUp": return "Trade one card left";
+    case "inheritance": return "Keep one, inherit one";
+    case "exposeChoice": return "Pick a card to expose";
+    case "auction": return "Auction row — claim cards in ready order";
+    case "blindPool": return "Drop one in the pool, draw one back blind";
+    case "peekBoard": return "Peek the future, then lock your hand";
+    case "sacrificeForPeek": return "Sacrifice a hole to peek the flop";
+    case "recruit": return "Keep two, then steal one from the right neighbor";
+    case "solomon": return "Split into pairs — left neighbor picks";
+    case "tablePicks": return "Other players vote on your hand";
+    case "optInHole3WithPenalty": return "Take a 3rd hole at the cost of one rank";
+    case "draftFromFlop": return "Draft from the flop";
+    case "mulligan":
+    case "peekKeep":
+    default:
+      if (flags.isTradeUp) return "Trade one card left";
+      if (flags.isInheritance) return "Keep one, inherit one";
+      if (flags.isExposeChoice) return "Pick a card to expose";
+      return "Keep your starting cards";
+  }
 }

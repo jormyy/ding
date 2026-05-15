@@ -4,8 +4,8 @@ shortName: Tiny
 summary: Only three community cards are dealt.
 detail: The flop is the whole board, so private cards matter longer and there is no late board rescue.
 tags:
-  - board
-  - community
+  - big-hands
+  - visibility
 tier: standard
 deal:
   extends: standard

@@ -4,8 +4,8 @@ shortName: Flash R
 summary: The full board is visible before anyone ranks a hand.
 detail: All five community cards are public at preflop, turning the whole hand into immediate table-reading.
 tags:
+  - phase-tempo
   - visibility
-  - board
 tier: twist
 deal:
   extends: standard

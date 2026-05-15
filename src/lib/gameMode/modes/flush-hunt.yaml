@@ -4,8 +4,7 @@ shortName: Flush
 summary: Hands rank by the largest same-suit cluster first.
 detail: Poker strength breaks ties, but suit density is the primary objective.
 tags:
-  - objective
-  - suits
+  - mission
 tier: twist
 deal:
   extends: standard

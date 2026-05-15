@@ -4,8 +4,8 @@ shortName: Wormhole
 summary: At the river, the first two hands swap one hole card.
 detail: When river begins, the first hole card of seat one trades places with the first hole card of seat two, leaving the rest of the table untouched.
 tags:
-  - event
-  - holes
+  - late-detonation
+  - positional
 tier: wild
 deal:
   extends: standard

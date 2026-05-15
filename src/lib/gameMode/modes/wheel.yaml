@@ -1,0 +1,32 @@
+id: wheel
+name: Wheel
+shortName: Wheel
+summary: 6-slot ring with a hidden hub that joins every score at reveal.
+detail: Six cards form a ring around a hidden hub; the hub lights up at reveal and joins every scoring read on the table.
+tags:
+  - big-hands
+  - phase-tempo
+  - visibility
+tier: chaos
+deal:
+  extends: standard
+  communityCards: 7
+  boardLayout:
+    kind: grid
+    slots:
+      - { row: 0, col: 1 }
+      - { row: 0, col: 2 }
+      - { row: 1, col: 0 }
+      - { row: 1, col: 1, group: "hub" }
+      - { row: 1, col: 3 }
+      - { row: 2, col: 1 }
+      - { row: 2, col: 2 }
+  visibleCommunityIndexes:
+    preflop: []
+    flop: [0, 1, 2]
+    turn: [0, 1, 2, 4]
+    river: [0, 1, 2, 4, 5, 6]
+    reveal: [0, 1, 2, 3, 4, 5, 6]
+infoFeatures:
+  - wheel
+score: high

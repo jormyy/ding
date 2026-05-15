@@ -1,0 +1,13 @@
+id: confession
+name: Confession
+shortName: Confess
+summary: One hand per phase must publicly confess one true fact about its cards.
+detail: Each street the server picks a hand to disclose one true fact about its holes — partial information, freely chosen scope.
+tags:
+  - info-overlay
+tier: wild
+deal:
+  extends: standard
+infoFeatures:
+  - confession
+score: high

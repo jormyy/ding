@@ -1,0 +1,18 @@
+id: oracle-peek
+name: Oracle Peek
+shortName: Oracle
+summary: Peek 1 community card before locking your hand.
+detail: At deal, each player sees one upcoming community slot in private, then locks their two hole cards with that information in mind.
+tags:
+  - select-stage
+tier: select
+deal:
+  extends: standard
+  dealChoice:
+    dealtCards: 2
+    keepCards: 2
+    selectionPhase: true
+    peekBoard: 1
+infoFeatures:
+  - oracle-peek
+score: high

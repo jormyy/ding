@@ -5,7 +5,7 @@ summary: At turn, every card swaps places.
 detail: All hole and community cards rotate one position through a single shared stream.
 tags:
   - insanity
-  - holes
+  - positional
 tier: insanity
 deal:
   extends: standard

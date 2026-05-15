@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { DisplayedCard } from "@/lib/types";
+import type { CardMeta, DisplayedCard, Suit } from "@/lib/types";
 import { getSuitSymbol, getRankDisplay } from "@/lib/utils";
 
 const SUIT_COLOR: Record<string, string> = {
@@ -11,13 +11,50 @@ const SUIT_COLOR: Record<string, string> = {
   S: "text-gray-900",
 };
 
+const META_CORNER_GLYPH: Partial<Record<NonNullable<CardMeta>, string>> = {
+  blessed: "✦",
+  cursed: "⊕",
+  marked: "•",
+  counterfeit: "≈",
+  trickster: "♕",
+  glitched: "▦",
+  twoSuited: "⇆",
+};
+
+const META_FRAME_CLASS: Partial<Record<NonNullable<CardMeta>, string>> = {
+  blessed: "card-meta-blessed",
+  cursed: "card-meta-cursed",
+  glitched: "card-meta-glitched",
+  marked: "ring-2 ring-slate-700/80",
+  counterfeit: "ring-1 ring-dashed ring-rose-400/70 opacity-90",
+  trickster: "ring-2 ring-fuchsia-500/80",
+};
+
+const META_CORNER_COLOR: Partial<Record<NonNullable<CardMeta>, string>> = {
+  blessed: "text-amber-500",
+  cursed: "text-red-600",
+  marked: "text-slate-700",
+  counterfeit: "text-rose-500",
+  trickster: "text-fuchsia-600",
+  glitched: "text-purple-600",
+  twoSuited: "text-indigo-600",
+};
+
 interface CardFaceProps {
   card: DisplayedCard;
   small?: boolean;
   tiny?: boolean;
+  /** When true, hide the suit symbol — used by board cards when stripBoardSuits is in effect. */
+  suitStripped?: boolean;
 }
 
-export function CardFace({ card, small = false, tiny = false }: CardFaceProps) {
+function twoSuitedPartnerSuit(suit: Suit | undefined): Suit | null {
+  if (!suit) return null;
+  // Pair red↔red and black↔black so flushes always have a complementary half.
+  return suit === "H" ? "D" : suit === "D" ? "H" : suit === "C" ? "S" : "C";
+}
+
+export function CardFace({ card, small = false, tiny = false, suitStripped = false }: CardFaceProps) {
   const isUncertain = (card.possibleIdentities?.length ?? 0) > 0;
   const justCollapsed = card.justCollapsed === true;
   const animationFiredRef = useRef(false);
@@ -33,16 +70,22 @@ export function CardFace({ card, small = false, tiny = false }: CardFaceProps) {
     return undefined;
   }, [justCollapsed]);
 
+  const meta = card.meta;
+  const isWildSpecial = meta === "joker" || meta === "tarot";
+  const metaFrameClass = meta ? META_FRAME_CLASS[meta] ?? "" : "";
+  const metaCornerGlyph = meta ? META_CORNER_GLYPH[meta] : undefined;
+  const metaCornerColor = meta ? META_CORNER_COLOR[meta] ?? "text-slate-600" : "";
+
   const uncertaintyClass = isUncertain
     ? "ring-2 ring-yellow-300/90 animate-uncertain"
     : collapsing
       ? "animate-card-collapse"
-      : "";
-  const isSpecial = card.meta === "joker" || card.meta === "tarot";
-  const symbol = isSpecial
-    ? card.meta === "joker" ? "J" : "T"
+      : metaFrameClass;
+  const symbol = isWildSpecial
+    ? meta === "joker" ? "J" : "T"
     : isUncertain ? "?"
-      : card.suit ? getSuitSymbol(card.suit) : card.color === "red" ? "●" : card.color === "black" ? "●" : "?";
+      : suitStripped ? "·"
+        : card.suit ? getSuitSymbol(card.suit) : card.color === "red" ? "●" : card.color === "black" ? "●" : "?";
   const colorClass = isUncertain
     ? "text-yellow-600"
     : card.suit
@@ -52,61 +95,73 @@ export function CardFace({ card, small = false, tiny = false }: CardFaceProps) {
         : card.color === "black"
           ? "text-gray-900"
           : "text-gray-500";
-  const rankDisplay = isSpecial ? "W" : isUncertain ? "?" : card.rank ? getRankDisplay(card.rank) : "?";
+  const rankDisplay = isWildSpecial ? "W" : isUncertain ? "?" : card.rank ? getRankDisplay(card.rank) : "?";
+  const partnerSuit = meta === "twoSuited" ? twoSuitedPartnerSuit(card.suit) : null;
+  const partnerSuitSymbol = partnerSuit ? getSuitSymbol(partnerSuit) : null;
+  const partnerSuitClass = partnerSuit ? SUIT_COLOR[partnerSuit] ?? "text-gray-900" : "";
 
   if (tiny) {
     return (
       <div
-        className={`bg-white rounded-sm shadow-sm flex flex-col items-center justify-between px-px py-px select-none ${uncertaintyClass}`}
+        className={`relative bg-white rounded-sm shadow-sm flex flex-col items-center justify-between px-px py-px select-none ${uncertaintyClass}`}
         style={{ width: 26, height: 38 }}
+        data-meta={meta}
       >
-        <div className={`text-[8px] font-black leading-none ${colorClass}`}>
-          {rankDisplay}
-        </div>
+        {metaCornerGlyph && (
+          <span className={`absolute top-px right-px text-[7px] leading-none ${metaCornerColor}`} aria-hidden>{metaCornerGlyph}</span>
+        )}
+        <div className={`text-[8px] font-black leading-none ${colorClass}`}>{rankDisplay}</div>
         <div className={`text-[13px] leading-none ${colorClass}`}>{symbol}</div>
-        <div className={`text-[8px] font-black leading-none rotate-180 ${colorClass}`}>
-          {rankDisplay}
-        </div>
+        <div className={`text-[8px] font-black leading-none rotate-180 ${colorClass}`}>{rankDisplay}</div>
       </div>
     );
   }
 
   if (small) {
     return (
-      <div className={`bg-white rounded-md shadow-sm flex flex-col items-center justify-between p-0.5 select-none ${uncertaintyClass}`}
-        style={{ width: 36, height: 52 }}>
-        <div className={`text-xs font-black leading-none ${colorClass}`}>
-          {rankDisplay}
+      <div className={`relative bg-white rounded-md shadow-sm flex flex-col items-center justify-between p-0.5 select-none ${uncertaintyClass}`}
+        style={{ width: 36, height: 52 }}
+        data-meta={meta}>
+        {metaCornerGlyph && (
+          <span className={`absolute top-0.5 right-0.5 text-[9px] leading-none ${metaCornerColor}`} aria-hidden>{metaCornerGlyph}</span>
+        )}
+        <div className={`text-xs font-black leading-none ${colorClass}`}>{rankDisplay}</div>
+        <div className={`text-xl leading-none flex items-center gap-0.5 ${colorClass}`}>
+          {symbol}
+          {partnerSuitSymbol && (
+            <span className={`text-xs ${partnerSuitClass}`} aria-hidden>{partnerSuitSymbol}</span>
+          )}
         </div>
-        <div className={`text-xl leading-none ${colorClass}`}>{symbol}</div>
-        <div className={`text-xs font-black leading-none rotate-180 ${colorClass}`}>
-          {rankDisplay}
-        </div>
+        <div className={`text-xs font-black leading-none rotate-180 ${colorClass}`}>{rankDisplay}</div>
       </div>
     );
   }
 
   return (
     <div
-      className={`bg-white rounded-lg shadow-md flex flex-col items-center justify-between p-1 select-none ${uncertaintyClass}`}
+      className={`relative bg-white rounded-lg shadow-md flex flex-col items-center justify-between p-1 select-none ${uncertaintyClass}`}
       style={{ width: 56, height: 80 }}
+      data-meta={meta}
     >
-      {/* Top rank + suit */}
+      {metaCornerGlyph && (
+        <span className={`absolute top-1 right-1 text-[10px] leading-none ${metaCornerColor}`} aria-hidden>
+          {metaCornerGlyph}
+        </span>
+      )}
       <div className="self-start">
-        <div className={`text-sm font-black leading-none ${colorClass}`}>
-          {rankDisplay}
-        </div>
+        <div className={`text-sm font-black leading-none ${colorClass}`}>{rankDisplay}</div>
         <div className={`text-sm leading-none ${colorClass}`}>{symbol}</div>
       </div>
 
-      {/* Center suit */}
-      <div className={`text-3xl leading-none ${colorClass}`}>{symbol}</div>
+      <div className={`text-3xl leading-none flex items-baseline gap-0.5 ${colorClass}`}>
+        {symbol}
+        {partnerSuitSymbol && (
+          <span className={`text-xl ${partnerSuitClass}`} aria-hidden>{partnerSuitSymbol}</span>
+        )}
+      </div>
 
-      {/* Bottom rank + suit (rotated) */}
       <div className="self-end rotate-180">
-        <div className={`text-sm font-black leading-none ${colorClass}`}>
-          {rankDisplay}
-        </div>
+        <div className={`text-sm font-black leading-none ${colorClass}`}>{rankDisplay}</div>
         <div className={`text-sm leading-none ${colorClass}`}>{symbol}</div>
       </div>
     </div>

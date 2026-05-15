@@ -257,9 +257,126 @@ function dealConstrainedHands(
       return dealRankBandHands(remainingDeck, playerIds, handsPerPlayer, cardsToDeal, isLowRank);
     case "highRanks":
       return dealRankBandHands(remainingDeck, playerIds, handsPerPlayer, cardsToDeal, isHighRank);
+    case "atLeastOneFace":
+      return dealAtLeastOneRankHands(remainingDeck, playerIds, handsPerPlayer, cardsToDeal, isFaceRank);
+    case "bichrome":
+      return dealColorPredicateHands(remainingDeck, playerIds, handsPerPlayer, cardsToDeal, false);
+    case "monochrome":
+      return dealColorPredicateHands(remainingDeck, playerIds, handsPerPlayer, cardsToDeal, true);
+    case "fixedGap5":
+      return dealRankGapHands(remainingDeck, playerIds, handsPerPlayer, cardsToDeal, 5);
     default:
       return dealRoundRobinHands(remainingDeck, playerIds, handsPerPlayer, cardsToDeal);
   }
+}
+
+function isFaceRank(card: Card): boolean {
+  return card.rank === "J" || card.rank === "Q" || card.rank === "K";
+}
+
+function isRedSuit(suit: Card["suit"]): boolean {
+  return suit === "H" || suit === "D";
+}
+
+function dealAtLeastOneRankHands(
+  remainingDeck: Card[],
+  playerIds: readonly string[],
+  handsPerPlayer: number,
+  cardsToDeal: number,
+  predicate: (card: Card) => boolean
+): Record<string, Card[][]> {
+  const dealtHands = initHandBuckets(playerIds, handsPerPlayer);
+  for (const playerId of playerIds) {
+    for (let handIndex = 0; handIndex < handsPerPlayer; handIndex++) {
+      dealtHands[playerId][handIndex] = drawHandWithAtLeastOne(remainingDeck, cardsToDeal, predicate);
+    }
+  }
+  return dealtHands;
+}
+
+function drawHandWithAtLeastOne(remainingDeck: Card[], cardsToDeal: number, predicate: (card: Card) => boolean): Card[] {
+  const seedIndex = remainingDeck.findIndex(predicate);
+  if (seedIndex === -1) {
+    const fallback: Card[] = [];
+    for (let i = 0; i < cardsToDeal; i++) {
+      const next = remainingDeck.shift();
+      if (next) fallback.push(next);
+    }
+    return fallback;
+  }
+  const seed = remainingDeck.splice(seedIndex, 1)[0];
+  const out: Card[] = [seed];
+  for (let i = 1; i < cardsToDeal; i++) {
+    const next = remainingDeck.shift();
+    if (next) out.push(next);
+  }
+  return out;
+}
+
+function dealColorPredicateHands(
+  remainingDeck: Card[],
+  playerIds: readonly string[],
+  handsPerPlayer: number,
+  cardsToDeal: number,
+  sameColor: boolean
+): Record<string, Card[][]> {
+  const dealtHands = initHandBuckets(playerIds, handsPerPlayer);
+  for (const playerId of playerIds) {
+    for (let handIndex = 0; handIndex < handsPerPlayer; handIndex++) {
+      dealtHands[playerId][handIndex] = drawColorPairAndFill(remainingDeck, cardsToDeal, sameColor);
+    }
+  }
+  return dealtHands;
+}
+
+function drawColorPairAndFill(remainingDeck: Card[], cardsToDeal: number, sameColor: boolean): Card[] {
+  if (cardsToDeal < 2) {
+    const out: Card[] = [];
+    for (let i = 0; i < cardsToDeal; i++) {
+      const next = remainingDeck.shift();
+      if (next) out.push(next);
+    }
+    return out;
+  }
+  for (let firstIndex = 0; firstIndex < remainingDeck.length; firstIndex++) {
+    const first = remainingDeck[firstIndex];
+    const firstIsRed = isRedSuit(first.suit);
+    const secondIndex = remainingDeck.findIndex((candidate, index) => {
+      if (index === firstIndex) return false;
+      const secondIsRed = isRedSuit(candidate.suit);
+      return sameColor ? secondIsRed === firstIsRed : secondIsRed !== firstIsRed;
+    });
+    if (secondIndex === -1) continue;
+    const second = remainingDeck[secondIndex];
+    const a = Math.max(firstIndex, secondIndex);
+    const b = Math.min(firstIndex, secondIndex);
+    remainingDeck.splice(a, 1);
+    remainingDeck.splice(b, 1);
+    const out: Card[] = [first, second];
+    for (let i = 2; i < cardsToDeal; i++) {
+      const next = remainingDeck.shift();
+      if (next) out.push(next);
+    }
+    return out;
+  }
+  return drawHandWithAtLeastOne(remainingDeck, cardsToDeal, () => true);
+}
+
+function dealRankGapHands(
+  remainingDeck: Card[],
+  playerIds: readonly string[],
+  handsPerPlayer: number,
+  cardsToDeal: number,
+  gap: number
+): Record<string, Card[][]> {
+  if (cardsToDeal !== 2) return dealRoundRobinHands(remainingDeck, playerIds, handsPerPlayer, cardsToDeal);
+  const dealtHands = initHandBuckets(playerIds, handsPerPlayer);
+  for (const playerId of playerIds) {
+    for (let handIndex = 0; handIndex < handsPerPlayer; handIndex++) {
+      dealtHands[playerId][handIndex] = drawFirstRankGapPair(remainingDeck, gap);
+    }
+  }
+  return dealtHands;
 }
 
 function initHandBuckets(playerIds: readonly string[], handsPerPlayer: number): Record<string, Card[][]> {

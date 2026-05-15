@@ -4,8 +4,8 @@ shortName: Volcano
 summary: At river, one face-up card from each hand is destroyed.
 detail: The first hole card in each hand is destroyed when river begins.
 tags:
-  - event
-  - holes
+  - late-detonation
+  - weather
 tier: wild
 deal:
   extends: standard

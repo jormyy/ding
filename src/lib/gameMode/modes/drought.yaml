@@ -4,8 +4,7 @@ shortName: Drought
 summary: At the turn, every face card on the board is wiped away.
 detail: When the turn begins, jacks, queens, and kings disappear from the community cards and are replaced by fresh deck draws.
 tags:
-  - event
-  - ranks
+  - weather
 tier: wild
 deal:
   extends: standard

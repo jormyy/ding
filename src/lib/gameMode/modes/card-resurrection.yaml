@@ -4,8 +4,10 @@ shortName: Resurrect
 summary: Discarded cards reappear as community cards.
 detail: Each hand is dealt three, keeps two automatically, and the discarded cards join the board at reveal.
 tags:
+  - big-hands
   - insanity
-  - discards
+  - late-detonation
+  - visibility
 tier: insanity
 deal:
   extends: standard

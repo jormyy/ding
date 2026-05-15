@@ -4,8 +4,7 @@ shortName: Stripped
 summary: Only ranks 8 through ace are in the deck.
 detail: The deck compresses to twenty-eight high cards, making premium holdings and collisions common.
 tags:
-  - deck
-  - compact
+  - deck-swap
 tier: standard
 deal:
   extends: standard

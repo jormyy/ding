@@ -1,0 +1,21 @@
+id: effigy
+name: Effigy
+shortName: Effigy
+summary: Marked card and its rank-twin are bound — both score wild at reveal.
+detail: A marked card and any other card sharing its rank are bound; at reveal the bound pair both play as wild.
+tags:
+  - identity-token
+  - late-detonation
+  - wild
+tier: chaos
+deal:
+  extends: standard
+  deck: marked
+syntheticPair: spread
+phaseEffects:
+  reveal:
+    - markedTwinWild
+infoFeatures:
+  - effigy
+  - meta-legend
+score: high

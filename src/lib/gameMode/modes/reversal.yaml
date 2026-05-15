@@ -4,8 +4,8 @@ shortName: Reverse
 summary: At river, the board reverses in place.
 detail: The same five community cards remain in play, but their displayed order flips when the river phase begins.
 tags:
-  - event
-  - board
+  - late-detonation
+  - weather
 tier: wild
 deal:
   extends: standard

@@ -1,0 +1,20 @@
+id: late-flop
+name: Late Flop
+shortName: Late Flop
+summary: Flop appears at turn; turn at river; river at reveal.
+detail: Every revelation is shifted one street later, so the table makes its early calls on no information at all.
+tags:
+  - phase-tempo
+  - visibility
+tier: twist
+deal:
+  extends: standard
+  visibleCommunityCards:
+    preflop: 0
+    flop: 0
+    turn: 3
+    river: 4
+    reveal: 5
+infoFeatures:
+  - late-flop
+score: high

@@ -1,0 +1,16 @@
+id: runners
+name: Runners
+shortName: Runners
+summary: Every hand shares the first board card before the flop.
+detail: Each seat is handed a public card matching the first community slot, so everyone runs alongside the same shared card all hand.
+tags:
+  - constrained-deal
+  - visibility
+tier: twist
+deal:
+  extends: standard
+  constraint: sharedFirstCard
+  publicCards: 1
+infoFeatures:
+  - runners
+score: high

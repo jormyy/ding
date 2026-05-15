@@ -1,0 +1,18 @@
+id: worst-of-all
+name: Worst Of All
+shortName: Worst Of All
+summary: Pure lowball, but only after a pair-qualification check.
+detail: The lowest hand wins, but the round only resolves if at least one paired hand exists at reveal — otherwise the round voids.
+tags:
+  - insanity
+  - late-detonation
+  - mission
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - requirePairToQualify
+infoFeatures:
+  - worst-of-all
+score: lowball

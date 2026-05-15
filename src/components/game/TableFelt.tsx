@@ -143,6 +143,87 @@ function CommunityCardsLayout({
     );
   }
 
+  if (layout.kind === "compass") {
+    // North / East / South / West around a 3x3 grid with empty corners.
+    const slotCount = layout.slots ?? 4;
+    const positions: { row: number; col: number }[] = [
+      { row: 0, col: 1 }, // N
+      { row: 1, col: 2 }, // E
+      { row: 2, col: 1 }, // S
+      { row: 1, col: 0 }, // W
+    ];
+    return (
+      <div className="grid gap-1 pointer-events-none" style={{ gridTemplateRows: "repeat(3, max-content)", gridTemplateColumns: "repeat(3, max-content)" }}>
+        {Array.from({ length: Math.min(slotCount, positions.length) }, (_, i) => (
+          <div key={i} style={{ gridRow: positions[i].row + 1, gridColumn: positions[i].col + 1 }}>
+            <CardSlot card={cards[i]} cardProps={cardProps} emptySize={emptySize} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (layout.kind === "wheel") {
+    // Approximate a ring by placing slots evenly around the perimeter of a
+    // grid sized to fit the count. For small counts (≤8) this is visually
+    // recognizable; larger counts fall back to two rows.
+    const slots = layout.slots;
+    const size = Math.max(3, Math.ceil(Math.sqrt(slots)));
+    const ring: { row: number; col: number }[] = [];
+    for (let c = 0; c < size; c++) ring.push({ row: 0, col: c });
+    for (let r = 1; r < size; r++) ring.push({ row: r, col: size - 1 });
+    for (let c = size - 2; c >= 0; c--) ring.push({ row: size - 1, col: c });
+    for (let r = size - 2; r >= 1; r--) ring.push({ row: r, col: 0 });
+    return (
+      <div className="grid gap-1 pointer-events-none" style={{ gridTemplateRows: `repeat(${size}, max-content)`, gridTemplateColumns: `repeat(${size}, max-content)` }}>
+        {Array.from({ length: slots }, (_, i) => {
+          const pos = ring[i % ring.length];
+          return (
+            <div key={i} style={{ gridRow: pos.row + 1, gridColumn: pos.col + 1 }}>
+              <CardSlot card={cards[i]} cardProps={cardProps} emptySize={emptySize} />
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (layout.kind === "staircase") {
+    return (
+      <div className="grid gap-1 pointer-events-none" style={{ gridTemplateRows: `repeat(${layout.slots}, max-content)`, gridTemplateColumns: `repeat(${layout.slots}, max-content)` }}>
+        {Array.from({ length: layout.slots }, (_, i) => (
+          <div key={i} style={{ gridRow: i + 1, gridColumn: i + 1 }}>
+            <CardSlot card={cards[i]} cardProps={cardProps} emptySize={emptySize} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (layout.kind === "plus") {
+    // 5 cards arranged as a plus: top, left-center-right row, bottom.
+    return (
+      <div className="grid gap-1 pointer-events-none" style={{ gridTemplateRows: "repeat(3, max-content)", gridTemplateColumns: "repeat(3, max-content)" }}>
+        <div style={{ gridRow: 1, gridColumn: 2 }}>
+          <CardSlot card={cards[0]} cardProps={cardProps} emptySize={emptySize} />
+        </div>
+        <div style={{ gridRow: 2, gridColumn: 1 }}>
+          <CardSlot card={cards[1]} cardProps={cardProps} emptySize={emptySize} />
+        </div>
+        <div style={{ gridRow: 2, gridColumn: 2 }}>
+          <CardSlot card={cards[2]} cardProps={cardProps} emptySize={emptySize} />
+        </div>
+        <div style={{ gridRow: 2, gridColumn: 3 }}>
+          <CardSlot card={cards[3]} cardProps={cardProps} emptySize={emptySize} />
+        </div>
+        <div style={{ gridRow: 3, gridColumn: 2 }}>
+          <CardSlot card={cards[4]} cardProps={cardProps} emptySize={emptySize} />
+        </div>
+      </div>
+    );
+  }
+
+  // Default linear layout.
   return <CardRow cards={cards} slots={Math.max(layout.slots, cards.length)} cardProps={cardProps} emptySize={emptySize} />;
 }
 

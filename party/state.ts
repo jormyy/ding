@@ -9,8 +9,10 @@ import type {
   ModeInfo,
   Phase,
 } from "../src/lib/types";
+import type { QualifierId } from "../src/lib/gameMode";
 import {
   visibleCommunityCardCount,
+  visibleCommunityCardCountForSubstep,
   visibleCommunityCardDetail,
   visibleCommunityCardDetails,
   visibleCommunityCardIndexes,
@@ -49,6 +51,26 @@ export interface ServerGameState extends GameState {
   gen: number;
   /** Transient typed chaos-event messages waiting to be broadcast. */
   pendingChaosEvents: ChaosEvent[];
+
+  // -------- Engine-internal phase-effect state (never broadcast) --------
+
+  /**
+   * Monotonic counter bumped on every phase-effect mutation. Used as part of
+   * the MaskBroadcaster cache key so that mutations which leave the masked
+   * payload byte-identical (e.g., opponent hole cards) still rebroadcast.
+   */
+  mutationVersion: number;
+  /**
+   * Mission-qualifier ID armed by a phase effect; the showdown evaluates it
+   * and writes back to `qualifierResult` for broadcast.
+   */
+  pendingQualifier?: QualifierId;
+  /**
+   * Set true when the `optedTierPenalty` phase effect fires at reveal. The
+   * post-showdown step in `lifecycle.ts` checks this (alongside `optedHandIds`)
+   * before reordering the trueRanking.
+   */
+  pendingOptedTierPenalty?: boolean;
 }
 
 /** Create a fresh empty server state for a new room. */
@@ -82,6 +104,7 @@ export function createInitialState(): ServerGameState {
     fuckoffLog: [],
     pendingChaosEvents: [],
     gen: 0,
+    mutationVersion: 0,
   };
 }
 
@@ -147,9 +170,19 @@ function maskDealChoicesForPlayer(
   const ownerByHand = new Map(hands.map((hand) => [hand.id, hand.playerId]));
   const masked: Record<string, DealChoiceProgress> = {};
   for (const [handId, choice] of Object.entries(dealChoices)) {
-    masked[handId] = ownerByHand.get(handId) === playerId
-      ? choice
-      : { ...choice, selectedIndexes: null };
+    if (ownerByHand.get(handId) === playerId) {
+      masked[handId] = choice;
+    } else {
+      // Strip every owner-only field. Anything else (table-visible tallies
+      // such as tablePicksVotes, submitted flags, keepCards) is broadcast.
+      const {
+        selectedIndexes: _selected,
+        privatePeekCards: _peek,
+        sacrificedHoleIndex: _sac,
+        ...rest
+      } = choice;
+      masked[handId] = { ...rest, selectedIndexes: null };
+    }
   }
   return masked;
 }
@@ -172,7 +205,8 @@ export function buildClientState(state: ServerGameState, playerId: string): Game
       }
     }
   } else {
-    const count = visibleCommunityCardCount(state.modeId, state.phase);
+    const substepOverride = visibleCommunityCardCountForSubstep(state.modeId, state.phase, state.phaseSubstep);
+    const count = substepOverride ?? visibleCommunityCardCount(state.modeId, state.phase);
     revealed = state.allCommunityCards.slice(0, count);
   }
   const communityCardsToShow = buildVisibleCommunityCards(
@@ -205,6 +239,20 @@ export function buildClientState(state: ServerGameState, playerId: string): Game
     chatMessages: state.chatMessages,
     dingLog: state.dingLog,
     fuckoffLog: state.fuckoffLog,
+    scoreRuleOverride: state.scoreRuleOverride,
+    qualifierResult: state.qualifierResult,
+    handHierarchyId: state.handHierarchyId,
+    absorbedHandIds: state.absorbedHandIds,
+    wildRankByEffect: state.wildRankByEffect,
+    lockedHandIds: state.lockedHandIds,
+    suitsStripped: state.suitsStripped,
+    markedBoardWildIndex: state.markedBoardWildIndex,
+    phaseSubstep: state.phaseSubstep,
+    metaTargetCard: state.metaTargetCard,
+    metaKind: state.metaKind,
+    auctionPool: state.auctionPool,
+    flopDraftPool: state.flopDraftPool,
+    optedHandIds: state.optedHandIds,
   };
 }
 
@@ -241,16 +289,24 @@ function buildVisibleCommunityCards(
  * change every player's view).
  */
 export class MaskBroadcaster {
-  private lastJsonByPlayer: Map<string, string> = new Map();
+  /**
+   * Cache entry per player: the last-broadcast payload AND the
+   * `mutationVersion` at which it was produced. We replay the payload when
+   * the version hasn't advanced AND the rebuilt payload is byte-identical;
+   * a version bump invalidates the byte-comparison short-circuit so phase-
+   * effect mutations always reach non-owners even if their masked view looks
+   * the same on the wire.
+   */
+  private cacheByPlayer: Map<string, { payload: string; version: number }> = new Map();
 
   /** Drop a player's cache entry on disconnect to keep the map bounded. */
   forget(playerId: string): void {
-    this.lastJsonByPlayer.delete(playerId);
+    this.cacheByPlayer.delete(playerId);
   }
 
   /** Reset the entire cache (e.g., after `playAgain` rebuilds state). */
   reset(): void {
-    this.lastJsonByPlayer.clear();
+    this.cacheByPlayer.clear();
   }
 
   broadcast(
@@ -261,13 +317,14 @@ export class MaskBroadcaster {
     const playerByConn = new Map<string, string>();
     for (const p of state.players) playerByConn.set(p.connId, p.id);
 
+    const version = state.mutationVersion;
     for (const [connId, conn] of connections) {
       const playerId = playerByConn.get(connId) ?? "";
       const clientState = buildClientState(state, playerId);
       const payload = JSON.stringify({ type: "state", state: clientState });
-      const previous = this.lastJsonByPlayer.get(playerId);
-      if (previous === payload) continue;
-      this.lastJsonByPlayer.set(playerId, payload);
+      const previous = this.cacheByPlayer.get(playerId);
+      if (previous && previous.version === version && previous.payload === payload) continue;
+      this.cacheByPlayer.set(playerId, { payload, version });
       conn.send(payload);
     }
   }

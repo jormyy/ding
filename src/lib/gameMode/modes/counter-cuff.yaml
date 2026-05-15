@@ -1,0 +1,18 @@
+id: counter-cuff
+name: Counter-Cuff
+shortName: Counter
+summary: Counterfeit card flips its scoring at reveal — high becomes low.
+detail: One hole card per hand is counterfeit; at reveal its rank inverts on the inverted-rank ladder, swapping high for low and vice versa.
+tags:
+  - identity-token
+  - late-detonation
+tier: chaos
+deal:
+  extends: standard
+  counterfeitHoleCards: 1
+phaseEffects:
+  reveal:
+    - counterfeitInversion
+infoFeatures:
+  - counter-cuff
+score: high

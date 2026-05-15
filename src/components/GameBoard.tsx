@@ -6,6 +6,8 @@ import PortraitWarning from "./game/PortraitWarning";
 import MobileLandscapeBoard from "./game/MobileLandscapeBoard";
 import DesktopBoard from "./game/DesktopBoard";
 import DealChoiceBoard from "./DealChoiceBoard";
+import DraftFromFlopBoard from "./dealChoice/DraftFromFlopBoard";
+import { D } from "@/lib/theme";
 
 interface GameBoardProps {
   gameState: GameState;
@@ -52,6 +54,16 @@ export default function GameBoard({
         code={code}
         onSend={onSend}
       />
+    );
+  }
+
+  if (gameState.phaseSubstep === "flopDraftPending" && gameState.flopDraftPool) {
+    return (
+      <div className="h-[100dvh] flex items-center justify-center p-4" style={{ background: "#0a1813", color: D.text }}>
+        <div className="w-full max-w-3xl">
+          <DraftFromFlopBoard gameState={gameState} myId={myId} onSend={onSend} />
+        </div>
+      </div>
     );
   }
 

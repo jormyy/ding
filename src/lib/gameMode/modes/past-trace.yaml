@@ -4,8 +4,7 @@ shortName: Trace
 summary: A public chip echoes a fact about the previous hand into this one.
 detail: Between hands, a trace carries forward a single piece of public information from the prior reveal so the table starts each new hand with some memory.
 tags:
-  - info
-  - memory
+  - info-overlay
 tier: chaos
 deal:
   extends: standard

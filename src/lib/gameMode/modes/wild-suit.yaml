@@ -5,7 +5,6 @@ summary: Every heart plays as a wild card at showdown.
 detail: Any heart in a hand or on the board can stand in for whichever rank or suit makes the strongest reveal hand.
 tags:
   - wild
-  - suits
 tier: standard
 deal:
   extends: standard

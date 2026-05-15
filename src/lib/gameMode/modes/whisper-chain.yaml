@@ -4,8 +4,7 @@ shortName: Whisper
 summary: Each player gets a private hint about one neighbor's hand.
 detail: Every player sees one secret tip naming a neighbor and a fact about that neighbor's hole cards; the hint stays private to its recipient.
 tags:
-  - info
-  - holes
+  - visibility
 tier: chaos
 deal:
   extends: standard

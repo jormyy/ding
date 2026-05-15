@@ -4,8 +4,7 @@ shortName: Cross
 summary: Five community cards form a cross; every hand scores on its better line.
 detail: The center card belongs to both the row and the column, so hands can connect along either axis.
 tags:
-  - board
-  - topology
+  - visibility
 tier: chaos
 deal:
   extends: standard

@@ -4,8 +4,7 @@ shortName: Pairs
 summary: Pairs, trips, and quads are the main scoring target.
 detail: The best multiplicity profile wins, with normal poker strength as the tiebreaker.
 tags:
-  - objective
-  - ranks
+  - mission
 tier: twist
 deal:
   extends: standard

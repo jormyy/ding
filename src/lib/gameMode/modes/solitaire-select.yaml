@@ -4,9 +4,8 @@ shortName: Sol+
 summary: Peek eight deal cards and keep any seven before ranking starts.
 detail: "A select-stage Solitaire Suite: each hand sees eight private candidates and sculpts a seven-card start."
 tags:
-  - choice
   - peek-keep
-  - big-hands
+  - select-stage
 tier: select
 deal:
   extends: standard

@@ -1,0 +1,33 @@
+id: chessboard
+name: Chessboard
+shortName: Chess
+summary: 8-slot grid; only diagonals score.
+detail: The community arrives in a 4x2 grid; the two diagonals are the only scoring runs, forcing a sliced read of the board.
+tags:
+  - big-hands
+  - multi-board
+tier: chaos
+deal:
+  extends: standard
+  communityCards: 8
+  boardLayout:
+    kind: grid
+    slots:
+      - { row: 0, col: 0, group: "diagA" }
+      - { row: 0, col: 1, group: "diagB" }
+      - { row: 0, col: 2, group: "diagA" }
+      - { row: 0, col: 3, group: "diagB" }
+      - { row: 1, col: 0, group: "diagB" }
+      - { row: 1, col: 1, group: "diagA" }
+      - { row: 1, col: 2, group: "diagB" }
+      - { row: 1, col: 3, group: "diagA" }
+  boards:
+    count: 2
+    cardsPerBoard: 4
+    cardIndexes:
+      - [0, 2, 5, 7]
+      - [1, 3, 4, 6]
+    scoring: best
+infoFeatures:
+  - chessboard
+score: high

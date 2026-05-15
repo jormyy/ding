@@ -4,9 +4,8 @@ shortName: Spark+
 summary: Peek three deal cards and keep just one before ranking starts.
 detail: "A select-stage Single Spark: each hand sees three private candidates and picks the single card to carry into preflop."
 tags:
-  - choice
   - peek-keep
-  - solo
+  - select-stage
 tier: select
 deal:
   extends: standard

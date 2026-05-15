@@ -5,7 +5,8 @@ summary: At river, one rank converges into aces.
 detail: When river begins, every seven in hands and on the board converges into an ace before reveal scoring.
 tags:
   - insanity
-  - ranks
+  - late-detonation
+  - weather
 tier: insanity
 deal:
   extends: standard

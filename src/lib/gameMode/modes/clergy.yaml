@@ -1,0 +1,17 @@
+id: clergy
+name: Clergy
+shortName: Clergy
+summary: Forced first hole per hand is blessed; second hole is normal.
+detail: Every seat's first hole card is guaranteed blessed; the second arrives standard. Each hand carries an absolute scoring anchor.
+tags:
+  - identity-token
+tier: wild
+deal:
+  extends: standard
+  deck: blessed
+forceRankByMeta:
+  first: blessed
+infoFeatures:
+  - clergy
+  - meta-legend
+score: high

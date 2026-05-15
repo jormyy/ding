@@ -1,0 +1,17 @@
+id: neighbor-bonus
+name: Neighbor Bonus
+shortName: Neighbor
+summary: Hands jump a tier when their first hole shares rank with a neighbor's.
+detail: Adjacent seats with matching first hole-card ranks both bump up one tier at reveal — sit next to someone strong and you climb with them.
+tags:
+  - late-detonation
+  - relational
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - adjacentRankBonus
+infoFeatures:
+  - neighbor-bonus
+score: high

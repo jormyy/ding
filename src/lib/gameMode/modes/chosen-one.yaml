@@ -1,0 +1,18 @@
+id: chosen-one
+name: Chosen One
+shortName: Chosen
+summary: First joker dealt becomes the round's wild — all wilds copy its suit.
+detail: At flop the first joker fixes the round's wild suit; every other wild card collapses to that suit at reveal.
+tags:
+  - identity-token
+tier: wild
+deal:
+  extends: standard
+  deck: jokers
+phaseEffects:
+  flop:
+    - chosenJokerImprint
+infoFeatures:
+  - chosen-one
+  - meta-legend
+score: high

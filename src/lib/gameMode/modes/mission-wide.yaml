@@ -1,0 +1,17 @@
+id: mission-wide
+name: Mission Wide
+shortName: M Wide
+summary: Win only if the spread is at least 4 rank-tiers.
+detail: An inverse of Mission Tight — best and worst must sit at least four tiers apart, so the table needs both a champion and a doormat.
+tags:
+  - late-detonation
+  - mission
+tier: chaos
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - requireWideSpread
+infoFeatures:
+  - mission-wide
+score: high

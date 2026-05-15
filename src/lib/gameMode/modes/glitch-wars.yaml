@@ -5,7 +5,7 @@ summary: At turn, board cards fight over suit identity.
 detail: The first community card absorbs the second community card's suit when turn begins.
 tags:
   - insanity
-  - suits
+  - weather
 tier: insanity
 deal:
   extends: standard

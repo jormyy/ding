@@ -4,8 +4,7 @@ shortName: Burn
 summary: The three burned cards are exposed to the whole table.
 detail: A public chip names the cards burned before the flop, turn, and river so the table knows what is not coming back; scoring is unchanged.
 tags:
-  - info
-  - deck
+  - info-overlay
 tier: chaos
 deal:
   extends: standard

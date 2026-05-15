@@ -4,8 +4,8 @@ shortName: Black Hole
 summary: At the river, the most recent community card disappears into the void.
 detail: When river begins, the last card placed on the board vanishes and is not replaced, so the table ends the hand on a four-card community board.
 tags:
-  - event
-  - board
+  - late-detonation
+  - weather
 tier: wild
 deal:
   extends: standard

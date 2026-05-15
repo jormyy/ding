@@ -5,7 +5,6 @@ summary: Hole cards are suit-only until turn.
 detail: Every hand exposes only suit hints through flop, then full visible hole cards from turn onward.
 tags:
   - visibility
-  - suits
 tier: chaos
 deal:
   extends: standard

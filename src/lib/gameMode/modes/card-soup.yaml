@@ -5,7 +5,7 @@ summary: At turn, holes and burn pile mix together.
 detail: When turn begins, every hand's hole cards mix with the burn pile and are dealt back out across the table.
 tags:
   - insanity
-  - holes
+  - weather
 tier: insanity
 deal:
   extends: standard

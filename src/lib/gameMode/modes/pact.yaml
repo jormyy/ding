@@ -1,0 +1,17 @@
+id: pact
+name: Pact
+shortName: Pact
+summary: First and last hand merge their best 5 cards at reveal.
+detail: At reveal the table's bookends pool resources — first and last seat combine their strongest five cards into a single joint hand.
+tags:
+  - late-detonation
+  - relational
+tier: chaos
+deal:
+  extends: standard
+phaseEffects:
+  reveal:
+    - pactMergeFirstLast
+infoFeatures:
+  - pact
+score: high

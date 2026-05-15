@@ -4,10 +4,9 @@ shortName: Book M
 summary: Hole cards are public — keep the dealt pair or spend a one-time full redraw.
 detail: "A select-stage Open Book: each hand sees both hole cards as public to the table, then can lock the dealt pair or burn a one-time mulligan for a fresh pair before preflop."
 tags:
-  - choice
   - mulligan
+  - select-stage
   - visibility
-  - holes
 tier: select
 deal:
   extends: standard

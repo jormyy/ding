@@ -4,8 +4,8 @@ shortName: Turnpike
 summary: Four community cards hit on the flop, then the game pauses before the river.
 detail: Most of the board appears early, making the final card a sharper negotiation point.
 tags:
-  - tempo
-  - board
+  - phase-tempo
+  - visibility
 tier: standard
 deal:
   extends: standard

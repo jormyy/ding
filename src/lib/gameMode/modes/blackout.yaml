@@ -4,8 +4,8 @@ shortName: Blackout
 summary: No community cards are shown until the river.
 detail: The first three streets are pure private-hand debate, then the board lands all at once.
 tags:
-  - tempo
-  - river
+  - phase-tempo
+  - visibility
 tier: twist
 deal:
   extends: standard

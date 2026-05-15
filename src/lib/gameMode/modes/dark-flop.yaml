@@ -4,8 +4,8 @@ shortName: Dark F
 summary: The flop stays face-down until turn.
 detail: No community cards are visible at flop; the board catches up at turn.
 tags:
+  - phase-tempo
   - visibility
-  - flop
 tier: twist
 deal:
   extends: standard

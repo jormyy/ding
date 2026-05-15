@@ -1,0 +1,31 @@
+id: pyramid
+name: Pyramid
+shortName: Pyramid
+summary: 9-slot triangle; one card per row required.
+detail: A pyramid of 9 cards stacks 1/2/3/3 across rows; each scoring read must take a card from each row, forcing a vertical pull.
+tags:
+  - big-hands
+  - late-detonation
+  - relational
+tier: chaos
+deal:
+  extends: standard
+  communityCards: 9
+  boardLayout:
+    kind: grid
+    slots:
+      - { row: 0, col: 1 }
+      - { row: 1, col: 0 }
+      - { row: 1, col: 1 }
+      - { row: 2, col: 0 }
+      - { row: 2, col: 1 }
+      - { row: 2, col: 2 }
+      - { row: 3, col: 0 }
+      - { row: 3, col: 1 }
+      - { row: 3, col: 2 }
+phaseEffects:
+  river:
+    - enforceOneCardPerBoardRow
+infoFeatures:
+  - pyramid
+score: high

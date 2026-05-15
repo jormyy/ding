@@ -4,8 +4,8 @@ shortName: Slow
 summary: The board arrives one card, then three, then five.
 detail: A narrow flop makes early confidence brittle and keeps trades alive longer.
 tags:
-  - tempo
-  - board
+  - phase-tempo
+  - visibility
 tier: standard
 deal:
   extends: standard

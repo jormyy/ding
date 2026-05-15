@@ -1,0 +1,20 @@
+id: flopless
+name: Flopless
+shortName: Flopless
+summary: No flop; turn deals 4 board cards at once.
+detail: The flop street passes empty; turn slams down four community cards in a single beat, compressing decisions into the back half.
+tags:
+  - phase-tempo
+  - visibility
+tier: twist
+deal:
+  extends: standard
+  visibleCommunityCards:
+    preflop: 0
+    flop: 0
+    turn: 4
+    river: 5
+    reveal: 5
+infoFeatures:
+  - flopless
+score: high

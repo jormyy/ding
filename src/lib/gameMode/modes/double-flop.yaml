@@ -1,0 +1,16 @@
+id: double-flop
+name: Double Flop
+shortName: Dbl Flop
+summary: Two flops in sequence; rerolls at turn before river resolves.
+detail: Flop deals three; turn discards them and rerolls three new flop cards, asking the table to re-rank twice on freshly-revealed boards.
+tags:
+  - phase-tempo
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  turn:
+    - rerollFlopAtTurn
+infoFeatures:
+  - double-flop
+score: high

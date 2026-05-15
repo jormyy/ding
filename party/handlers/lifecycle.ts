@@ -8,6 +8,7 @@ import {
 import {
   computeShowdownForMode,
   countInversionsForRanks,
+  getGameModeDefinition,
 } from "../../src/lib/gameMode";
 import type { Handler } from "./types";
 import { inGamePhase } from "./types";
@@ -34,20 +35,41 @@ export function advancePhaseIfAllReady(state: ServerGameState): boolean {
   const currentIndex = PHASE_ORDER.indexOf(state.phase as Phase);
   const nextPhase = PHASE_ORDER[currentIndex + 1];
   state.acquireRequests = [];
+
+  // draftFromFlop: when entering the flop in a flop-draft mode, expose 6
+  // cards instead of 3 and hold the phase advance until every seat drafts.
+  // We open the pool here BEFORE running phase effects so the chaos chip
+  // fires alongside the draft UI; the pool blocks any further advancement
+  // until cleared (see `flopDraftPending` substep gating below).
+  installFlopDraftPoolIfNeeded(state, nextPhase);
+
   const chaosEvents = applyModePhaseEffects(state, nextPhase);
   appendChaosEvents(state, chaosEvents);
 
   if (nextPhase === "reveal") {
-    const showdown = computeShowdownForMode(state.modeId, state.hands, state.allCommunityCards);
+    // Collapse identities BEFORE running the showdown so the label-builder
+    // sees the final card identities (pandemonium snapshot bug). Previously
+    // labels referenced pre-collapse possibleIdentities and could disagree
+    // with the post-collapse hand names players saw on reveal.
     for (const hand of state.hands) {
-      hand.madeHandName = showdown.madeHandNames[hand.id];
       hand.cards = collapsePossibleIdentities(hand.cards);
       hand.publicCards = collapsePossibleIdentities(hand.publicCards ?? []);
     }
     state.allCommunityCards = collapsePossibleIdentities(state.allCommunityCards);
+
+    const showdown = computeShowdownForMode(state.modeId, state.hands, state.allCommunityCards, {
+      scoreRuleOverride: state.scoreRuleOverride,
+      pendingQualifier: state.pendingQualifier,
+      handHierarchyId: state.handHierarchyId,
+    });
+    for (const hand of state.hands) {
+      hand.madeHandName = showdown.madeHandNames[hand.id];
+    }
     state.trueRanking = showdown.trueRanking;
     state.trueRanks = showdown.trueRanks;
+    state.qualifierResult = showdown.qualifierResult;
     state.revealIndex = 0;
+    applyOptedTierPenalty(state);
   } else {
     state.ranking = Array(state.hands.length).fill(null);
   }
@@ -59,6 +81,44 @@ export function advancePhaseIfAllReady(state: ServerGameState): boolean {
   for (const p of state.players) p.ready = false;
 
   return true;
+}
+
+function installFlopDraftPoolIfNeeded(state: ServerGameState, nextPhase: Phase): void {
+  if (nextPhase !== "flop") return;
+  const mode = getGameModeDefinition(state.modeId);
+  const fires = mode.phaseEffects?.flop?.includes("draftFromFlop");
+  if (!fires) return;
+  // Need 6 cards face-up; the standard deal only produces 5 community cards.
+  // Pull one more from `dealDeck` if available; otherwise use what we have.
+  while (state.allCommunityCards.length < 6 && state.dealDeck.length > 0) {
+    const next = state.dealDeck.shift();
+    if (next) state.allCommunityCards.push(next);
+  }
+  const cards = state.allCommunityCards.slice(0, 6);
+  state.flopDraftPool = {
+    cards,
+    remainingIndexes: cards.map((_card, i) => i),
+    draftedBy: {},
+  };
+  state.phaseSubstep = "flopDraftPending";
+  state.mutationVersion++;
+}
+
+function applyOptedTierPenalty(state: ServerGameState): void {
+  if (!state.pendingOptedTierPenalty) return;
+  const opted = state.optedHandIds;
+  if (!opted || opted.length === 0) return;
+  if (!state.trueRanking || state.trueRanking.length < 2) return;
+  const ranking = state.trueRanking.slice();
+  for (const handId of opted) {
+    const idx = ranking.indexOf(handId);
+    if (idx < 0 || idx >= ranking.length - 1) continue;
+    [ranking[idx], ranking[idx + 1]] = [ranking[idx + 1], ranking[idx]];
+  }
+  state.trueRanking = ranking;
+  const trueRanks: Record<string, number> = {};
+  ranking.forEach((id, i) => { trueRanks[id] = i + 1; });
+  state.trueRanks = trueRanks;
 }
 
 function collapsePossibleIdentities<T extends { possibleIdentities?: unknown }>(cards: readonly T[]): T[] {

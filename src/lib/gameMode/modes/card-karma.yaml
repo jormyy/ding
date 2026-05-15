@@ -4,8 +4,7 @@ shortName: Karma
 summary: A card from the previous hand echoes into this one as a karmic memory.
 detail: Between hands, a public karma notice carries forward one card from the prior reveal so the new hand starts with shared memory of what came before.
 tags:
-  - info
-  - memory
+  - info-overlay
 tier: chaos
 deal:
   extends: standard

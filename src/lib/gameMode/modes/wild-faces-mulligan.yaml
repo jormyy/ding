@@ -4,10 +4,9 @@ shortName: Faces M
 summary: Mulligan in a wild-faces world — redraw if face density doesn't match your plan.
 detail: "A select-stage Wild Faces: each hand can lock its dealt pair or burn a one-time mulligan, knowing jacks, queens, and kings all substitute into stronger identities at reveal."
 tags:
-  - choice
   - mulligan
+  - select-stage
   - wild
-  - ranks
 tier: select
 deal:
   extends: standard

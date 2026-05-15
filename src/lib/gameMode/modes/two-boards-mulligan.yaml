@@ -4,10 +4,12 @@ shortName: 2B M
 summary: Mulligan against two parallel boards — redraw if your pair fits neither.
 detail: "A select-stage Two Boards: each hand can lock its dealt pair or spend a one-time mulligan after seeing how poorly it lines up against both parallel five-card boards."
 tags:
-  - choice
+  - big-hands
   - mulligan
-  - board
   - multi-board
+  - phase-tempo
+  - select-stage
+  - visibility
 tier: select
 deal:
   extends: standard

@@ -5,7 +5,6 @@ summary: Each hand alternates which hole card is visible.
 detail: One hole card is public at every street, alternating between first and second before both are revealed.
 tags:
   - visibility
-  - holes
 tier: chaos
 deal:
   extends: standard

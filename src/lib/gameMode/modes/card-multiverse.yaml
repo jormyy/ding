@@ -4,8 +4,11 @@ shortName: Multiverse
 summary: Four parallel five-card boards play out as alternate universes.
 detail: Twenty community cards form four separate five-card boards; each hand scores against its strongest universe at reveal.
 tags:
+  - big-hands
   - insanity
-  - board
+  - multi-board
+  - phase-tempo
+  - visibility
 tier: insanity
 deal:
   extends: standard
