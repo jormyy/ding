@@ -110,7 +110,7 @@ Hand IDs follow `${playerId}-${handIndex}` (e.g. `"abc-0"`, `"abc-1"`). Stable f
 
 ### State Versioning
 
-`party/state/migrate.ts` defines `STATE_VERSION` and `migrateState(raw)`. The server tags every persisted blob with `__version` via `tagVersion(state)`. On load, `RoomStorage.loadState` calls `migrateState`, which forward-migrates older shapes (currently version 0 → 1 is a stamp-only upgrade since the shape was identical). Future shape changes bump `STATE_VERSION` and chain into the migration switch.
+`party/state/migrate.ts` defines `STATE_VERSION` (currently `2`) and `migrateState(raw)`. The server tags every persisted blob with `__version` via `tagVersion(state)`. On load, `RoomStorage.loadState` calls `migrateState`, which forward-migrates older shapes — version 0 (unversioned) and version 1 (pre-`modeExt`) both forward-migrate to v2 by stamping defaults in `stripVersion`. A future-version blob (e.g., persisted by newer code) refuses to load and the room starts fresh.
 
 ### Connection Lifecycle
 

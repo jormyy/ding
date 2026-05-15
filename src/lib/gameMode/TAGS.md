@@ -1,18 +1,23 @@
 # Ding Mode Tag Vocabulary
 
-Canonical mechanic-grouped tags for the 330-YAML catalog. Replaces the ad-hoc
+Canonical mechanic-grouped tags for the 328-YAML catalog. Replaces the ad-hoc
 386-tag soup that accumulated as modes were authored. Every mode carries
 1–4 tags drawn from this list and **nothing else**. New mechanic → new tag,
-documented here, then propagated through derivation.
+documented here, then propagated through every YAML.
 
 Source: `~/vault/projects/ding/ding-mode-tag-vocabulary.md` (vault), reconciled
 with the 13 mechanic clusters specified in the audit goal. Tags are mechanic-
 grouped: they describe what the engine actually does to the hand, not vibe.
 
-## Derivation
+## Authoring
 
-Tags are derived from mode shape by `scripts/derive-tags.ts` and written back
-into each YAML. The script reads:
+Tags live in each mode's YAML under `tags:` and are hand-written from this
+vocabulary. The schema (`src/lib/gameMode/schema.ts`) types `tags` as
+`z.array(z.string())`, so the constraint is documentary — keep new modes
+inside the 23 tags below, derive the right set from the table, and add a
+new cluster only when a mechanic genuinely doesn't fit.
+
+Pick tags from these signals in the YAML:
 
 - `deal.deck`, `deal.publicCards`, `deal.visibleHoleCards/...Detail/...Indexes`
 - `deal.visibleCommunityCards/...Indexes/...Detail`
@@ -21,9 +26,6 @@ into each YAML. The script reads:
 - `wildCards`, `wildCardsByPhase`, `excludedMetas`, `forceRankByMeta`
 - `phaseEffects.*` (every PhaseEffectId)
 - `infoFeatures.*`, `tier`
-
-…and emits the canonical tag set. The author writes the mode; the script
-writes the tags. Do not hand-edit `tags:` blocks.
 
 ## The 23 canonical tags
 
@@ -128,9 +130,9 @@ If a new mechanic doesn't fit one of these 23, **don't bolt a tag on**:
 
 1. Decide whether the mechanic is genuinely orthogonal (a new cluster) or
    a variant of an existing one (a new sub-mechanic).
-2. If new cluster: add a row to "Mechanic clusters" above, extend
-   `scripts/derive-tags.ts`, regenerate every YAML's `tags:` block.
-3. If new sub-mechanic under `select-stage`: add a row under sub-mechanics,
-   extend the derivation, regenerate.
+2. If new cluster: add a row to "Mechanic clusters" above and apply the
+   tag to every existing YAML that matches the new signal.
+3. If new sub-mechanic under `select-stage`: add a row under sub-mechanics
+   and update affected YAMLs.
 
 The vocabulary is for the catalog as a whole — never for one mode.

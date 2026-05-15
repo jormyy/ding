@@ -13,4 +13,4 @@ Classic Ding is the baseline cooperative ranking mode.
 
 ## Validation
 
-See `sim/notes/ding.md` and `sim/screens/ding/`.
+`npm run modes:check` runs the full gate (codegen drift + handler-contract audit + `verify-mechanics --strict` over every catalogue mode). The mechanic-verification report lands at `scripts/Stage-3-results.md`.
