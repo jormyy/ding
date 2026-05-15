@@ -1,0 +1,17 @@
+id: quantum-shuffle
+name: Quantum Shuffle
+shortName: Quantum
+summary: At turn, all hole cards are redistributed.
+detail: Hole cards are gathered, rotated, and redealt across the table when turn begins.
+tags:
+  - event
+  - holes
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  turn:
+    - shuffleAllHoleCards
+infoFeatures:
+  - quantum-shuffle
+score: high

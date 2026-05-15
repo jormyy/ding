@@ -1,0 +1,13 @@
+id: royal-spark
+name: Royal Spark
+shortName: Royal
+summary: Both hole cards in every hand come from the high ranks.
+detail: Every hand starts with two cards from 8 through Ace, making preflop strength dense and board kickers sharper.
+tags:
+  - constrained
+  - ranks
+tier: twist
+deal:
+  extends: standard
+  constraint: highRanks
+score: high

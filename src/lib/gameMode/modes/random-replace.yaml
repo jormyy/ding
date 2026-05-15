@@ -1,0 +1,15 @@
+id: random-replace
+name: Random Replace
+shortName: Replace
+summary: At turn, one visible board card is swapped for a fresh card.
+detail: The board mutates as the turn begins, forcing the table to re-evaluate earlier placements.
+tags:
+  - event
+  - board
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  turn:
+    - randomReplaceVisibleCommunity
+score: high

@@ -1,0 +1,12 @@
+id: flush-hunt
+name: Flush Hunt
+shortName: Flush
+summary: Hands rank by the largest same-suit cluster first.
+detail: Poker strength breaks ties, but suit density is the primary objective.
+tags:
+  - objective
+  - suits
+tier: twist
+deal:
+  extends: standard
+score: flush

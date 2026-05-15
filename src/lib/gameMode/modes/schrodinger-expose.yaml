@@ -1,0 +1,21 @@
+id: schrodinger-expose
+name: Schrödinger Expose
+shortName: Sch X
+summary: Pick which superposed hole card you publicly resolve to the table.
+detail: "A select-stage Schrödinger's Hole: each hand's two cards carry multiple possible identities until reveal, but at the deal the owner picks one card to publicly collapse and expose; the other stays in superposition."
+tags:
+  - choice
+  - expose-choice
+  - insanity
+  - identity
+  - holes
+tier: select
+deal:
+  extends: standard
+  publicCards: 1
+  publicCardSelection: playerChoice
+  possibleIdentities: holes
+identityResolution: bestPossible
+infoFeatures:
+  - schrodingers-hole
+score: high

@@ -1,0 +1,15 @@
+id: late-light
+name: Late Light
+shortName: Late
+summary: Hole cards become public at the river.
+detail: Hands stay private through turn, then every hole card is exposed at river before the final ranking.
+tags:
+  - visibility
+  - river
+tier: standard
+deal:
+  extends: standard
+  visibleHoleCards:
+    river: 2
+    reveal: 2
+score: high

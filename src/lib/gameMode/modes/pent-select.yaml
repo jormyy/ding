@@ -1,0 +1,17 @@
+id: pent-select
+name: Pent Select
+shortName: Pent+
+summary: Peek six deal cards and keep any five before ranking starts.
+detail: "A select-stage Pent: each hand sees six private candidates and sculpts a five-card start."
+tags:
+  - choice
+  - peek-keep
+  - big-hands
+tier: select
+deal:
+  extends: standard
+  dealChoice:
+    dealtCards: 6
+    keepCards: 5
+    selectionPhase: true
+score: high

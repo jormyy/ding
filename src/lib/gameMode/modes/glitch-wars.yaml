@@ -1,0 +1,17 @@
+id: glitch-wars
+name: Glitch Wars
+shortName: Glitch Wars
+summary: At turn, board cards fight over suit identity.
+detail: The first community card absorbs the second community card's suit when turn begins.
+tags:
+  - insanity
+  - suits
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  turn:
+    - firstCommunityAbsorbsSecondSuit
+infoFeatures:
+  - glitch-wars
+score: high

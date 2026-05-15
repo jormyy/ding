@@ -1,0 +1,13 @@
+id: bottom-half
+name: Bottom Half
+shortName: Bottom
+summary: Only ranks two through nine are in the deck.
+detail: The deck removes broadway texture and makes low-rank board reading much sharper.
+tags:
+  - deck
+  - ranks
+tier: standard
+deal:
+  extends: standard
+  deck: bottomHalf
+score: high

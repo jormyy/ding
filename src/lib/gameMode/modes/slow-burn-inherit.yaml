@@ -1,0 +1,26 @@
+id: slow-burn-inherit
+name: Slow Burn Inherit
+shortName: Slow I
+summary: Inheritance chain into a one-card flop and a three-card turn.
+detail: "A select-stage Slow Burn: each hand keeps one dealt card while the right neighbor's discard fills the second slot, then the board arrives one card on flop, three on turn, and five on river."
+tags:
+  - choice
+  - inheritance
+  - tempo
+  - board
+tier: select
+deal:
+  extends: standard
+  dealChoice:
+    dealtCards: 2
+    keepCards: 1
+    selectionPhase: true
+    inheritance: true
+  visibleCommunityCards:
+    lobby: 0
+    preflop: 0
+    flop: 1
+    turn: 3
+    river: 5
+    reveal: 5
+score: high

@@ -1,0 +1,16 @@
+id: drunken-display
+name: Drunken Display
+shortName: Drunken
+summary: Cards wobble between possible ranks until reveal sobers them up.
+detail: Hands and board carry alternate rank identities through preflop, flop, turn, and river; reveal collapses every card to whichever rank scores best.
+tags:
+  - insanity
+  - identity
+tier: insanity
+deal:
+  extends: standard
+  possibleIdentities: holesAndBoard
+identityResolution: bestPossible
+infoFeatures:
+  - drunken-display
+score: high

@@ -1,0 +1,13 @@
+id: triad
+name: Triad
+shortName: Triad
+summary: Three private cards per hand, best five-card poker hand wins.
+detail: A lighter multi-card mode with enough extra texture to make rankings less obvious.
+tags:
+  - big-hands
+  - dense
+tier: standard
+deal:
+  extends: standard
+  holeCards: 3
+score: high

@@ -1,0 +1,19 @@
+id: photographic-memory
+name: Photographic Memory
+shortName: Photo Mem
+summary: The flop disappears after you see it.
+detail: Flop is visible, then the board goes dark at turn and only partial river information returns.
+tags:
+  - insanity
+  - memory
+tier: insanity
+deal:
+  extends: standard
+  visibleCommunityCards:
+    flop: 3
+    turn: 0
+    river: 2
+    reveal: 5
+infoFeatures:
+  - photographic-memory
+score: high

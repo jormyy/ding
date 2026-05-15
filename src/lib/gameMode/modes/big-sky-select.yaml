@@ -1,0 +1,26 @@
+id: big-sky-select
+name: Big Sky Select
+shortName: Sky+
+summary: Peek 3 cards and sculpt your start for the seven-card Big Sky board.
+detail: "A select-stage Big Sky: each hand sees three private candidates and sculpts a two-card start before the board grows to four on flop, five on turn, and seven on river."
+tags:
+  - choice
+  - peek-keep
+  - board
+  - community
+tier: select
+deal:
+  extends: standard
+  dealChoice:
+    dealtCards: 3
+    keepCards: 2
+    selectionPhase: true
+  communityCards: 7
+  visibleCommunityCards:
+    lobby: 0
+    preflop: 0
+    flop: 4
+    turn: 5
+    river: 7
+    reveal: 7
+score: high

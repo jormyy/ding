@@ -1,0 +1,17 @@
+id: lowball-select
+name: Lowball Select
+shortName: Low+
+summary: Peek three deal cards and keep any two; worst poker hand wins.
+detail: "A select-stage Lowball: each hand sculpts a two-card start from three candidates, then ranks for the weakest hand."
+tags:
+  - choice
+  - peek-keep
+  - lowball
+tier: select
+deal:
+  extends: standard
+  dealChoice:
+    dealtCards: 3
+    keepCards: 2
+    selectionPhase: true
+score: lowball

@@ -1,0 +1,16 @@
+id: schrodingers-board
+name: Schrodinger's Board
+shortName: S Board
+summary: The board exists in two possible versions.
+detail: Every community card carries a second possible identity; reveal scoring picks the strongest coherent version per hand.
+tags:
+  - insanity
+  - board
+tier: insanity
+deal:
+  extends: standard
+  possibleIdentities: board
+identityResolution: bestPossible
+infoFeatures:
+  - schrodingers-board
+score: high

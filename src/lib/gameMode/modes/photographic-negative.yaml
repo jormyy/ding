@@ -1,0 +1,17 @@
+id: photographic-negative
+name: Photographic Negative
+shortName: Negative
+summary: Card colors invert visually after turn.
+detail: The board is color-only from turn through river, forcing players to reason through the negative display.
+tags:
+  - visibility
+  - colors
+tier: twist
+deal:
+  extends: standard
+  visibleCommunityCardDetail:
+    turn: color
+    river: color
+infoFeatures:
+  - photographic-negative
+score: high

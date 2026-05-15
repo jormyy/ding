@@ -1,0 +1,16 @@
+id: pick-2-of-5
+name: Pick 2 of 5
+shortName: Pick 2
+summary: Every hand is dealt five cards; the owner keeps any two before ranking starts.
+detail: A deeper deal-choice phase gives each player five private candidates and asks them to sculpt a two-card start.
+tags:
+  - choice
+  - peek-keep
+tier: select
+deal:
+  extends: standard
+  dealChoice:
+    dealtCards: 5
+    keepCards: 2
+    selectionPhase: true
+score: high

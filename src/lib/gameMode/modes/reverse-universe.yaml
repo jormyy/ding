@@ -1,0 +1,17 @@
+id: reverse-universe
+name: Reverse Universe
+shortName: Reverse U
+summary: At river, table order and board order reverse.
+detail: The board and player order reverse when river begins while hand identities remain rankable.
+tags:
+  - insanity
+  - time
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  river:
+    - reverseTableAndBoard
+infoFeatures:
+  - reverse-universe
+score: high

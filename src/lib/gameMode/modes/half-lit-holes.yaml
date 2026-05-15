@@ -1,0 +1,32 @@
+id: half-lit-holes
+name: Half-Lit Holes
+shortName: Half-Lit
+summary: Each hand alternates which hole card is visible.
+detail: One hole card is public at every street, alternating between first and second before both are revealed.
+tags:
+  - visibility
+  - holes
+tier: chaos
+deal:
+  extends: standard
+  visibleHoleCards:
+    preflop: 1
+    flop: 1
+    turn: 1
+    river: 1
+    reveal: 2
+  visibleHoleCardIndexes:
+    preflop:
+      - 0
+    flop:
+      - 1
+    turn:
+      - 0
+    river:
+      - 1
+    reveal:
+      - 0
+      - 1
+infoFeatures:
+  - half-lit-holes
+score: high

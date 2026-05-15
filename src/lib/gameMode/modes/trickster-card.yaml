@@ -1,0 +1,15 @@
+id: trickster-card
+name: Trickster Card
+shortName: Trick
+summary: One trickster card is shuffled in; whichever hand holds it finishes last.
+detail: The trickster marker overrides poker strength at reveal, dropping its hand below every non-trickster hand regardless of made-hand quality.
+tags:
+  - identity
+  - marked
+tier: wild
+deal:
+  extends: standard
+  deck: trickster
+forceRankByMeta:
+  last: trickster
+score: high

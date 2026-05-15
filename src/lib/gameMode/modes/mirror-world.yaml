@@ -1,0 +1,65 @@
+id: mirror-world
+name: Mirror World
+shortName: M World
+summary: Two realities are visible before reveal picks a ranking.
+detail: Two five-card boards are shown, with hands scored against their better reality.
+tags:
+  - insanity
+  - board
+tier: insanity
+deal:
+  extends: standard
+  communityCards: 10
+  boardLayout:
+    kind: dual
+    primary: 5
+    secondary: 5
+    secondaryRole: mirror
+  boards:
+    count: 2
+    cardsPerBoard: 5
+    scoring: best
+  visibleCommunityIndexes:
+    lobby: []
+    preflop: []
+    flop:
+      - 0
+      - 1
+      - 2
+      - 5
+      - 6
+      - 7
+    turn:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 5
+      - 6
+      - 7
+      - 8
+    river:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+    reveal:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+infoFeatures:
+  - mirror-world
+score: high

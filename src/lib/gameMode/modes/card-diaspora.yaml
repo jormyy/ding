@@ -1,0 +1,17 @@
+id: card-diaspora
+name: Card Diaspora
+shortName: Diaspora
+summary: At turn, every hand gives one card away.
+detail: The first hole card in each hand rotates to the next hand when turn begins.
+tags:
+  - insanity
+  - holes
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  turn:
+    - rotateFirstHoleCardsClockwise
+infoFeatures:
+  - card-diaspora
+score: high

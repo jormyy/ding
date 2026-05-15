@@ -1,0 +1,17 @@
+id: card-vortex
+name: Card Vortex
+shortName: Vortex
+summary: At turn, ranks rotate around the table.
+detail: Hole-card ranks rotate across table order while suits stay in their slots.
+tags:
+  - insanity
+  - ranks
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  turn:
+    - rotateHoleRanksAcrossHands
+infoFeatures:
+  - card-vortex
+score: high

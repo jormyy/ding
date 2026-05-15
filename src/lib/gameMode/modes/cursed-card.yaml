@@ -1,0 +1,15 @@
+id: cursed-card
+name: Cursed Card
+shortName: Cursed
+summary: One cursed card is shuffled in; whichever hand holds it finishes last.
+detail: The cursed marker overrides poker strength at reveal, dropping the cursed hand below every uncursed hand regardless of made-hand quality.
+tags:
+  - identity
+  - marked
+tier: wild
+deal:
+  extends: standard
+  deck: cursed
+forceRankByMeta:
+  last: cursed
+score: high

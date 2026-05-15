@@ -1,0 +1,17 @@
+id: card-soup
+name: Card Soup
+shortName: Soup
+summary: At turn, holes and burn pile mix together.
+detail: When turn begins, every hand's hole cards mix with the burn pile and are dealt back out across the table.
+tags:
+  - insanity
+  - holes
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  turn:
+    - mixHolesWithBurn
+infoFeatures:
+  - card-soup
+score: high

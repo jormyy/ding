@@ -1,0 +1,26 @@
+id: flood-select
+name: Flood Select
+shortName: Flood+
+summary: Peek 3 cards and sculpt your start, knowing low cards will play wild.
+detail: "A select-stage Flood: each hand sees three private candidates and sculpts a two-card start, knowing every two, three, four, and five substitutes into stronger identities at reveal."
+tags:
+  - choice
+  - peek-keep
+  - wild
+  - ranks
+tier: select
+deal:
+  extends: standard
+  dealChoice:
+    dealtCards: 3
+    keepCards: 2
+    selectionPhase: true
+wildCards:
+  ranks:
+    - "2"
+    - "3"
+    - "4"
+    - "5"
+infoFeatures:
+  - flood
+score: high

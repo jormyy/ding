@@ -1,0 +1,17 @@
+id: card-eclipse-total
+name: Card Eclipse Total
+shortName: Eclipse T
+summary: At river, the highest rank in play vanishes.
+detail: Every card of the current highest rank is removed from hands and board at river.
+tags:
+  - insanity
+  - ranks
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  river:
+    - removeHighestRankInPlay
+infoFeatures:
+  - card-eclipse-total
+score: high

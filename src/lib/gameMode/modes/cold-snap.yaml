@@ -1,0 +1,17 @@
+id: cold-snap
+name: Cold Snap
+shortName: Cold
+summary: At turn, all face cards become twos.
+detail: Jacks, queens, and kings in hands and board convert to twos when turn begins.
+tags:
+  - event
+  - ranks
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  turn:
+    - faceCardsToTwos
+infoFeatures:
+  - cold-snap
+score: high

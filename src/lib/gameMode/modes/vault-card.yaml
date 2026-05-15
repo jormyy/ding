@@ -1,0 +1,24 @@
+id: vault-card
+name: Vault Card
+shortName: Vault
+summary: A sixth community card waits in a vault lane until reveal opens it.
+detail: The main board fills normally through river while a separate vault slot stays empty; reveal exposes its hidden card alongside the five primary board cards.
+tags:
+  - visibility
+tier: twist
+deal:
+  extends: standard
+  communityCards: 6
+  boardLayout:
+    kind: dual
+    primary: 5
+    secondary: 1
+    secondaryRole: vault
+  visibleCommunityCards:
+    lobby: 0
+    preflop: 0
+    flop: 3
+    turn: 4
+    river: 5
+    reveal: 6
+score: high

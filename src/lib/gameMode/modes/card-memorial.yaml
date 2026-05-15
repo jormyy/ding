@@ -1,0 +1,21 @@
+id: card-memorial
+name: Card Memorial
+shortName: Memorial
+summary: A memorial sixth board card appears at reveal as a tribute to discards.
+detail: The board grows from three to six community cards across streets, and the extra card joins the felt at reveal as memorial information only.
+tags:
+  - insanity
+  - memory
+tier: insanity
+deal:
+  extends: standard
+  communityCards: 6
+  visibleCommunityCards:
+    flop: 3
+    turn: 4
+    river: 5
+    reveal: 6
+  scoreCommunityCards: 5
+infoFeatures:
+  - card-memorial
+score: high

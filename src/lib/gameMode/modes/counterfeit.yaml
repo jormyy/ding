@@ -1,0 +1,15 @@
+id: counterfeit
+name: Counterfeit
+shortName: Counter
+summary: One face-down hole card per hand is value zero.
+detail: The first kept hole card in every hand is marked counterfeit and ignored by showdown scoring.
+tags:
+  - identity
+  - holes
+tier: twist
+deal:
+  extends: standard
+  counterfeitHoleCards: 1
+excludedMetas:
+  - counterfeit
+score: high

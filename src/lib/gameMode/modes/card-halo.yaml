@@ -1,0 +1,15 @@
+id: card-halo
+name: Card Halo
+shortName: Halo
+summary: Neighboring ranks gain a pair aura.
+detail: Adjacent ranks can create a synthetic pair during showdown.
+tags:
+  - insanity
+  - ranks
+tier: insanity
+deal:
+  extends: standard
+infoFeatures:
+  - card-halo
+syntheticPair: adjacent
+score: high

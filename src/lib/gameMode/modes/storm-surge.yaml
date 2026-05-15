@@ -1,0 +1,21 @@
+id: storm-surge
+name: Storm Surge
+shortName: Surge
+summary: Each street, the oldest community card is swept off the board.
+detail: Flop drops the first board card, turn drops the next, and river drops another, so the board keeps shifting forward instead of accumulating.
+tags:
+  - event
+  - board
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  flop:
+    - stormSurge
+  turn:
+    - stormSurge
+  river:
+    - stormSurge
+infoFeatures:
+  - storm-surge
+score: high

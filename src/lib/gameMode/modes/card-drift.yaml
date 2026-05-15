@@ -1,0 +1,21 @@
+id: card-drift
+name: Card Drift
+shortName: Drift
+summary: Every street, private cards drift upward.
+detail: Hole-card ranks shift +1 at flop, turn, and river.
+tags:
+  - insanity
+  - ranks
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  flop:
+    - incrementAllHoleRanks
+  turn:
+    - incrementAllHoleRanks
+  river:
+    - incrementAllHoleRanks
+infoFeatures:
+  - card-drift
+score: high

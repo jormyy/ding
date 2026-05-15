@@ -1,0 +1,14 @@
+id: reality-skip
+name: Reality Skip
+shortName: Skip
+summary: At the turn, the table glimpses a future street and snaps back unchanged.
+detail: A public skip notice fires at turn, previewing a possible future without altering the actual hands or board; everything resumes as if nothing happened.
+tags:
+  - insanity
+  - time
+tier: insanity
+deal:
+  extends: standard
+infoFeatures:
+  - reality-skip
+score: high

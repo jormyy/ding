@@ -1,0 +1,20 @@
+id: tiny-board
+name: Tiny Board
+shortName: Tiny
+summary: Only three community cards are dealt.
+detail: The flop is the whole board, so private cards matter longer and there is no late board rescue.
+tags:
+  - board
+  - community
+tier: standard
+deal:
+  extends: standard
+  communityCards: 3
+  visibleCommunityCards:
+    lobby: 0
+    preflop: 0
+    flop: 3
+    turn: 3
+    river: 3
+    reveal: 3
+score: high

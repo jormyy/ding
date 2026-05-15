@@ -1,0 +1,11 @@
+id: ding
+name: Classic Ding
+shortName: Classic
+summary: The original cooperative hold'em ranking game.
+detail: Two private cards, five shared board cards, strongest poker hand wins.
+tags:
+  - core
+tier: standard
+deal:
+  extends: standard
+score: high

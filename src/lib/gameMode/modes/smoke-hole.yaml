@@ -1,0 +1,26 @@
+id: smoke-hole
+name: Smoke Hole
+shortName: Smoke
+summary: Hole cards are suit-only until turn.
+detail: Every hand exposes only suit hints through flop, then full visible hole cards from turn onward.
+tags:
+  - visibility
+  - suits
+tier: chaos
+deal:
+  extends: standard
+  visibleHoleCards:
+    preflop: 2
+    flop: 2
+    turn: 2
+    river: 2
+    reveal: 2
+  visibleHoleCardDetail:
+    preflop: suit
+    flop: suit
+    turn: full
+    river: full
+    reveal: full
+infoFeatures:
+  - smoke-hole
+score: high

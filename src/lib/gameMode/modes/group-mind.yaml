@@ -1,0 +1,32 @@
+id: group-mind
+name: Group Mind
+shortName: Group
+summary: Everyone sees one shared hole card from every hand.
+detail: One public hole-card anchor per hand rotates as shared table knowledge across phases.
+tags:
+  - visibility
+  - holes
+tier: chaos
+deal:
+  extends: standard
+  visibleHoleCards:
+    preflop: 1
+    flop: 1
+    turn: 1
+    river: 1
+    reveal: 2
+  visibleHoleCardIndexes:
+    preflop:
+      - 0
+    flop:
+      - 1
+    turn:
+      - 0
+    river:
+      - 1
+    reveal:
+      - 0
+      - 1
+infoFeatures:
+  - group-mind
+score: high

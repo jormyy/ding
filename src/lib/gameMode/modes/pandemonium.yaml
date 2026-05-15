@@ -1,0 +1,23 @@
+id: pandemonium
+name: Pandemonium
+shortName: Pandemonium
+summary: A different chaos effect fires every street, with cards in superposition all the way through.
+detail: Flop bumps every rank up, turn rotates hole-card ranks across the table, and river inverts ranks; reveal collapses every superposed card to whichever identity scores best.
+tags:
+  - insanity
+  - ranks
+tier: insanity
+deal:
+  extends: standard
+  possibleIdentities: holesAndBoard
+phaseEffects:
+  flop:
+    - incrementAllRanks
+  turn:
+    - rotateHoleRanksAcrossHands
+  river:
+    - invertAllRanks
+identityResolution: bestPossible
+infoFeatures:
+  - pandemonium
+score: high

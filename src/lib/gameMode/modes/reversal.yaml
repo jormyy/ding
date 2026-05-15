@@ -1,0 +1,15 @@
+id: reversal
+name: Reversal
+shortName: Reverse
+summary: At river, the board reverses in place.
+detail: The same five community cards remain in play, but their displayed order flips when the river phase begins.
+tags:
+  - event
+  - board
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  river:
+    - reverseCommunity
+score: high

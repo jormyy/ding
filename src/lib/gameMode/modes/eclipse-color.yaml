@@ -1,0 +1,17 @@
+id: eclipse-color
+name: Eclipse Color
+shortName: Eclipse C
+summary: Community cards show only red or black until reveal.
+detail: The board exposes color pressure while hiding exact ranks and suits until the final reveal.
+tags:
+  - visibility
+  - colors
+tier: twist
+deal:
+  extends: standard
+  visibleCommunityCardDetail:
+    preflop: color
+    flop: color
+    turn: color
+    river: color
+score: high

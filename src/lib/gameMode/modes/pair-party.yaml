@@ -1,0 +1,12 @@
+id: pair-party
+name: Pair Party
+shortName: Pairs
+summary: Pairs, trips, and quads are the main scoring target.
+detail: The best multiplicity profile wins, with normal poker strength as the tiebreaker.
+tags:
+  - objective
+  - ranks
+tier: twist
+deal:
+  extends: standard
+score: pairs

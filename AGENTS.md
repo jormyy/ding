@@ -238,7 +238,11 @@ The offline simulator + parity harness has been removed. To validate bot behavio
 
 ### Adding a New GameMode
 
-Most mode variants in the 200-mode catalogue are configuration entries in `src/lib/gameMode/catalog.ts` and need no per-mode code. Add a new `DingGameModeDefinition` to that array and the engine handles it through the shared `ding` mode runtime.
+Most mode variants in the 230-mode catalogue are declarative YAML files in `src/lib/gameMode/modes/` and need no per-mode code. To add one:
+
+1. Create `src/lib/gameMode/modes/<id>.yaml` mirroring an existing mode's shape (see `ding.yaml` for the simple form, `card-multiverse.yaml` for the full deal grammar). Validated by the zod schema in `src/lib/gameMode/schema.ts`.
+2. Append the new id to `src/lib/gameMode/modes/_manifest.yaml` so codegen emits it in catalog order.
+3. Run `npm run modes:gen` to regenerate `src/lib/gameMode/catalog.generated.ts`. Both files are checked into git; CI runs `modes:check` to fail on drift.
 
 For a mode with genuinely new runtime behavior:
 

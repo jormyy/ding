@@ -1,0 +1,15 @@
+id: wild-aces
+name: Wild Aces
+shortName: Wild A
+summary: Aces are wild for showdown.
+detail: Every ace can substitute into the strongest available identity at reveal.
+tags:
+  - wild
+  - ranks
+tier: standard
+deal:
+  extends: standard
+wildCards:
+  ranks:
+    - A
+score: high

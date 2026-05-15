@@ -1,0 +1,17 @@
+id: card-lunar
+name: Card Lunar
+shortName: Lunar
+summary: Hearts wax full and play as wild cards at showdown.
+detail: Every heart in a hand or on the board can stand in for whichever rank or suit completes the strongest reveal hand.
+tags:
+  - insanity
+  - suits
+tier: insanity
+deal:
+  extends: standard
+wildCards:
+  suits:
+    - H
+infoFeatures:
+  - card-lunar
+score: high

@@ -1,0 +1,13 @@
+id: pent
+name: Pent
+shortName: Pent
+summary: Five private cards per hand make every hand information-dense.
+detail: Each hand starts with five hole cards, then still uses the shared board to find its best five-card poker hand.
+tags:
+  - big-hands
+  - dense
+tier: standard
+deal:
+  extends: standard
+  holeCards: 5
+score: high

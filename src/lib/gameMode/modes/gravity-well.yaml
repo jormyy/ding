@@ -1,0 +1,17 @@
+id: gravity-well
+name: Gravity Well
+shortName: Gravity
+summary: At the river, every hand's highest hole card climbs one rank.
+detail: When river begins, each hand's top card is pulled up a single rank, sharpening high-card and made-hand pressure across the final showdown.
+tags:
+  - event
+  - ranks
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  river:
+    - upgradeHighestHole
+infoFeatures:
+  - gravity-well
+score: high

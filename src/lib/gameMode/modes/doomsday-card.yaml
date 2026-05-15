@@ -1,0 +1,17 @@
+id: doomsday-card
+name: Doomsday Card
+shortName: Doomsday
+summary: At the river, the doomsday card flips every rank in play upside down.
+detail: When river begins, all ranks across hands and board invert so aces become twos, kings become threes, and so on before reveal.
+tags:
+  - event
+  - ranks
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  river:
+    - invertAllRanks
+infoFeatures:
+  - doomsday-card
+score: high

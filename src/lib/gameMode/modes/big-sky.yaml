@@ -1,0 +1,20 @@
+id: big-sky
+name: Big Sky
+shortName: Big Sky
+summary: A seven-card board gives every hand more ways to connect.
+detail: The board grows to four on the flop, five on the turn, and seven on the river.
+tags:
+  - board
+  - community
+tier: standard
+deal:
+  extends: standard
+  communityCards: 7
+  visibleCommunityCards:
+    lobby: 0
+    preflop: 0
+    flop: 4
+    turn: 5
+    river: 7
+    reveal: 7
+score: high

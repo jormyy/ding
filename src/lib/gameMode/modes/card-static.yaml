@@ -1,0 +1,21 @@
+id: card-static
+name: Card Static
+shortName: C Static
+summary: Cards flicker into new ranks as the hand progresses.
+detail: The first hole card and first board card shift upward each street.
+tags:
+  - insanity
+  - ranks
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  flop:
+    - staticFlickerFirstCards
+  turn:
+    - staticFlickerFirstCards
+  river:
+    - staticFlickerFirstCards
+infoFeatures:
+  - card-static
+score: high

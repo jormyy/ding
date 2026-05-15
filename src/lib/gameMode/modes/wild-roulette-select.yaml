@@ -1,0 +1,33 @@
+id: wild-roulette-select
+name: Wild Roulette Select
+shortName: Roul+
+summary: Peek 3 cards before the rotating wild rank locks in for showdown.
+detail: "A select-stage Wild Rank Roulette: each hand sees three private candidates and sculpts a two-card start knowing fives, sixes, sevens, and eights rotate as the wild rank through the streets."
+tags:
+  - choice
+  - peek-keep
+  - wild
+  - ranks
+tier: select
+deal:
+  extends: standard
+  dealChoice:
+    dealtCards: 3
+    keepCards: 2
+    selectionPhase: true
+wildCardsByPhase:
+  flop:
+    ranks:
+      - "5"
+  turn:
+    ranks:
+      - "6"
+  river:
+    ranks:
+      - "7"
+  reveal:
+    ranks:
+      - "8"
+infoFeatures:
+  - wild-rank-roulette
+score: high

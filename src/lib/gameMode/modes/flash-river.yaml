@@ -1,0 +1,20 @@
+id: flash-river
+name: Flash River
+shortName: Flash R
+summary: The full board is visible before anyone ranks a hand.
+detail: All five community cards are public at preflop, turning the whole hand into immediate table-reading.
+tags:
+  - visibility
+  - board
+tier: twist
+deal:
+  extends: standard
+  visibleCommunityCards:
+    lobby: 0
+    dealChoice: 0
+    preflop: 5
+    flop: 5
+    turn: 5
+    river: 5
+    reveal: 5
+score: high

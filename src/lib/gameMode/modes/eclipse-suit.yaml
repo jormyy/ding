@@ -1,0 +1,17 @@
+id: eclipse-suit
+name: Eclipse Suit
+shortName: Eclipse S
+summary: Community cards show suits only until reveal.
+detail: The board's suit texture is visible, but ranks stay hidden until the final reveal.
+tags:
+  - visibility
+  - suits
+tier: twist
+deal:
+  extends: standard
+  visibleCommunityCardDetail:
+    preflop: suit
+    flop: suit
+    turn: suit
+    river: suit
+score: high

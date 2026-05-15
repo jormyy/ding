@@ -1,0 +1,14 @@
+id: sample-draw
+name: Sample Draw
+shortName: Sample
+summary: At the river, three cards from the leftover deck are exposed as a public sample.
+detail: The sample appears only on river street and previews three cards that never reach the board; scoring uses the normal five-card board.
+tags:
+  - info
+  - deck
+tier: chaos
+deal:
+  extends: standard
+infoFeatures:
+  - sample-draw
+score: high

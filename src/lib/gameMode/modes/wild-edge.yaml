@@ -1,0 +1,16 @@
+id: wild-edge
+name: Wild Edge
+shortName: Edge
+summary: Twos and aces are wild.
+detail: Both deck edges can substitute into the strongest available reveal identity.
+tags:
+  - wild
+  - ranks
+tier: twist
+deal:
+  extends: standard
+wildCards:
+  ranks:
+    - "2"
+    - A
+score: high

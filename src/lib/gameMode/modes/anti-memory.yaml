@@ -1,0 +1,20 @@
+id: anti-memory
+name: Anti-Memory
+shortName: Anti-Memory
+summary: Seen cards fade while unseen cards surface.
+detail: The board starts fully visible, then progressively hides through river before reveal restores truth.
+tags:
+  - insanity
+  - memory
+tier: insanity
+deal:
+  extends: standard
+  visibleCommunityCards:
+    preflop: 5
+    flop: 2
+    turn: 1
+    river: 0
+    reveal: 5
+infoFeatures:
+  - anti-memory
+score: high

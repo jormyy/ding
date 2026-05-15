@@ -1,0 +1,13 @@
+id: rainbow-hole
+name: Rainbow Hole
+shortName: Rainbow
+summary: Hole cards in every hand are guaranteed different suits.
+detail: Every hand starts with two suits represented, reducing suited-hole certainty while keeping classic high-hand scoring.
+tags:
+  - constrained
+  - suits
+tier: twist
+deal:
+  extends: standard
+  constraint: differentSuits
+score: high

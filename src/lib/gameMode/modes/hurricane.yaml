@@ -1,0 +1,17 @@
+id: hurricane
+name: Hurricane
+shortName: Hurricane
+summary: At river, every player loses one hole card.
+detail: Each hand loses its final hole card when river begins.
+tags:
+  - event
+  - holes
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  river:
+    - removeOneHolePerHand
+infoFeatures:
+  - hurricane
+score: high

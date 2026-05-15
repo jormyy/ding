@@ -1,0 +1,65 @@
+id: twin-universes
+name: Twin Universes
+shortName: Twin U
+summary: Two board universes play out side-by-side.
+detail: Ten community cards form two five-card boards; each hand scores against its better universe.
+tags:
+  - insanity
+  - board
+tier: insanity
+deal:
+  extends: standard
+  communityCards: 10
+  boardLayout:
+    kind: dual
+    primary: 5
+    secondary: 5
+    secondaryRole: vault
+  boards:
+    count: 2
+    cardsPerBoard: 5
+    scoring: best
+  visibleCommunityIndexes:
+    lobby: []
+    preflop: []
+    flop:
+      - 0
+      - 1
+      - 2
+      - 5
+      - 6
+      - 7
+    turn:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 5
+      - 6
+      - 7
+      - 8
+    river:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+    reveal:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+infoFeatures:
+  - twin-universes
+score: high

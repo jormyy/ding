@@ -1,0 +1,19 @@
+id: blackout
+name: Blackout
+shortName: Blackout
+summary: No community cards are shown until the river.
+detail: The first three streets are pure private-hand debate, then the board lands all at once.
+tags:
+  - tempo
+  - river
+tier: twist
+deal:
+  extends: standard
+  visibleCommunityCards:
+    lobby: 0
+    preflop: 0
+    flop: 0
+    turn: 0
+    river: 5
+    reveal: 5
+score: high

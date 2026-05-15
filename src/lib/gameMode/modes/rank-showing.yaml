@@ -1,0 +1,19 @@
+id: rank-showing
+name: Rank Showing
+shortName: Ranks
+summary: Every hole-card rank is public, but suits stay hidden.
+detail: The table sees paired and high-card structure from the deal while exact suits remain private until reveal.
+tags:
+  - visibility
+  - ranks
+tier: standard
+deal:
+  extends: standard
+  visibleHoleCards:
+    preflop: 2
+    flop: 2
+    turn: 2
+    river: 2
+    reveal: 2
+  visibleHoleCardDetail: rank
+score: high

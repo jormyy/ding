@@ -1,4 +1,4 @@
-import { GAME_MODE_DEFINITIONS } from "./catalog";
+import { GAME_MODE_DEFINITIONS } from "./catalog.generated";
 import { DEFAULT_GAME_MODE_ID, type DingGameModeDefinition } from "./types";
 
 const modeById = new Map(GAME_MODE_DEFINITIONS.map((mode) => [mode.id, mode]));

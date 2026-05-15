@@ -1,0 +1,13 @@
+id: open-book
+name: Open Book
+shortName: Open
+summary: Everyone's hole cards are public.
+detail: A low-bluff, high-coordination mode where disagreements are about interpretation.
+tags:
+  - visibility
+  - holes
+tier: standard
+deal:
+  extends: standard
+  publicCards: 2
+score: high

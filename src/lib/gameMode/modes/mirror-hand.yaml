@@ -1,0 +1,16 @@
+id: mirror-hand
+name: Mirror Hand
+shortName: M Hand
+summary: Every hand has a shadow inversion.
+detail: Hole cards carry alternate identities so each hand can resolve through its mirrored possibility.
+tags:
+  - insanity
+  - identity
+tier: insanity
+deal:
+  extends: standard
+  possibleIdentities: holes
+identityResolution: bestPossible
+infoFeatures:
+  - mirror-hand
+score: high

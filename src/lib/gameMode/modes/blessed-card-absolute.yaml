@@ -1,0 +1,17 @@
+id: blessed-card-absolute
+name: Blessed Card Absolute
+shortName: Bless Abs
+summary: One absolute-blessed card is shuffled in; whichever hand holds it finishes first.
+detail: The blessing overrides poker strength at reveal, lifting its hand above every other hand regardless of made-hand quality.
+tags:
+  - identity
+  - marked
+tier: wild
+deal:
+  extends: standard
+  deck: blessed
+forceRankByMeta:
+  first: blessed
+infoFeatures:
+  - blessed-card-absolute
+score: high

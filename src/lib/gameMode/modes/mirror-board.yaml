@@ -1,0 +1,29 @@
+id: mirror-board
+name: Mirror Board
+shortName: Mirror
+summary: At the river, the board doubles into a primary row and a mirrored row.
+detail: Ten community slots fan out on river street, but scoring still uses the five primary cards — the mirror row is read-only theatrics.
+tags:
+  - board
+  - mirror
+tier: wild
+deal:
+  extends: standard
+  boardLayout:
+    kind: dual
+    primary: 5
+    secondary: 5
+    secondaryRole: mirror
+  visibleCommunityCards:
+    lobby: 0
+    dealChoice: 0
+    preflop: 0
+    flop: 3
+    turn: 4
+    river: 10
+    reveal: 10
+  scoreCommunityCards: 5
+phaseEffects:
+  river:
+    - mirrorCommunity
+score: high

@@ -1,0 +1,19 @@
+id: card-resurrection
+name: Card Resurrection
+shortName: Resurrect
+summary: Discarded cards reappear as community cards.
+detail: Each hand is dealt three, keeps two automatically, and the discarded cards join the board at reveal.
+tags:
+  - insanity
+  - discards
+tier: insanity
+deal:
+  extends: standard
+  holeCards: 3
+  keepCards: 2
+  visibleCommunityCards:
+    reveal: 22
+  discardedCardsToCommunity: true
+infoFeatures:
+  - card-resurrection
+score: high

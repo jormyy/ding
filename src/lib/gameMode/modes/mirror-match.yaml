@@ -1,0 +1,13 @@
+id: mirror-match
+name: Mirror Match
+shortName: Mirror
+summary: Every hand shares the same first hole card.
+detail: A single mirrored anchor card appears in every hand, so the second hole card and board texture decide the spread.
+tags:
+  - constrained
+  - mirror
+tier: twist
+deal:
+  extends: standard
+  constraint: sharedFirstCard
+score: high

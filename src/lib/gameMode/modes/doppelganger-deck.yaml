@@ -1,0 +1,15 @@
+id: doppelganger-deck
+name: Doppelganger Deck
+shortName: Doppel
+summary: Every card has a hidden twin somewhere else.
+detail: The deck is doubled so duplicate identities can appear across hands and board.
+tags:
+  - deck
+  - duplicates
+tier: twist
+deal:
+  extends: standard
+  deck: double
+infoFeatures:
+  - doppelganger-deck
+score: high

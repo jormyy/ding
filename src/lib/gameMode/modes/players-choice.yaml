@@ -1,0 +1,16 @@
+id: players-choice
+name: Player's Choice
+shortName: Choice
+summary: Every hand is dealt three cards; the owner keeps any two before ranking starts.
+detail: A deal-choice phase lets each player sculpt their starting hands, then the game continues as classic Ding.
+tags:
+  - choice
+  - peek-keep
+tier: select
+deal:
+  extends: standard
+  dealChoice:
+    dealtCards: 3
+    keepCards: 2
+    selectionPhase: true
+score: high

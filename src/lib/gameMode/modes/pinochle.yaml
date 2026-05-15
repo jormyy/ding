@@ -1,0 +1,13 @@
+id: pinochle
+name: Pinochle
+shortName: Pinochle
+summary: Ranks nine through ace appear twice in each suit.
+detail: A duplicated high-card deck creates compact, collision-heavy boards and hands.
+tags:
+  - deck
+  - duplicates
+tier: standard
+deal:
+  extends: standard
+  deck: pinochle
+score: high

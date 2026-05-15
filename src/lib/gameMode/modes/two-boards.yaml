@@ -1,0 +1,63 @@
+id: two-boards
+name: Two Boards
+shortName: 2 Boards
+summary: Two parallel boards are dealt; every hand scores against its better board.
+detail: Each street reveals cards on both boards, and showdown evaluates every hand on both boards before keeping its strongest result.
+tags:
+  - board
+  - multi-board
+tier: chaos
+deal:
+  extends: standard
+  communityCards: 10
+  boardLayout:
+    kind: dual
+    primary: 5
+    secondary: 5
+    secondaryRole: vault
+  boards:
+    count: 2
+    cardsPerBoard: 5
+    scoring: best
+  visibleCommunityIndexes:
+    lobby: []
+    preflop: []
+    flop:
+      - 0
+      - 1
+      - 2
+      - 5
+      - 6
+      - 7
+    turn:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 5
+      - 6
+      - 7
+      - 8
+    river:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+    reveal:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+score: high

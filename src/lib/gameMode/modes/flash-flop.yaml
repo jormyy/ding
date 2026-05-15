@@ -1,0 +1,20 @@
+id: flash-flop
+name: Flash Flop
+shortName: Flash
+summary: The flop is visible before anyone ranks a hand.
+detail: Players start with real board context, so early rankings are less random.
+tags:
+  - tempo
+  - flop
+tier: twist
+deal:
+  extends: standard
+  visibleCommunityCards:
+    lobby: 0
+    dealChoice: 0
+    preflop: 3
+    flop: 3
+    turn: 4
+    river: 5
+    reveal: 5
+score: high

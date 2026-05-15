@@ -1,0 +1,20 @@
+id: avalanche
+name: Avalanche
+shortName: Avalanche
+summary: The board buries the table in seven community cards by river.
+detail: The flop shows three cards, the turn jumps to five, and the river piles on two more so reveal lands on a seven-card community board.
+tags:
+  - event
+  - board
+tier: wild
+deal:
+  extends: standard
+  communityCards: 7
+  visibleCommunityCards:
+    flop: 3
+    turn: 5
+    river: 7
+    reveal: 7
+infoFeatures:
+  - avalanche
+score: high

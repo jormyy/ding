@@ -1,0 +1,28 @@
+id: recursive-board
+name: Recursive Board
+shortName: Recursive
+summary: At turn, the board duplicates itself.
+detail: The board recursively mirrors into ten displayed cards at turn.
+tags:
+  - insanity
+  - board
+tier: insanity
+deal:
+  extends: standard
+  boardLayout:
+    kind: dual
+    primary: 5
+    secondary: 5
+    secondaryRole: mirror
+  visibleCommunityCards:
+    flop: 3
+    turn: 10
+    river: 10
+    reveal: 10
+  scoreCommunityCards: 5
+phaseEffects:
+  turn:
+    - mirrorCommunity
+infoFeatures:
+  - recursive-board
+score: high

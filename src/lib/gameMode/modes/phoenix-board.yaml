@@ -1,0 +1,27 @@
+id: phoenix-board
+name: Phoenix Board
+shortName: Phoenix
+summary: Every discarded third hole card rises back into a reveal-only vault row.
+detail: Each hand keeps two of three dealt cards through the streets; reveal opens a vault lane that shows every discard the table threw away.
+tags:
+  - board
+  - discards
+tier: twist
+deal:
+  extends: standard
+  holeCards: 3
+  keepCards: 2
+  boardLayout:
+    kind: dual
+    primary: 5
+    secondary: 17
+    secondaryRole: vault
+  visibleCommunityCards:
+    lobby: 0
+    preflop: 0
+    flop: 3
+    turn: 4
+    river: 5
+    reveal: 22
+  discardedCardsToCommunity: true
+score: high

@@ -3,7 +3,6 @@ import {
   newRangeBelief,
   applyPlacement,
   rangeMeanStrength,
-  rangeConfidence,
   decayRange,
   pruneByExclusions,
   type RangeBelief,
@@ -487,7 +486,6 @@ export function perceiveState(
         // bots too sure of borderline placements and they stop trading.
       }
     }
-    void rangeConfidence; // available for future, not used here
   }
 }
 

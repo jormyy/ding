@@ -1,0 +1,17 @@
+id: time-echo
+name: Time Echo
+shortName: Echo
+summary: At river, the board returns to the flop.
+detail: The river phase truncates the board back to its first three community cards.
+tags:
+  - insanity
+  - time
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  river:
+    - revertBoardToFlop
+infoFeatures:
+  - time-echo
+score: high

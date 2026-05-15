@@ -1,0 +1,17 @@
+id: card-convergence
+name: Card Convergence
+shortName: Converge
+summary: At river, one rank converges into aces.
+detail: When river begins, every seven in hands and on the board converges into an ace before reveal scoring.
+tags:
+  - insanity
+  - ranks
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  river:
+    - convergeSevensToAces
+infoFeatures:
+  - card-convergence
+score: high

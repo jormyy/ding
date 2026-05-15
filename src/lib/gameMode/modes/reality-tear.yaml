@@ -1,0 +1,16 @@
+id: reality-tear
+name: Reality Tear
+shortName: Tear
+summary: One reality-torn card has multiple possible identities.
+detail: Cards can carry alternate identities and reveal scoring resolves the strongest possible version.
+tags:
+  - insanity
+  - identity
+tier: insanity
+deal:
+  extends: standard
+  possibleIdentities: holesAndBoard
+identityResolution: bestPossible
+infoFeatures:
+  - reality-tear
+score: high

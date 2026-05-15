@@ -1,0 +1,19 @@
+id: dark-flop
+name: Dark Flop
+shortName: Dark F
+summary: The flop stays face-down until turn.
+detail: No community cards are visible at flop; the board catches up at turn.
+tags:
+  - visibility
+  - flop
+tier: twist
+deal:
+  extends: standard
+  visibleCommunityCards:
+    lobby: 0
+    preflop: 0
+    flop: 0
+    turn: 4
+    river: 5
+    reveal: 5
+score: high

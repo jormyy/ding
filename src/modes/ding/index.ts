@@ -14,7 +14,7 @@
  */
 
 export { dingEvaluator } from "./evaluator";
-export { dingScaler, _resetScalerCaches } from "./scaler";
+export { dingScaler } from "./scaler";
 export { dingPhases } from "./phases";
 export { computeReveal, nextFlipIndex, nextFlipHandId } from "./reveal";
 export {

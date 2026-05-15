@@ -1,0 +1,14 @@
+id: hint-card
+name: Hint Card
+shortName: Hint
+summary: At the turn, a public chip names one off-board card from the deck.
+detail: The hint appears only on the turn and previews a single card sitting in the deck, then vanishes for river and reveal scoring.
+tags:
+  - info
+  - deck
+tier: chaos
+deal:
+  extends: standard
+infoFeatures:
+  - hint-card
+score: high

@@ -1,0 +1,21 @@
+id: ice-age
+name: Ice Age
+shortName: Ice
+summary: Even ranks are frozen out of scoring.
+detail: Even-ranked cards are skipped by the reveal evaluator.
+tags:
+  - event
+  - ranks
+tier: wild
+deal:
+  extends: standard
+excludedRanks:
+  - "2"
+  - "4"
+  - "6"
+  - "8"
+  - T
+  - Q
+infoFeatures:
+  - ice-age
+score: high

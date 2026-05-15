@@ -1,0 +1,17 @@
+id: identity-crisis
+name: Identity Crisis
+shortName: Crisis
+summary: At turn, a hole card and board card swap identities.
+detail: The first hand's first hole card swaps with the first community card when turn begins.
+tags:
+  - insanity
+  - identity
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  turn:
+    - swapFirstHoleWithFirstCommunity
+infoFeatures:
+  - identity-crisis
+score: high

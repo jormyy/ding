@@ -1,0 +1,17 @@
+id: heat-wave
+name: Heat Wave
+shortName: Heat W
+summary: At turn, all face cards become aces.
+detail: Jacks, queens, and kings in hands and board convert to aces when turn begins.
+tags:
+  - event
+  - ranks
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  turn:
+    - faceCardsToAces
+infoFeatures:
+  - heat-wave
+score: high

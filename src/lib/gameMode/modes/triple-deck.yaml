@@ -1,0 +1,13 @@
+id: triple-deck
+name: Triple Deck
+shortName: Triple
+summary: Three full decks are merged before the deal.
+detail: The enlarged deck makes exact duplicate cards possible while preserving cooperative ranking.
+tags:
+  - deck
+  - duplicates
+tier: twist
+deal:
+  extends: standard
+  deck: triple
+score: high

@@ -217,56 +217,6 @@ export function rangeMeanStrength(
 }
 
 /**
- * Weighted-mean absolute strength across a range belief.
- * Uses the same scale as `currentHandStrength`, making it directly
- * compatible with scalar beliefs and own-hand estimates.
- */
-export function rangeMeanAbsoluteStrength(
-  range: RangeBelief,
-  strengths: AbsoluteStrengthMap
-): number {
-  let totalW = 0;
-  let acc = 0;
-  for (const [key, w] of range.weights) {
-    const s = strengths.get(key);
-    if (s === undefined) continue;
-    totalW += w;
-    acc += s * w;
-  }
-  if (totalW <= 0) return 0.5;
-  return acc / totalW;
-}
-
-/**
- * Effective sample size of a range belief: (Σw)² / Σw².
- * High ESS → the range is still diffuse (many combos have similar weight).
- * Low ESS → the range has collapsed onto a few combos.
- */
-export function effectiveSampleSize(range: RangeBelief): number {
-  let sum = 0, sumSq = 0;
-  for (const w of range.weights.values()) {
-    sum += w;
-    sumSq += w * w;
-  }
-  if (sumSq <= 0) return 0;
-  return (sum * sum) / sumSq;
-}
-
-/**
- * Confidence in [0, 1] derived from how much the range has narrowed.
- * Empty or uniform → ~0.3; collapsed onto few combos → ~0.95.
- */
-export function rangeConfidence(range: RangeBelief): number {
-  if (range.weights.size === 0) return 0.3;
-  const ess = effectiveSampleSize(range);
-  const total = range.weights.size;
-  if (total <= 1) return 0.3;
-  // Normalized: 1 - ess/total in [0, 1] (0 when uniform, 1 when collapsed).
-  const narrowness = 1 - ess / total;
-  return Math.min(0.95, 0.3 + 0.65 * narrowness);
-}
-
-/**
  * Decay a range belief toward uniform weights.
  * Called at phase boundaries because the previous phase's placements were
  * made on a different board and are now stale signal.

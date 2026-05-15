@@ -1,0 +1,19 @@
+id: hidden-turn
+name: Hidden Turn
+shortName: Hidden T
+summary: The turn card stays hidden until river.
+detail: The flop is visible, but the fourth board card is withheld until the river reveal catches up.
+tags:
+  - visibility
+  - tempo
+tier: twist
+deal:
+  extends: standard
+  visibleCommunityCards:
+    lobby: 0
+    preflop: 0
+    flop: 3
+    turn: 3
+    river: 5
+    reveal: 5
+score: high

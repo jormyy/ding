@@ -1,0 +1,19 @@
+id: crawl
+name: Crawl
+shortName: Crawl
+summary: The board crawls out slowly before completing at river.
+detail: One card is visible preflop, then the board inches forward before the final two cards arrive at river.
+tags:
+  - tempo
+  - board
+tier: twist
+deal:
+  extends: standard
+  visibleCommunityCards:
+    lobby: 0
+    preflop: 1
+    flop: 2
+    turn: 3
+    river: 5
+    reveal: 5
+score: high

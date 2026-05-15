@@ -1,0 +1,14 @@
+id: anti-wild
+name: Anti-Wild
+shortName: Anti
+summary: One announced rank is banned from scoring.
+detail: Sevens are ignored by the showdown evaluator, shrinking hands and boards before hand comparison.
+tags:
+  - wild
+  - ranks
+tier: twist
+deal:
+  extends: standard
+excludedRanks:
+  - "7"
+score: high

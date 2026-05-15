@@ -1,0 +1,26 @@
+id: suit-showing-inherit
+name: Suit Showing Inherit
+shortName: Suit I
+summary: Inherit a card whose suit you saw at the deal — ranks stay hidden until reveal.
+detail: "A select-stage Suit Showing: each hand keeps one dealt card while the right neighbor's discard fills the second slot; both cards' suits are public throughout, but ranks stay hidden until reveal."
+tags:
+  - choice
+  - inheritance
+  - visibility
+  - suits
+tier: select
+deal:
+  extends: standard
+  dealChoice:
+    dealtCards: 2
+    keepCards: 1
+    selectionPhase: true
+    inheritance: true
+  visibleHoleCards:
+    preflop: 2
+    flop: 2
+    turn: 2
+    river: 2
+    reveal: 2
+  visibleHoleCardDetail: suit
+score: high

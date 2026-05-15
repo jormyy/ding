@@ -1,0 +1,19 @@
+id: tower
+name: Tower
+shortName: Tower
+summary: A five-card stack shows only its top three cards until river.
+detail: The table reads a stable three-card board through turn, then the hidden bottom of the stack appears at river.
+tags:
+  - visibility
+  - board
+tier: chaos
+deal:
+  extends: standard
+  visibleCommunityCards:
+    lobby: 0
+    preflop: 0
+    flop: 3
+    turn: 3
+    river: 5
+    reveal: 5
+score: high

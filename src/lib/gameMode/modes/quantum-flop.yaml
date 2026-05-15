@@ -1,0 +1,54 @@
+id: quantum-flop
+name: Quantum Flop
+shortName: Q Flop
+summary: Three possible flops exist at once.
+detail: Nine community cards form three flop boards; each hand scores against its best quantum board.
+tags:
+  - insanity
+  - board
+tier: insanity
+deal:
+  extends: standard
+  communityCards: 9
+  boardLayout:
+    kind: grid
+    slots:
+      - row: 0
+        col: 0
+        group: flop-a
+      - row: 0
+        col: 1
+        group: flop-a
+      - row: 0
+        col: 2
+        group: flop-a
+      - row: 1
+        col: 0
+        group: flop-b
+      - row: 1
+        col: 1
+        group: flop-b
+      - row: 1
+        col: 2
+        group: flop-b
+      - row: 2
+        col: 0
+        group: flop-c
+      - row: 2
+        col: 1
+        group: flop-c
+      - row: 2
+        col: 2
+        group: flop-c
+  boards:
+    count: 3
+    cardsPerBoard: 3
+    scoring: best
+  visibleCommunityCards:
+    flop: 9
+    turn: 9
+    river: 9
+    reveal: 9
+infoFeatures:
+  - quantum-flop
+score: high

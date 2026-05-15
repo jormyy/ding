@@ -1,0 +1,18 @@
+id: synesthesia
+name: Synesthesia
+shortName: Synesthesia
+summary: Each street shows the community cards through a different sensory filter.
+detail: Flop shows ranks only, turn shows suits only, and river shows colors only; the full board lands at reveal for scoring.
+tags:
+  - visibility
+  - board
+tier: chaos
+deal:
+  extends: standard
+  visibleCommunityCardDetail:
+    flop: rank
+    turn: suit
+    river: color
+infoFeatures:
+  - synesthesia
+score: high

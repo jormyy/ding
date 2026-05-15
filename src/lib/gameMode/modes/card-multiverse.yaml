@@ -1,0 +1,157 @@
+id: card-multiverse
+name: Card Multiverse
+shortName: Multiverse
+summary: Four parallel five-card boards play out as alternate universes.
+detail: Twenty community cards form four separate five-card boards; each hand scores against its strongest universe at reveal.
+tags:
+  - insanity
+  - board
+tier: insanity
+deal:
+  extends: standard
+  communityCards: 20
+  boardLayout:
+    kind: grid
+    slots:
+      - row: 0
+        col: 0
+        group: universe-a
+      - row: 0
+        col: 1
+        group: universe-a
+      - row: 0
+        col: 2
+        group: universe-a
+      - row: 0
+        col: 3
+        group: universe-a
+      - row: 0
+        col: 4
+        group: universe-a
+      - row: 1
+        col: 0
+        group: universe-b
+      - row: 1
+        col: 1
+        group: universe-b
+      - row: 1
+        col: 2
+        group: universe-b
+      - row: 1
+        col: 3
+        group: universe-b
+      - row: 1
+        col: 4
+        group: universe-b
+      - row: 2
+        col: 0
+        group: universe-c
+      - row: 2
+        col: 1
+        group: universe-c
+      - row: 2
+        col: 2
+        group: universe-c
+      - row: 2
+        col: 3
+        group: universe-c
+      - row: 2
+        col: 4
+        group: universe-c
+      - row: 3
+        col: 0
+        group: universe-d
+      - row: 3
+        col: 1
+        group: universe-d
+      - row: 3
+        col: 2
+        group: universe-d
+      - row: 3
+        col: 3
+        group: universe-d
+      - row: 3
+        col: 4
+        group: universe-d
+  boards:
+    count: 4
+    cardsPerBoard: 5
+    scoring: best
+  visibleCommunityIndexes:
+    lobby: []
+    preflop: []
+    flop:
+      - 0
+      - 1
+      - 2
+      - 5
+      - 6
+      - 7
+      - 10
+      - 11
+      - 12
+      - 15
+      - 16
+      - 17
+    turn:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 5
+      - 6
+      - 7
+      - 8
+      - 10
+      - 11
+      - 12
+      - 13
+      - 15
+      - 16
+      - 17
+      - 18
+    river:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+      - 12
+      - 13
+      - 14
+      - 15
+      - 16
+      - 17
+      - 18
+      - 19
+    reveal:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+      - 12
+      - 13
+      - 14
+      - 15
+      - 16
+      - 17
+      - 18
+      - 19
+infoFeatures:
+  - card-multiverse
+score: high

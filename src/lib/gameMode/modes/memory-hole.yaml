@@ -1,0 +1,22 @@
+id: memory-hole
+name: Memory Hole
+shortName: Mem Hole
+summary: At turn, one community card is forgotten.
+detail: One visible community card is replaced at turn and then masked through river.
+tags:
+  - insanity
+  - memory
+tier: insanity
+deal:
+  extends: standard
+  visibleCommunityCardDetails:
+    turn:
+      "0": hidden
+    river:
+      "0": hidden
+phaseEffects:
+  turn:
+    - randomReplaceVisibleCommunity
+infoFeatures:
+  - memory-hole
+score: high

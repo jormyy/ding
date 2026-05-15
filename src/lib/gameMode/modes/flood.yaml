@@ -1,0 +1,20 @@
+id: flood
+name: Flood
+shortName: Flood
+summary: Every two, three, four, and five plays as a wild card at showdown.
+detail: The four lowest ranks all substitute into stronger identities at reveal, turning otherwise dead low cards into the building blocks of big made hands.
+tags:
+  - wild
+  - ranks
+tier: wild
+deal:
+  extends: standard
+wildCards:
+  ranks:
+    - "2"
+    - "3"
+    - "4"
+    - "5"
+infoFeatures:
+  - flood
+score: high

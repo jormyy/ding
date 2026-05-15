@@ -1,0 +1,15 @@
+id: wild-rank
+name: Wild Rank
+shortName: Wild R
+summary: Every seven plays as a wild card at showdown.
+detail: Any seven in a hand or on the board can stand in for whichever rank or suit makes the strongest reveal hand.
+tags:
+  - wild
+  - ranks
+tier: standard
+deal:
+  extends: standard
+wildCards:
+  ranks:
+    - "7"
+score: high

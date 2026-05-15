@@ -1,0 +1,24 @@
+id: tornado-trade
+name: Tornado Trade
+shortName: Tornado T
+summary: Pass one card left before the turn-rotation hits the table.
+detail: "A select-stage Tornado: each hand chooses one of two dealt cards to pass left before preflop, then the turn rotates everyone's hand clockwise as usual."
+tags:
+  - choice
+  - trade-up
+  - event
+  - holes
+tier: select
+deal:
+  extends: standard
+  dealChoice:
+    dealtCards: 2
+    keepCards: 1
+    selectionPhase: true
+    tradeUp: true
+phaseEffects:
+  turn:
+    - rotateHoleCardsClockwise
+infoFeatures:
+  - tornado
+score: high

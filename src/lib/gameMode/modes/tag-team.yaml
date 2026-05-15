@@ -1,0 +1,20 @@
+id: tag-team
+name: Tag Team
+shortName: Tag
+summary: Each player privately sees a neighbor's full two-card hand.
+detail: Every player is tagged with another hand's complete hole cards as a private hint that persists from preflop through reveal.
+tags:
+  - info
+  - holes
+tier: chaos
+deal:
+  extends: standard
+  visibleHoleCards:
+    preflop: 2
+    flop: 2
+    turn: 2
+    river: 2
+    reveal: 2
+infoFeatures:
+  - tag-team
+score: high

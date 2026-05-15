@@ -1,0 +1,16 @@
+id: two-suited-card
+name: Two-Suited Card
+shortName: 2-Suit
+summary: One card carries two suits at once for flush purposes.
+detail: The marked card counts as whichever of its two suits makes the better flush at reveal, while its rank stays fixed.
+tags:
+  - wild
+  - marked
+tier: wild
+deal:
+  extends: standard
+  deck: twoSuited
+wildCards:
+  metas:
+    - twoSuited
+score: high

@@ -1,0 +1,72 @@
+id: l-board
+name: L-Board
+shortName: L-Board
+summary: Nine community cards form an L with five-card arms; every hand scores on its best five-card path.
+detail: Both arms of the L run five cards long and share a corner, creating overlapping five-card paths that include the pure arm, the pure stem, and the bend between them.
+tags:
+  - board
+  - topology
+tier: chaos
+deal:
+  extends: standard
+  communityCards: 9
+  boardLayout:
+    kind: L
+    arm: 5
+    stem: 5
+  boards:
+    cardIndexes:
+      - - 0
+        - 1
+        - 2
+        - 3
+        - 4
+      - - 2
+        - 1
+        - 0
+        - 5
+        - 6
+      - - 0
+        - 5
+        - 6
+        - 7
+        - 8
+    scoring: best
+  visibleCommunityIndexes:
+    lobby: []
+    preflop: []
+    flop:
+      - 0
+      - 1
+      - 2
+      - 5
+      - 6
+    turn:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 5
+      - 6
+      - 7
+    river:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+    reveal:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+score: high

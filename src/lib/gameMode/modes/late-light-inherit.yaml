@@ -1,0 +1,22 @@
+id: late-light-inherit
+name: Late Light Inherit
+shortName: Late I
+summary: Keep one hole card and inherit your neighbor's discard — hole cards expose at river.
+detail: "A select-stage Late Light: each hand keeps one dealt card while the right neighbor's discard fills the second slot, then both hole cards flip public when the river arrives."
+tags:
+  - choice
+  - inheritance
+  - visibility
+  - river
+tier: select
+deal:
+  extends: standard
+  dealChoice:
+    dealtCards: 2
+    keepCards: 1
+    selectionPhase: true
+    inheritance: true
+  visibleHoleCards:
+    river: 2
+    reveal: 2
+score: high

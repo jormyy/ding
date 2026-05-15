@@ -1,0 +1,17 @@
+id: eclipse-rank
+name: Eclipse Rank
+shortName: Eclipse R
+summary: Community cards show ranks only until reveal.
+detail: The board's rank structure is visible, but suits stay hidden until the final reveal.
+tags:
+  - visibility
+  - ranks
+tier: twist
+deal:
+  extends: standard
+  visibleCommunityCardDetail:
+    preflop: rank
+    flop: rank
+    turn: rank
+    river: rank
+score: high

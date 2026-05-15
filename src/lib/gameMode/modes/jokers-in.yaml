@@ -1,0 +1,16 @@
+id: jokers-in
+name: Jokers In
+shortName: Jokers
+summary: Two jokers are added to the deck as wild cards.
+detail: Each joker can become the best possible card identity for the hand holding it at showdown.
+tags:
+  - deck
+  - wild
+tier: standard
+deal:
+  extends: standard
+  deck: jokers
+wildCards:
+  metas:
+    - joker
+score: high

@@ -1,0 +1,20 @@
+id: communal-glance
+name: Communal Glance
+shortName: Glance
+summary: The table sees one random hole-card slot.
+detail: One shared hole-card anchor per hand is public for the hand, preserving symmetric information.
+tags:
+  - info
+  - holes
+tier: chaos
+deal:
+  extends: standard
+  visibleHoleCards:
+    preflop: 1
+    flop: 1
+    turn: 1
+    river: 1
+    reveal: 2
+infoFeatures:
+  - communal-glance
+score: high

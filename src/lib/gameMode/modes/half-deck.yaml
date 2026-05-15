@@ -1,0 +1,13 @@
+id: half-deck
+name: Half Deck
+shortName: Half
+summary: A random twenty-six-card deck is used for the whole hand.
+detail: Half the deck is removed before dealing, creating a tight and unpredictable card pool.
+tags:
+  - deck
+  - compact
+tier: standard
+deal:
+  extends: standard
+  deck: half
+score: high

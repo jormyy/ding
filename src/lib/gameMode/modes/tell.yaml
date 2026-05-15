@@ -1,0 +1,14 @@
+id: tell
+name: Tell
+shortName: Tell
+summary: A public chip reveals one community card's true identity from the start.
+detail: From preflop onward, the chip names one community-card slot and its rank and suit, giving the table a guaranteed anchor.
+tags:
+  - info
+  - board
+tier: chaos
+deal:
+  extends: standard
+infoFeatures:
+  - tell
+score: high

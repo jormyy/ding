@@ -1,0 +1,19 @@
+id: slow-burn
+name: Slow Burn
+shortName: Slow
+summary: The board arrives one card, then three, then five.
+detail: A narrow flop makes early confidence brittle and keeps trades alive longer.
+tags:
+  - tempo
+  - board
+tier: standard
+deal:
+  extends: standard
+  visibleCommunityCards:
+    lobby: 0
+    preflop: 0
+    flop: 1
+    turn: 3
+    river: 5
+    reveal: 5
+score: high

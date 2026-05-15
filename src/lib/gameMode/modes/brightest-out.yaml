@@ -1,0 +1,14 @@
+id: brightest-out
+name: Brightest Out
+shortName: Brightest
+summary: The highest hole card in every hand is public from the start.
+detail: Each hand exposes its brightest private card, giving the table a high-card anchor while the lower card stays hidden until reveal.
+tags:
+  - visibility
+  - holes
+tier: twist
+deal:
+  extends: standard
+  publicCards: 1
+  publicCardSelection: highest
+score: high

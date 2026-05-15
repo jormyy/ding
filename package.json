@@ -8,7 +8,11 @@
     "start": "next start",
     "lint": "next lint",
     "party:dev": "partykit dev",
-    "party:deploy": "partykit deploy"
+    "party:deploy": "partykit deploy",
+    "modes:gen": "tsx src/lib/gameMode/generate.ts",
+    "modes:check": "tsx src/lib/gameMode/generate.ts --check",
+    "predev": "npm run modes:gen",
+    "prebuild": "npm run modes:gen && npm run modes:check"
   },
   "dependencies": {
     "next": "14.2.5",
@@ -26,6 +30,9 @@
     "concurrently": "^8.2.2",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "tsx": "^4.22.0",
+    "typescript": "^5",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
   }
 }

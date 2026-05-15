@@ -1,0 +1,42 @@
+id: cross
+name: Cross
+shortName: Cross
+summary: Five community cards form a cross; every hand scores on its better line.
+detail: The center card belongs to both the row and the column, so hands can connect along either axis.
+tags:
+  - board
+  - topology
+tier: chaos
+deal:
+  extends: standard
+  boardLayout:
+    kind: grid
+    slots:
+      - row: 1
+        col: 0
+      - row: 0
+        col: 1
+      - row: 1
+        col: 1
+        group: center
+      - row: 2
+        col: 1
+      - row: 1
+        col: 2
+  boards:
+    cardIndexes:
+      - - 0
+        - 2
+        - 4
+      - - 1
+        - 2
+        - 3
+    scoring: best
+  visibleCommunityCards:
+    lobby: 0
+    preflop: 0
+    flop: 3
+    turn: 4
+    river: 5
+    reveal: 5
+score: high

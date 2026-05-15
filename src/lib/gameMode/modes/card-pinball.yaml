@@ -1,0 +1,21 @@
+id: card-pinball
+name: Card Pinball
+shortName: Pinball
+summary: A community card bounces into a hole slot.
+detail: The first community card swaps with the first hole card at flop, turn, and river.
+tags:
+  - insanity
+  - board
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  flop:
+    - swapFirstHoleWithFirstCommunity
+  turn:
+    - swapFirstHoleWithFirstCommunity
+  river:
+    - swapFirstHoleWithFirstCommunity
+infoFeatures:
+  - card-pinball
+score: high

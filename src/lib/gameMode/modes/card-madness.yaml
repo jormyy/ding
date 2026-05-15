@@ -1,0 +1,17 @@
+id: card-madness
+name: Card Madness
+shortName: Madness
+summary: At turn, every card swaps places.
+detail: All hole and community cards rotate one position through a single shared stream.
+tags:
+  - insanity
+  - holes
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  turn:
+    - rotateAllCardPositions
+infoFeatures:
+  - card-madness
+score: high

@@ -1,0 +1,21 @@
+id: rainstorm
+name: Rainstorm
+shortName: Rain
+summary: Every phase, one community card is replaced.
+detail: A fresh deck card replaces one visible community card at flop, turn, and river.
+tags:
+  - event
+  - board
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  flop:
+    - randomReplaceVisibleCommunity
+  turn:
+    - randomReplaceVisibleCommunity
+  river:
+    - randomReplaceVisibleCommunity
+infoFeatures:
+  - rainstorm
+score: high

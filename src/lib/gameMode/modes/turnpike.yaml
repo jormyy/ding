@@ -1,0 +1,19 @@
+id: turnpike
+name: Turnpike
+shortName: Turnpike
+summary: Four community cards hit on the flop, then the game pauses before the river.
+detail: Most of the board appears early, making the final card a sharper negotiation point.
+tags:
+  - tempo
+  - board
+tier: standard
+deal:
+  extends: standard
+  visibleCommunityCards:
+    lobby: 0
+    preflop: 0
+    flop: 4
+    turn: 4
+    river: 5
+    reveal: 5
+score: high

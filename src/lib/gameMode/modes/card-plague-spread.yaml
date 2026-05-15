@@ -1,0 +1,21 @@
+id: card-plague-spread
+name: Card Plague Spread
+shortName: Spread
+summary: A plague rank infects more cards each phase.
+detail: One additional card converts to seven at flop, turn, and river.
+tags:
+  - insanity
+  - ranks
+tier: insanity
+deal:
+  extends: standard
+phaseEffects:
+  flop:
+    - spreadPlagueToFirstCard
+  turn:
+    - spreadPlagueToFirstCard
+  river:
+    - spreadPlagueToFirstCard
+infoFeatures:
+  - card-plague-spread
+score: high

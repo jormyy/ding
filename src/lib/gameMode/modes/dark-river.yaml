@@ -1,0 +1,15 @@
+id: dark-river
+name: Dark River
+shortName: Dark R
+summary: The river card shows only its suit until reveal.
+detail: The first four board cards are normal, but the final river card keeps its rank hidden until reveal.
+tags:
+  - visibility
+  - river
+tier: twist
+deal:
+  extends: standard
+  visibleCommunityCardDetails:
+    river:
+      "4": suit
+score: high

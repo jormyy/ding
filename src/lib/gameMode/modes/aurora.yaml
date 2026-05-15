@@ -1,0 +1,17 @@
+id: aurora
+name: Aurora
+shortName: Aurora
+summary: At river, suits swap within color pairs.
+detail: When river begins, suits reassign across hands and board on a fixed cycle, scrambling flush draws while ranks stay intact.
+tags:
+  - event
+  - suits
+tier: wild
+deal:
+  extends: standard
+phaseEffects:
+  river:
+    - reassignAllSuits
+infoFeatures:
+  - aurora
+score: high

@@ -1,0 +1,17 @@
+id: card-constellation
+name: Card Constellation
+shortName: Constellation
+summary: Sevens form a constellation across the table and play as wild cards.
+detail: Every seven, in hands or on the board, can substitute for whichever rank or suit completes the strongest reveal hand.
+tags:
+  - insanity
+  - ranks
+tier: insanity
+deal:
+  extends: standard
+wildCards:
+  ranks:
+    - "7"
+infoFeatures:
+  - card-constellation
+score: high

@@ -55,15 +55,6 @@ function trimCache<V>(cache: Map<string, V>): void {
   }
 }
 
-/**
- * Diagnostic: clear caches between simulation runs so per-game profiling is
- * not contaminated by a previous game's fingerprint hits.
- */
-export function _resetScalerCaches(): void {
-  percentileCache.clear();
-  absStrengthCache.clear();
-}
-
 export const dingScaler: StrengthScaler = {
   ownHandStrength(hole: Card[], board: Card[]): number {
     return currentHandStrength(hole, board);

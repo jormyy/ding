@@ -1,0 +1,14 @@
+id: suit-census
+name: Suit Census
+shortName: Suit C
+summary: A public chip breaks down how many cards of each suit remain in the deck.
+detail: The suit counts refresh every street so the table can read suit pressure; scoring still uses the standard five-card board.
+tags:
+  - info
+  - suits
+tier: chaos
+deal:
+  extends: standard
+infoFeatures:
+  - suit-census
+score: high

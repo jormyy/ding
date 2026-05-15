@@ -1,0 +1,18 @@
+id: fog-bank
+name: Fog Bank
+shortName: Fog
+summary: Community cards show only their color until reveal.
+detail: From flop through river the board exposes color pressure only; reveal restores ranks and suits for scoring.
+tags:
+  - visibility
+  - colors
+tier: twist
+deal:
+  extends: standard
+  visibleCommunityCardDetail:
+    flop: color
+    turn: color
+    river: color
+infoFeatures:
+  - fog-bank
+score: high

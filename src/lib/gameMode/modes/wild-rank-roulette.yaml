@@ -1,0 +1,27 @@
+id: wild-rank-roulette
+name: Wild Rank Roulette
+shortName: Roulette
+summary: A new rank becomes wild each street; whichever is wild at reveal counts for showdown.
+detail: Fives, sixes, sevens, and eights take turns as the wild rank across flop, turn, river, and reveal; only the reveal-phase rank substitutes for scoring.
+tags:
+  - wild
+  - ranks
+tier: wild
+deal:
+  extends: standard
+wildCardsByPhase:
+  flop:
+    ranks:
+      - "5"
+  turn:
+    ranks:
+      - "6"
+  river:
+    ranks:
+      - "7"
+  reveal:
+    ranks:
+      - "8"
+infoFeatures:
+  - wild-rank-roulette
+score: high

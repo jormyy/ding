@@ -1,0 +1,17 @@
+id: trade-up
+name: Trade-Up
+shortName: Trade-Up
+summary: At the deal, each hand passes one selected card to the left neighbor.
+detail: Every owner chooses one hole card to trade away. Cards move simultaneously around the table before preflop ranking starts.
+tags:
+  - choice
+  - trade-up
+tier: select
+deal:
+  extends: standard
+  dealChoice:
+    dealtCards: 2
+    keepCards: 1
+    selectionPhase: true
+    tradeUp: true
+score: high

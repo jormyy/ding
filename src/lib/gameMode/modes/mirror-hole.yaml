@@ -1,0 +1,14 @@
+id: mirror-hole
+name: Mirror Hole
+shortName: Mirror H
+summary: Each player privately sees one hole card from a neighbor's hand.
+detail: Every player receives a secret reflection of a single card belonging to another hand; the mirror stays private through reveal.
+tags:
+  - info
+  - holes
+tier: chaos
+deal:
+  extends: standard
+infoFeatures:
+  - mirror-hole
+score: high

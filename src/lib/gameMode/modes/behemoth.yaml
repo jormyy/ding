@@ -1,0 +1,20 @@
+id: behemoth
+name: Behemoth
+shortName: Behemoth
+summary: Nine community cards are dealt; best five-card poker hand wins.
+detail: The river dumps the rest of a huge board, creating a crowded final comparison across eleven available cards.
+tags:
+  - board
+  - community
+tier: twist
+deal:
+  extends: standard
+  communityCards: 9
+  visibleCommunityCards:
+    lobby: 0
+    preflop: 0
+    flop: 3
+    turn: 4
+    river: 9
+    reveal: 9
+score: high
