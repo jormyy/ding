@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { ClientMessage, GameState, Hand } from "@/lib/types";
 import { getGameModeDefinition } from "@/lib/gameMode";
 import { D } from "@/lib/theme";
+import { surfaces } from "@/lib/tokens";
 import { CardFace } from "./CardFace";
 import { resolveDealChoiceVariant } from "@/lib/gameMode/dealChoiceVariant";
 import PeekBoardBoard from "./dealChoice/PeekBoardBoard";
@@ -92,7 +93,7 @@ export default function DealChoiceBoard({
               className="rounded-lg p-4"
               style={{
                 background: "rgba(6,30,16,0.94)",
-                border: "1px solid rgba(201,165,74,0.28)",
+                border: `1px solid ${D.panelBorder}`,
                 boxShadow: "0 16px 48px rgba(0,0,0,0.45)",
               }}
             >
@@ -264,7 +265,7 @@ function ChoiceHandRow({
               disabled={submitted}
               className="rounded-lg p-1 transition-all disabled:cursor-default"
               style={{
-                background: isSelected ? "rgba(201,165,74,0.2)" : "rgba(0,0,0,0.22)",
+                background: isSelected ? "rgba(201,165,74,0.2)" : surfaces.disabledBg,
                 border: isSelected ? "2px solid #c9a54a" : "2px solid rgba(255,255,255,0.08)",
                 opacity: submitted && !isSelected ? 0.35 : 1,
               }}
@@ -284,7 +285,7 @@ function ChoiceHandRow({
             onClick={onMulligan}
             className="h-8 rounded-md text-[11px] font-black uppercase tracking-wide transition-all active:scale-95 disabled:opacity-45 disabled:cursor-not-allowed"
             style={{
-              background: mulliganUsed ? "rgba(255,255,255,0.06)" : "rgba(240,138,108,0.18)",
+              background: mulliganUsed ? "rgba(255,255,255,0.06)" : surfaces.dangerLight,
               color: mulliganUsed ? D.sub : "#f08a6c",
               border: "1px solid rgba(240,138,108,0.32)",
             }}
@@ -300,7 +301,7 @@ function ChoiceHandRow({
           className="h-10 rounded-md text-xs font-black uppercase tracking-wide transition-all active:scale-95 disabled:opacity-45 disabled:cursor-not-allowed"
           style={{
             background: submitted
-              ? "rgba(47,184,115,0.18)"
+              ? surfaces.accentLight
               : `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`,
             color: submitted ? D.accent : D.ink,
             border: submitted ? "1px solid rgba(47,184,115,0.35)" : "none",

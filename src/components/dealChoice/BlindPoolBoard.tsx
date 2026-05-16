@@ -1,6 +1,7 @@
 "use client";
 
 import { D } from "@/lib/theme";
+import { surfaces } from "@/lib/tokens";
 import { CardFace } from "../CardFace";
 import { VariantStatusBar } from "./SharedAffordances";
 import type { DealChoiceBoardProps } from "./types";
@@ -44,7 +45,7 @@ export default function BlindPoolBoard({ gameState, myId, onSend }: DealChoiceBo
                     onClick={() => onSend({ type: "contributeToBlindPool", handId: hand.id, cardIndex: i })}
                     className="rounded-lg p-1 transition-all disabled:cursor-default"
                     style={{
-                      background: isContrib ? "rgba(240,138,108,0.18)" : "rgba(0,0,0,0.22)",
+                      background: isContrib ? surfaces.dangerLight : surfaces.disabledBg,
                       border: isContrib ? "2px solid #f08a6c" : "2px solid rgba(255,255,255,0.08)",
                       opacity: submitted && !isContrib ? 0.35 : 1,
                     }}

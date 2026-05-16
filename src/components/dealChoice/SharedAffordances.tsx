@@ -2,6 +2,7 @@
 
 import type { Card } from "@/lib/types";
 import { D } from "@/lib/theme";
+import { surfaces } from "@/lib/tokens";
 import { CardFace } from "../CardFace";
 
 export function CommunityPreviewStrip({
@@ -14,7 +15,7 @@ export function CommunityPreviewStrip({
   if (cards.length === 0) return null;
   return (
     <div className="flex items-center gap-2 rounded-md px-2 py-1.5"
-      style={{ background: "rgba(201,165,74,0.08)", border: "1px solid rgba(201,165,74,0.28)" }}>
+      style={{ background: surfaces.goldPanel, border: `1px solid ${D.panelBorder}` }}>
       <span className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: D.accent }}>
         {label}
       </span>
@@ -61,7 +62,7 @@ export function PoolStrip({
               disabled={!canClaim}
               className="rounded-lg p-1 transition-all disabled:cursor-default"
               style={{
-                background: canClaim ? "rgba(201,165,74,0.18)" : "rgba(0,0,0,0.22)",
+                background: canClaim ? "rgba(201,165,74,0.18)" : surfaces.disabledBg,
                 border: canClaim ? "2px solid #c9a54a" : "2px solid rgba(255,255,255,0.08)",
                 opacity: claimed ? 0.25 : 1,
               }}
@@ -112,7 +113,7 @@ export function NeighborView({
               disabled={!canToggle}
               className="rounded-lg p-1 transition-all disabled:cursor-default"
               style={{
-                background: isSelected ? "rgba(201,165,74,0.22)" : "rgba(0,0,0,0.22)",
+                background: isSelected ? "rgba(201,165,74,0.22)" : surfaces.disabledBg,
                 border: isSelected ? "2px solid #c9a54a" : "2px solid rgba(255,255,255,0.08)",
                 opacity: disabled && !isSelected ? 0.4 : 1,
               }}

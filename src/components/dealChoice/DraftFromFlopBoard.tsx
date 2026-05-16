@@ -18,7 +18,7 @@ export default function DraftFromFlopBoard({ gameState, myId, onSend }: DealChoi
       className="rounded-lg p-4 flex flex-col gap-3"
       style={{
         background: "rgba(6,30,16,0.94)",
-        border: "1px solid rgba(201,165,74,0.28)",
+        border: `1px solid ${D.panelBorder}`,
       }}
     >
       <div className="flex items-baseline justify-between">

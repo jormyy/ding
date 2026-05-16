@@ -4,6 +4,7 @@ import type React from "react";
 import type { GameState } from "@/lib/types";
 import ChatPanel from "../ChatPanel";
 import { D } from "@/lib/theme";
+import { surfaces } from "@/lib/tokens";
 import {
   computeRevealRows,
   computeDisplacementLeaderboard,
@@ -169,7 +170,7 @@ export default function RevealResults({
       style={{ background: D.cardBg, fontFamily: '"Inter", system-ui, sans-serif', color: D.text }}
     >
       <div style={{ position: "absolute", inset: 0, background: "url('/felt.png') repeat, #0a3820", backgroundSize: "256px 256px", opacity: 0.18, pointerEvents: "none", zIndex: 0 }} />
-      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 30%, rgba(201,165,74,0.08) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at 50% 30%, ${surfaces.goldPanel} 0%, transparent 60%)`, pointerEvents: "none", zIndex: 0 }} />
 
       <RevealHeader
         gameState={gameState}
@@ -191,7 +192,7 @@ export default function RevealResults({
         <div
           className="flex flex-col gap-1 min-h-0 overflow-hidden"
           style={{
-            background: "rgba(0,0,0,0.22)",
+            background: surfaces.disabledBg,
             border: `1px solid ${D.panelBorder}`,
             borderRadius: 12,
             padding: 10,

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { generateRoomCode } from "@/lib/utils";
 import { ROOM_CODE_LENGTH } from "@/lib/constants";
+import { D } from "@/lib/theme";
 
 export default function HomePage() {
   const router = useRouter();
@@ -92,7 +93,7 @@ export default function HomePage() {
             className="rounded-2xl p-6 flex flex-col gap-4"
             style={{
               background: "linear-gradient(180deg, rgba(20,60,36,0.92) 0%, rgba(10,40,22,0.96) 100%)",
-              border: "1px solid rgba(201,165,74,0.28)",
+              border: `1px solid ${D.panelBorder}`,
               boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
             }}
           >

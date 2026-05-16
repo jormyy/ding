@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { GameState, Hand } from "@/lib/types";
 import { handIndexFromId } from "@/lib/handId";
 import { D } from "@/lib/theme";
+import { surfaces } from "@/lib/tokens";
 import { CardFace } from "../CardFace";
 import { NeighborView, VariantStatusBar } from "./SharedAffordances";
 import type { DealChoiceBoardProps } from "./types";
@@ -122,7 +123,7 @@ function RecruitHandRow({
               disabled={stage !== "keep"}
               className="rounded-lg p-1 transition-all disabled:cursor-default"
               style={{
-                background: isSelected ? "rgba(201,165,74,0.2)" : "rgba(0,0,0,0.22)",
+                background: isSelected ? "rgba(201,165,74,0.2)" : surfaces.disabledBg,
                 border: isSelected ? "2px solid #c9a54a" : "2px solid rgba(255,255,255,0.08)",
                 opacity: stage !== "keep" && !isSelected ? 0.5 : 1,
               }}

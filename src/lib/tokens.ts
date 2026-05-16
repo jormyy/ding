@@ -58,6 +58,18 @@ export const overlays = {
   panelBorder: "rgba(201,165,74,0.28)",
 } as const;
 
+/**
+ * Translucent fills used as ephemeral state backgrounds (selected, disabled,
+ * win/loss flash). Names describe the *role*, not the hue — pick by what the
+ * pixel means, not what color it happens to be.
+ */
+export const surfaces = {
+  goldPanel: "rgba(201,165,74,0.08)",
+  accentLight: "rgba(47,184,115,0.18)",
+  dangerLight: "rgba(240,138,108,0.18)",
+  disabledBg: "rgba(0,0,0,0.22)",
+} as const;
+
 export const typography = {
   serif: "var(--font-playfair), Georgia, serif",
   sans: "var(--font-inter), system-ui, sans-serif",

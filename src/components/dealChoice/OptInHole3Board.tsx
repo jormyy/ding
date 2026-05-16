@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Hand } from "@/lib/types";
 import { D } from "@/lib/theme";
+import { surfaces } from "@/lib/tokens";
 import { CardFace } from "../CardFace";
 import { VariantStatusBar } from "./SharedAffordances";
 import type { DealChoiceBoardProps } from "./types";
@@ -102,7 +103,7 @@ function OptInRow({
               disabled={submitted}
               className="rounded-lg p-1 transition-all disabled:cursor-default"
               style={{
-                background: isSelected ? "rgba(201,165,74,0.2)" : "rgba(0,0,0,0.22)",
+                background: isSelected ? "rgba(201,165,74,0.2)" : surfaces.disabledBg,
                 border: isSelected ? "2px solid #c9a54a" : "2px solid rgba(255,255,255,0.08)",
                 opacity: submitted && !isSelected ? 0.35 : 1,
               }}
@@ -120,7 +121,7 @@ function OptInRow({
           className="h-10 px-3 rounded-md text-xs font-black uppercase tracking-wide transition-all active:scale-95 disabled:opacity-45 disabled:cursor-not-allowed"
           style={{
             background: submitted
-              ? "rgba(47,184,115,0.18)"
+              ? surfaces.accentLight
               : `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`,
             color: submitted ? D.accent : D.ink,
             border: submitted ? "1px solid rgba(47,184,115,0.35)" : "none",

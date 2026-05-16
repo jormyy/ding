@@ -2,6 +2,7 @@
 
 import type { LeaderboardEntry } from "@/lib/reveal/leaderboard";
 import { D } from "@/lib/theme";
+import { surfaces } from "@/lib/tokens";
 
 interface AccuracySidebarProps {
   ranked: LeaderboardEntry[];
@@ -77,7 +78,7 @@ export default function AccuracySidebar({ ranked, best, worst, maxOff, myEntry }
         <div
           className="p-2.5 rounded-lg text-xs leading-relaxed flex-none"
           style={{
-            background: myEntry.off === 0 ? "rgba(47,184,115,0.1)" : "rgba(201,165,74,0.08)",
+            background: myEntry.off === 0 ? "rgba(47,184,115,0.1)" : surfaces.goldPanel,
             border: `1px solid ${myEntry.off === 0 ? D.accent + "44" : D.panelBorder}`,
             color: D.sub,
           }}

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { InversionsData } from "@/lib/reveal/leaderboard";
 import { D } from "@/lib/theme";
+import { surfaces } from "@/lib/tokens";
 
 const PHASES = ["Pre-flop", "Flop", "Turn", "River", "Reveal"] as const;
 const PALETTE = ["#f0d278", "#e9a080", "#7aaac0", "#9fc5a8", "#d6a8d8", "#88c0a8", "#e8b563", "#c9a54a"];
@@ -42,7 +43,7 @@ function Graph({ data, width, height }: GraphProps) {
     <svg width={width} height={height} style={{ display: "block" }}>
       {uniqTicks.map((v) => (
         <g key={v}>
-          <line x1={padL} y1={yFor(v)} x2={width - padR} y2={yFor(v)} stroke="rgba(201,165,74,0.08)" strokeWidth={1} />
+          <line x1={padL} y1={yFor(v)} x2={width - padR} y2={yFor(v)} stroke={surfaces.goldPanel} strokeWidth={1} />
           <text x={padL - 6} y={yFor(v) + 3} fill="rgba(201,165,74,0.5)" fontSize={9} fontWeight={800} textAnchor="end">
             {v}
           </text>
@@ -53,7 +54,7 @@ function Graph({ data, width, height }: GraphProps) {
         <g key={p}>
           <line
             x1={xFor(i)} y1={padT} x2={xFor(i)} y2={height - padB}
-            stroke="rgba(201,165,74,0.08)" strokeWidth={1}
+            stroke={surfaces.goldPanel} strokeWidth={1}
             strokeDasharray={i === PHASES.length - 1 ? "" : "2 4"}
           />
           <text

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Hand } from "@/lib/types";
 import { D } from "@/lib/theme";
+import { surfaces } from "@/lib/tokens";
 import { CardFace } from "../CardFace";
 import { NeighborView, VariantStatusBar } from "./SharedAffordances";
 import type { DealChoiceBoardProps } from "./types";
@@ -55,7 +56,7 @@ export default function TablePicksBoard({ gameState, myId, onSend }: DealChoiceB
                       key={i}
                       className="rounded-lg p-1"
                       style={{
-                        background: isWinner ? "rgba(47,184,115,0.18)" : "rgba(0,0,0,0.22)",
+                        background: isWinner ? surfaces.accentLight : surfaces.disabledBg,
                         border: isWinner ? "2px solid rgba(47,184,115,0.6)" : "2px solid rgba(255,255,255,0.08)",
                       }}
                     >

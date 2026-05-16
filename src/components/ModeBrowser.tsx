@@ -17,6 +17,7 @@ import {
   type SelectSubTag,
 } from "@/lib/gameMode";
 import { D } from "@/lib/theme";
+import { surfaces } from "@/lib/tokens";
 
 const MODE_RECENT_KEY = "ding.recentModes.v1";
 const MODE_FAVORITES_KEY = "ding.favoriteModes.v1";
@@ -765,7 +766,7 @@ function ModeDetail({
       <p className="mt-3 text-sm leading-relaxed" style={{ color: D.sub }}>
         {mode.detail}
       </p>
-      <div className="mt-3 rounded-lg p-3" style={{ background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.08)" }}>
+      <div className="mt-3 rounded-lg p-3" style={{ background: surfaces.disabledBg, border: "1px solid rgba(255,255,255,0.08)" }}>
         <div className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: D.muted }}>
           Example preflop
         </div>

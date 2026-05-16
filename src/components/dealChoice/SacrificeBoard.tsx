@@ -1,6 +1,7 @@
 "use client";
 
 import { D } from "@/lib/theme";
+import { surfaces } from "@/lib/tokens";
 import { CardFace } from "../CardFace";
 import { CommunityPreviewStrip, VariantStatusBar } from "./SharedAffordances";
 import type { DealChoiceBoardProps } from "./types";
@@ -48,7 +49,7 @@ export default function SacrificeBoard({ gameState, myId, onSend }: DealChoiceBo
                     }}
                     className="rounded-lg p-1 transition-all disabled:cursor-default"
                     style={{
-                      background: isSacrificed ? "rgba(240,138,108,0.18)" : "rgba(0,0,0,0.22)",
+                      background: isSacrificed ? surfaces.dangerLight : surfaces.disabledBg,
                       border: isSacrificed ? "2px solid #f08a6c" : "2px solid rgba(255,255,255,0.08)",
                       opacity: isSacrificed ? 0.55 : 1,
                     }}
