@@ -1,5 +1,6 @@
 import type { Card, ModeInfo, Phase } from "../../src/lib/types";
 import { getGameModeDefinition, type InfoFeatureId } from "../../src/lib/gameMode";
+import { ALL_PHASES } from "../../src/lib/phases";
 import type { ServerGameState } from "../state";
 import { narrativeSpecs } from "./infoNarrativeSpecs";
 
@@ -159,8 +160,7 @@ function labelFromId(id: string): string {
 }
 
 function phaseIndex(phase: Phase): number {
-  const phases: readonly Phase[] = ["lobby", "dealChoice", "preflop", "flop", "turn", "river", "reveal"];
-  return Math.max(0, phases.indexOf(phase));
+  return Math.max(0, ALL_PHASES.indexOf(phase));
 }
 
 function deckHeat(cards: readonly Card[]): string {

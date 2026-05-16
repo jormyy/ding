@@ -7,6 +7,7 @@
 
 import { memo } from "react";
 import type { AcquireRequest, GameState } from "@/lib/types";
+import { surfaces } from "@/lib/tokens";
 import RequestItem from "../RequestItem";
 import ChatPanel from "../../ChatPanel";
 
@@ -38,12 +39,12 @@ function RequestsSidebarImpl({
   return (
     <div
       className="hidden sm:flex flex-none w-64 flex-col overflow-hidden"
-      style={{ background: "#0a1813", borderLeft: "1px solid rgba(201,165,74,0.18)" }}
+      style={{ background: "#0a1813", borderLeft: `1px solid ${surfaces.goldLight}` }}
     >
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         <div
           className="flex-none px-3 py-2 flex items-center gap-2"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
+          style={{ borderBottom: `1px solid ${surfaces.faintFill}` }}
         >
           <span
             className="text-[10px] font-black uppercase tracking-[0.2em]"
@@ -88,7 +89,7 @@ function RequestsSidebarImpl({
                     </span>
                     <div
                       className="flex-1 h-px"
-                      style={{ background: "rgba(255,255,255,0.06)" }}
+                      style={{ background: surfaces.neutralFaint }}
                     />
                   </div>
                   {outgoingRequests.map((req) => (
@@ -111,7 +112,7 @@ function RequestsSidebarImpl({
       </div>
       <div
         className="flex-1 min-h-0 flex flex-col overflow-hidden"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
+        style={{ borderTop: `1px solid ${surfaces.faintFill}` }}
       >
         <ChatPanel messages={gameState.chatMessages} myId={myId} onSend={onSendChat} />
       </div>

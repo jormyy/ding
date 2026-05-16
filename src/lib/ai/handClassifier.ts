@@ -7,6 +7,7 @@
 import type { Card, Rank } from "../types";
 import { Hand as PokerHand } from "pokersolver";
 import { cardToPokersolverStr } from "../utils";
+import { RANK_VALUE } from "../rankValue";
 
 export type DrawType =
   | "flush-draw"
@@ -24,11 +25,6 @@ export type ClassifiedHand = {
   isCoordinated: boolean;     // suited, connected, or paired — good starting texture
   strengthStability: number;  // 0–1: how much this hand's rank can change from board runouts
   highCardRank: number;       // 2–14 for the highest hole card (for tiebreaks)
-};
-
-const RANK_VALUE: Record<Rank, number> = {
-  "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9,
-  T: 10, J: 11, Q: 12, K: 13, A: 14,
 };
 
 // Maps pokersolver rank to our simplified made-hand type.

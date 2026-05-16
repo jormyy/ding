@@ -21,6 +21,7 @@ import { resolveDealChoiceVariant } from "../../src/lib/gameMode/dealChoiceVaria
 import { handIndexFromId } from "../../src/lib/handId";
 import type { Card } from "../../src/lib/types";
 import type { ServerGameState } from "../state";
+import { isValidCardIndex, lookupOwnedHandChoice } from "./dealChoiceHelpers";
 import type { Handler } from "./types";
 
 type StateHand = ServerGameState["hands"][number];
@@ -34,11 +35,9 @@ export const chooseDealCards: Handler = (state, player, msg) => {
   const isExposeChoice = mode.deal.publicCardSelection === "playerChoice";
   if (!dealChoice?.selectionPhase && !isExposeChoice) return { kind: "ignore" };
 
-  const hand = state.hands.find((candidate) => candidate.id === msg.handId);
-  if (!hand || hand.playerId !== player.id) return { kind: "ignore" };
-
-  const choice = state.dealChoices[msg.handId];
-  if (!choice || choice.submitted) return { kind: "ignore" };
+  const owned = lookupOwnedHandChoice(state, player, msg.handId);
+  if (!owned) return { kind: "ignore" };
+  const { hand, choice } = owned;
 
   // optInHole3WithPenalty mutates `choice.keepCards` at runtime, so read it
   // from the choice rather than the static `mode.deal.dealChoice.keepCards`.
@@ -68,13 +67,10 @@ export const mulliganHand: Handler = (state, player, msg) => {
   const dealChoice = mode.deal.dealChoice;
   if (!dealChoice?.selectionPhase || !dealChoice.mulligan) return { kind: "ignore" };
 
-  const hand = state.hands.find((candidate) => candidate.id === msg.handId);
-  if (!hand || hand.playerId !== player.id) return { kind: "ignore" };
-
-  const choice = state.dealChoices[msg.handId];
-  if (!choice || choice.submitted || !choice.canMulligan || choice.mulliganUsed) {
-    return { kind: "ignore" };
-  }
+  const owned = lookupOwnedHandChoice(state, player, msg.handId);
+  if (!owned) return { kind: "ignore" };
+  const { hand, choice } = owned;
+  if (!choice.canMulligan || choice.mulliganUsed) return { kind: "ignore" };
 
   if (state.dealDeck.length < dealChoice.dealtCards) return { kind: "ignore" };
 
@@ -98,10 +94,9 @@ export const sacrificeHole: Handler = (state, player, msg) => {
   const mode = getGameModeDefinition(state.modeId);
   if (!mode.deal.dealChoice?.sacrificeForPeek) return { kind: "ignore" };
 
-  const hand = state.hands.find((candidate) => candidate.id === msg.handId);
-  if (!hand || hand.playerId !== player.id) return { kind: "ignore" };
-  const choice = state.dealChoices[msg.handId];
-  if (!choice || choice.submitted) return { kind: "ignore" };
+  const owned = lookupOwnedHandChoice(state, player, msg.handId);
+  if (!owned) return { kind: "ignore" };
+  const { hand, choice } = owned;
 
   if (msg.cardIndex === null) {
     choice.sacrificedHoleIndex = null;
@@ -109,9 +104,7 @@ export const sacrificeHole: Handler = (state, player, msg) => {
     return { kind: "broadcast" };
   }
 
-  if (!Number.isInteger(msg.cardIndex) || msg.cardIndex < 0 || msg.cardIndex >= hand.cards.length) {
-    return { kind: "ignore" };
-  }
+  if (!isValidCardIndex(msg.cardIndex, hand.cards.length)) return { kind: "ignore" };
 
   choice.sacrificedHoleIndex = msg.cardIndex;
   choice.privatePeekCards = state.allCommunityCards.slice(0, 3);
@@ -130,10 +123,9 @@ export const optInThirdHole: Handler = (state, player, msg) => {
   const mode = getGameModeDefinition(state.modeId);
   if (!mode.deal.dealChoice?.optInHole3WithPenalty) return { kind: "ignore" };
 
-  const hand = state.hands.find((candidate) => candidate.id === msg.handId);
-  if (!hand || hand.playerId !== player.id) return { kind: "ignore" };
-  const choice = state.dealChoices[msg.handId];
-  if (!choice || choice.submitted) return { kind: "ignore" };
+  const owned = lookupOwnedHandChoice(state, player, msg.handId);
+  if (!owned) return { kind: "ignore" };
+  const { hand, choice } = owned;
 
   choice.optedThirdHole = msg.optIn;
   // The standard chooseDealCards validator reads choice.keepCards, so toggle
@@ -149,14 +141,11 @@ export const contributeToBlindPool: Handler = (state, player, msg) => {
   const mode = getGameModeDefinition(state.modeId);
   if (!mode.deal.dealChoice?.blindPool) return { kind: "ignore" };
 
-  const hand = state.hands.find((candidate) => candidate.id === msg.handId);
-  if (!hand || hand.playerId !== player.id) return { kind: "ignore" };
-  const choice = state.dealChoices[msg.handId];
-  if (!choice || choice.submitted) return { kind: "ignore" };
+  const owned = lookupOwnedHandChoice(state, player, msg.handId);
+  if (!owned) return { kind: "ignore" };
+  const { hand, choice } = owned;
 
-  if (!Number.isInteger(msg.cardIndex) || msg.cardIndex < 0 || msg.cardIndex >= hand.cards.length) {
-    return { kind: "ignore" };
-  }
+  if (!isValidCardIndex(msg.cardIndex, hand.cards.length)) return { kind: "ignore" };
 
   choice.blindPoolContribution = msg.cardIndex;
   choice.selectedIndexes = [msg.cardIndex];
@@ -265,10 +254,10 @@ export const recruitFromNeighbor: Handler = (state, player, msg) => {
   const mode = getGameModeDefinition(state.modeId);
   if (!mode.deal.dealChoice?.recruit) return { kind: "ignore" };
 
-  const hand = state.hands.find((candidate) => candidate.id === msg.handId);
-  if (!hand || hand.playerId !== player.id) return { kind: "ignore" };
-  const choice = state.dealChoices[msg.handId];
-  if (!choice || choice.recruitStage !== "steal") return { kind: "ignore" };
+  const owned = lookupOwnedHandChoice(state, player, msg.handId);
+  if (!owned) return { kind: "ignore" };
+  const { hand, choice } = owned;
+  if (choice.recruitStage !== "steal") return { kind: "ignore" };
 
   const playerIds = state.players.map((p) => p.id);
   const ownerIndex = playerIds.indexOf(player.id);
@@ -305,10 +294,9 @@ export const solomonSplit: Handler = (state, player, msg) => {
   const mode = getGameModeDefinition(state.modeId);
   if (!mode.deal.dealChoice?.solomon) return { kind: "ignore" };
 
-  const hand = state.hands.find((candidate) => candidate.id === msg.handId);
-  if (!hand || hand.playerId !== player.id) return { kind: "ignore" };
-  const choice = state.dealChoices[msg.handId];
-  if (!choice || choice.submitted) return { kind: "ignore" };
+  const owned = lookupOwnedHandChoice(state, player, msg.handId);
+  if (!owned) return { kind: "ignore" };
+  const { hand, choice } = owned;
 
   const total = hand.cards.length;
   const pair1 = normalizeIndexes(msg.pair1, total);

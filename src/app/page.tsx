@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { generateRoomCode } from "@/lib/utils";
 import { ROOM_CODE_LENGTH } from "@/lib/constants";
 import { D } from "@/lib/theme";
+import { shades, shadows, surfaces } from "@/lib/tokens";
 
 export default function HomePage() {
   const router = useRouter();
@@ -68,7 +69,7 @@ export default function HomePage() {
               fontSize: "clamp(72px, 16vw, 120px)",
               fontWeight: 900,
               color: "#f5e6b8",
-              textShadow: "0 3px 0 #7a5012, 0 6px 30px rgba(0,0,0,0.5)",
+              textShadow: `0 3px 0 #7a5012, 0 6px 30px ${shades.shadowMedium}`,
               letterSpacing: "-0.02em",
             }}
           >
@@ -110,7 +111,7 @@ export default function HomePage() {
             className="rounded-2xl p-6 flex flex-col gap-4"
             style={{
               background: "rgba(8,26,16,0.85)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              border: `1px solid ${surfaces.dividerLine}`,
             }}
           >
             <div>
@@ -147,7 +148,7 @@ export default function HomePage() {
               onClick={handleJoinGame}
               className="w-full py-3 rounded-xl font-black text-sm tracking-wide transition-all active:scale-95"
               style={{
-                background: "rgba(255,255,255,0.07)",
+                background: surfaces.tagBg,
                 color: "#f5e6b8",
                 border: "1px solid rgba(201,165,74,0.35)",
               }}
@@ -173,7 +174,7 @@ function GoldButton({ onClick, children }: { onClick: () => void; children: Reac
       style={{
         background: "linear-gradient(180deg, #f0d278, #c9a54a)",
         color: "#2a1a08",
-        boxShadow: "0 3px 0 #78350f, 0 6px 16px rgba(0,0,0,0.35)",
+        boxShadow: shadows.goldButton,
         border: "none",
       }}
     >

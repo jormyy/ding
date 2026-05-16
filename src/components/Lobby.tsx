@@ -9,6 +9,7 @@ import {
   listGameModes,
 } from "@/lib/gameMode";
 import { D } from "@/lib/theme";
+import { shades, shadows, surfaces } from "@/lib/tokens";
 import ModeBrowser from "./ModeBrowser";
 
 interface LobbyProps {
@@ -94,7 +95,7 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
       >
         <div
           className="absolute inset-0 pointer-events-none"
-          style={{ background: "radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(0,0,0,0.5) 100%)" }}
+          style={{ background: `radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, ${shades.shadowMedium} 100%)` }}
         />
         <div className="relative z-10 text-center px-4">
           <div
@@ -115,7 +116,7 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
             style={{
               background: D.panel,
               border: `1px solid ${D.panelBorder}`,
-              boxShadow: "0 16px 48px rgba(0,0,0,0.5)",
+              boxShadow: `0 16px 48px ${shades.shadowMedium}`,
             }}
           >
             <div className="text-[10px] font-black tracking-[0.4em] uppercase" style={{ color: D.sub }}>
@@ -132,7 +133,7 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
               onClick={handleCopyLink}
               className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold transition-all"
               style={{
-                background: "rgba(255,255,255,0.07)",
+                background: surfaces.tagBg,
                 color: D.sub,
                 border: `1px solid ${D.panelBorder}`,
               }}
@@ -170,7 +171,7 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
             onClick={handleCopyLink}
             className="text-[10px] font-bold rounded-full px-2.5 py-1 flex-shrink-0"
             style={{
-              background: "rgba(255,255,255,0.07)",
+              background: surfaces.tagBg,
               color: D.sub,
               border: `1px solid ${D.panelBorder}`,
             }}
@@ -199,8 +200,8 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
                 key={p.id}
                 className="flex items-center gap-3 rounded-lg px-3 py-2 min-w-0"
                 style={{
-                  background: "rgba(10,30,18,0.6)",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  background: surfaces.panelOverlay,
+                  border: `1px solid ${surfaces.neutralFaint}`,
                 }}
               >
                 <div
@@ -208,7 +209,7 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
                   style={
                     i === 0
                       ? { background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink }
-                      : { background: "rgba(255,255,255,0.1)", color: D.sub }
+                      : { background: surfaces.dividerLine, color: D.sub }
                   }
                 >
                   {p.name[0].toUpperCase()}
@@ -249,9 +250,9 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
                     aria-label={`Remove ${p.name}`}
                     className="w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold leading-none transition-colors hover:bg-red-900/40 hover:text-red-300"
                     style={{
-                      background: "rgba(255,255,255,0.05)",
+                      background: surfaces.faintFill,
                       color: D.muted,
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      border: `1px solid ${surfaces.subtleBorder}`,
                     }}
                   >
                     ×
@@ -274,7 +275,7 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
                   disabled={!canAddBot}
                   className="rounded-lg px-3 py-1.5 text-xs font-bold tracking-wide transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
                   style={{
-                    background: "rgba(10,30,18,0.6)",
+                    background: surfaces.panelOverlay,
                     color: D.goldBright,
                     border: `1px dashed ${D.panelBorder}`,
                   }}
@@ -343,12 +344,12 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
                   ? {
                       background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`,
                       color: D.ink,
-                      boxShadow: `0 3px 0 ${D.rail}, 0 6px 16px rgba(0,0,0,0.35)`,
+                      boxShadow: shadows.goldButton,
                     }
                   : {
-                      background: "rgba(255,255,255,0.06)",
+                      background: surfaces.neutralFaint,
                       color: D.muted,
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      border: `1px solid ${surfaces.subtleBorder}`,
                     }
               }
             >
@@ -381,7 +382,7 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
               style={{
                 background: "transparent",
                 color: D.muted,
-                border: "1px solid rgba(255,255,255,0.1)",
+                border: `1px solid ${surfaces.dividerLine}`,
               }}
             >
               Leave table
@@ -406,7 +407,7 @@ function SettingRow({
   return (
     <div
       className="rounded-lg px-3 py-2"
-      style={{ background: "rgba(10,30,18,0.6)", border: "1px solid rgba(255,255,255,0.06)" }}
+      style={{ background: surfaces.panelOverlay, border: `1px solid ${surfaces.neutralFaint}` }}
     >
       <div className="flex items-center justify-between mb-1.5">
         <div
@@ -452,13 +453,13 @@ function PillToggle({
           : disabled
           ? {
               background: "rgba(0,0,0,0.2)",
-              color: "rgba(255,255,255,0.2)",
-              border: "1px solid rgba(255,255,255,0.06)",
+              color: surfaces.dimmed,
+              border: `1px solid ${surfaces.neutralFaint}`,
             }
           : {
               background: "rgba(0,0,0,0.3)",
               color: D.goldBright,
-              border: "1px solid rgba(255,255,255,0.1)",
+              border: `1px solid ${surfaces.dividerLine}`,
               cursor: "pointer",
             }
       }

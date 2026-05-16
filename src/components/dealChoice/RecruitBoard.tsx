@@ -5,6 +5,7 @@ import type { GameState, Hand } from "@/lib/types";
 import { handIndexFromId } from "@/lib/handId";
 import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
+import { toggleInSet } from "@/lib/utils";
 import { CardFace } from "../CardFace";
 import { NeighborView, VariantStatusBar } from "./SharedAffordances";
 import type { DealChoiceBoardProps } from "./types";
@@ -81,12 +82,7 @@ function RecruitHandRow({
 
   function toggle(i: number) {
     if (stage !== "keep") return;
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(i)) next.delete(i);
-      else if (next.size < keepCards) next.add(i);
-      return next;
-    });
+    setSelected((prev) => toggleInSet(prev, i, keepCards));
   }
 
   const neighborSelected = rightNeighborChoice?.selectedIndexes ?? null;
@@ -97,7 +93,7 @@ function RecruitHandRow({
   return (
     <div
       className="grid gap-3 rounded-lg p-3"
-      style={{ background: "rgba(10,40,22,0.9)", border: "1px solid rgba(255,255,255,0.08)" }}
+      style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
     >
       <VariantStatusBar
         label={`Hand #${handNumber}`}
@@ -123,8 +119,8 @@ function RecruitHandRow({
               disabled={stage !== "keep"}
               className="rounded-lg p-1 transition-all disabled:cursor-default"
               style={{
-                background: isSelected ? "rgba(201,165,74,0.2)" : surfaces.disabledBg,
-                border: isSelected ? "2px solid #c9a54a" : "2px solid rgba(255,255,255,0.08)",
+                background: isSelected ? surfaces.goldMid : surfaces.disabledBg,
+                border: isSelected ? "2px solid #c9a54a" : `2px solid ${surfaces.subtleBorder}`,
                 opacity: stage !== "keep" && !isSelected ? 0.5 : 1,
               }}
               aria-pressed={isSelected}

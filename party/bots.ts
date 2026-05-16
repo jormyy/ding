@@ -1,4 +1,5 @@
 import type { ClientMessage, GameState, Player } from "../src/lib/types";
+import { GAME_PHASES } from "../src/lib/phases";
 import { decideAction, newBotMemo, type BotMemo } from "../src/lib/ai/strategy";
 import {
   pickBotName,
@@ -163,13 +164,12 @@ export class BotController {
     for (const pid of Array.from(this.bots.keys())) {
       if (!livePids.has(pid)) this.removeBot(pid);
     }
-    const gamePhases = ["preflop", "flop", "turn", "river"];
     for (const [pid, rec] of Array.from(this.bots.entries())) {
       if (rec.pending) continue;
       rec.pending = true;
       // Base pacing — difficulty modulates later once we've evaluated.
       let delay = thinkDelayMs(rec.traits, 0.3);
-      if (gamePhases.includes(state.phase) && rec.firstActionPhase !== state.phase) {
+      if (GAME_PHASES.includes(state.phase) && rec.firstActionPhase !== state.phase) {
         rec.firstActionPhase = state.phase;
         delay += firstActionDelayMs(rec.traits);
       }
@@ -198,7 +198,6 @@ export class BotController {
   fastTickAll(): number {
     if (this.disposed) return 0;
     const state = this.opts.getState();
-    const gamePhases = ["preflop", "flop", "turn", "river"];
     let acted = 0;
     for (const [pid, rec] of Array.from(this.bots.entries())) {
       if (rec.pending) {
@@ -207,7 +206,7 @@ export class BotController {
         // notifyStateChanged call may set it to true again — we reset below.
         rec.pending = false;
       }
-      if (gamePhases.includes(state.phase) && rec.firstActionPhase !== state.phase) {
+      if (GAME_PHASES.includes(state.phase) && rec.firstActionPhase !== state.phase) {
         rec.firstActionPhase = state.phase;
       }
       rec.pending = true;

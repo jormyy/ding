@@ -1,7 +1,7 @@
 import { getGameModeDefinition } from "./registry";
 import type { DingGameModeDefinition } from "./types";
 
-export function deckSizeForMode(modeId: string | undefined): number {
+function deckSizeForMode(modeId: string | undefined): number {
   switch (getGameModeDefinition(modeId).deal.deck) {
     case "short":
       return 36;
@@ -38,13 +38,13 @@ export function deckSizeForMode(modeId: string | undefined): number {
   }
 }
 
-export function cardsConsumedPerHandForMode(modeId: string | undefined): number {
+function cardsConsumedPerHandForMode(modeId: string | undefined): number {
   const deal = getGameModeDefinition(modeId).deal;
   const dealtCards = deal.dealChoice?.dealtCards ?? deal.holeCards;
   return deal.dealChoice?.mulligan ? dealtCards * 2 : dealtCards;
 }
 
-export function getMaxTotalHandsForMode(modeId: string | undefined): number {
+function getMaxTotalHandsForMode(modeId: string | undefined): number {
   const mode = getGameModeDefinition(modeId);
   const burns = 3;
   const availableForHands = Math.min(

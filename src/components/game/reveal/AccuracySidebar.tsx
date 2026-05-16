@@ -17,7 +17,7 @@ export default function AccuracySidebar({ ranked, best, worst, maxOff, myEntry }
     <div
       className="flex flex-col gap-2"
       style={{
-        background: "rgba(0,0,0,0.28)",
+        background: surfaces.panelDeep,
         border: `1px solid ${D.panelBorder}`,
         borderRadius: 12,
         padding: 12,
@@ -63,7 +63,7 @@ export default function AccuracySidebar({ ranked, best, worst, maxOff, myEntry }
             >
               <div className="text-[10px] font-black text-right" style={{ width: 16, color: labelColor }}>#{entry.rank}</div>
               <div className="text-xs font-bold truncate" style={{ width: 56, color: entry.mine ? D.goldBright : D.text }}>{entry.name}</div>
-              <div className="flex-1 rounded-full overflow-hidden" style={{ height: 5, background: "rgba(255,255,255,0.06)" }}>
+              <div className="flex-1 rounded-full overflow-hidden" style={{ height: 5, background: surfaces.neutralFaint }}>
                 <div style={{ width: `${100 - pct}%`, height: "100%", background: barColor, borderRadius: 9999 }} />
               </div>
               <div className="text-[11px] font-black text-right tabular-nums" style={{ width: 36, color: labelColor, fontFamily: D.serif }}>

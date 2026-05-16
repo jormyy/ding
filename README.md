@@ -30,7 +30,7 @@ Open http://localhost:3000, share the 6-character room code, ready up, play. Up 
 
 ## Architecture in one paragraph
 
-The PartyKit server is the single source of truth (`party/index.ts` is a thin orchestrator over `ConnectionManager`, `RoomStorage`, `AlarmScheduler`, `LobbySweeper`). Every player and bot action flows through one dispatcher (`party/pipeline/dispatch.ts`) that routes to a per-action reducer (`src/modes/ding/reducers/`), bumps `state.gen`, runs invariants, and lets `MaskBroadcaster` send each connection a per-player masked view (skipped when byte-identical to the previous broadcast). Mode-specific logic — phases, hand evaluation, strength scoring, reveal — lives behind a `GameMode` plugin contract (`src/lib/gameMode/types.ts`) under `src/modes/ding/`. Adding a second mode is one folder + one registry line.
+The PartyKit server is the single source of truth (`party/index.ts` is a thin orchestrator over `ConnectionManager`, `RoomStorage`, `AlarmScheduler`, `LobbySweeper`). Every player and bot action flows through one dispatcher (`party/pipeline/dispatch.ts`) that routes to a per-action reducer (`src/modes/ding/reducers.ts`), bumps `state.gen`, runs invariants, and lets `MaskBroadcaster` send each connection a per-player masked view (skipped when byte-identical to the previous broadcast). Mode-specific logic — phases, hand evaluation, strength scoring, reveal — lives behind a `GameMode` plugin contract (`src/lib/gameMode/types.ts`) under `src/modes/ding/`. Adding a second mode is one folder + one registry line.
 
 The client mounts a `GameSessionProvider` (socket lifecycle + identity + notifications) and routes phases through `GameModeRouter`. The lobby is height-bounded and fits a 720px viewport without scrolling.
 

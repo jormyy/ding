@@ -22,7 +22,6 @@ import {
   type HoleCardVisibilityDetail,
 } from "../src/lib/gameMode";
 import { applyModeInfoFeatures } from "./handlers/infoFeatures";
-import { maskModeExt } from "../src/lib/gameMode/modeExt";
 
 /**
  * Server-side game state. Extends the client-visible `GameState` with
@@ -262,7 +261,6 @@ export function buildClientState(state: ServerGameState, playerId: string): Game
     auctionPool: state.auctionPool,
     flopDraftPool: state.flopDraftPool,
     optedHandIds: state.optedHandIds,
-    modeExt: maskModeExt(state.modeExt, playerId),
   };
 }
 

@@ -7,14 +7,13 @@
 
 import { Hand as PokerHand } from "pokersolver";
 import type { Card, Hand, Suit } from "../../lib/types";
-import { cardToPokersolverStr } from "../../lib/utils";
+import { POKER_SUITS, cardToPokersolverStr, normalizeSolverStrings } from "../../lib/utils";
 import type {
   HandEvaluator,
   SolvedHand,
 } from "../../lib/gameMode/types";
 
 type RawSolved = ReturnType<typeof PokerHand.solve>;
-const POKER_SUITS = ["h", "d", "c", "s"] as const;
 const SUIT_BY_CODE: Record<Suit, typeof POKER_SUITS[number]> = {
   H: "h",
   D: "d",
@@ -143,27 +142,8 @@ export const dingEvaluator: HandEvaluator = {
 };
 
 function normalizeDuplicateCardsForSolver(hole: Card[], boardStrs: string[]): string[] {
-  const used = new Set<string>();
-  const out: string[] = [];
   const cards = hole.map(cardToPokersolverStr).concat(boardStrs);
-
-  for (const raw of cards) {
-    if (!used.has(raw)) {
-      used.add(raw);
-      out.push(raw);
-      continue;
-    }
-
-    const rank = raw.slice(0, -1);
-    const replacement = POKER_SUITS
-      .map((suit) => `${rank}${suit}`)
-      .find((candidate) => !used.has(candidate));
-    if (!replacement) continue;
-    used.add(replacement);
-    out.push(replacement);
-  }
-
-  return out.sort((a, b) => {
+  return normalizeSolverStrings(cards).sort((a, b) => {
     const rankDelta = a.slice(0, -1).localeCompare(b.slice(0, -1));
     if (rankDelta !== 0) return rankDelta;
     return POKER_SUITS.indexOf(suitCode(a)) - POKER_SUITS.indexOf(suitCode(b));

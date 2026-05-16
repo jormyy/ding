@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { Card, Hand } from "@/lib/types";
 import { D } from "@/lib/theme";
+import { surfaces } from "@/lib/tokens";
+import { toggleInSet } from "@/lib/utils";
 import { CardFace } from "../CardFace";
 import { VariantStatusBar } from "./SharedAffordances";
 import type { DealChoiceBoardProps } from "./types";
@@ -84,12 +86,7 @@ function SolomonSplitRow({
   const total = hand.cards.length;
   function toggleSlot(i: number) {
     if (split || submitted) return;
-    setPair1((prev) => {
-      const next = new Set(prev);
-      if (next.has(i)) next.delete(i);
-      else next.add(i);
-      return next;
-    });
+    setPair1((prev) => toggleInSet(prev, i));
   }
   const pair1Indexes = [...pair1].sort((a, b) => a - b);
   const pair2Indexes = hand.cards
@@ -100,7 +97,7 @@ function SolomonSplitRow({
   return (
     <div
       className="grid gap-3 rounded-lg p-3"
-      style={{ background: "rgba(10,40,22,0.9)", border: "1px solid rgba(255,255,255,0.08)" }}
+      style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
     >
       <VariantStatusBar
         label={`Hand #${handNumber}`}
@@ -146,7 +143,7 @@ function BucketView({
   disabled: boolean;
 }) {
   return (
-    <div className="rounded-md p-2" style={{ background: "rgba(0,0,0,0.18)", border: "1px solid rgba(255,255,255,0.08)" }}>
+    <div className="rounded-md p-2" style={{ background: "rgba(0,0,0,0.18)", border: `1px solid ${surfaces.subtleBorder}` }}>
       <div className="text-[9px] font-black uppercase tracking-[0.2em] mb-1" style={{ color: D.sub }}>{label}</div>
       <div className="flex flex-wrap gap-1">
         {indexes.map((i) => (
@@ -157,7 +154,7 @@ function BucketView({
             disabled={disabled}
             className="rounded p-0.5 transition-all disabled:cursor-default"
             style={{
-              background: "rgba(201,165,74,0.18)",
+              background: surfaces.goldLight,
               border: "1px solid #c9a54a",
             }}
             aria-label={`Card ${i + 1}`}
@@ -188,7 +185,7 @@ function SolomonChooseRow({
 }) {
   if (!split) {
     return (
-      <div className="rounded-lg p-3 text-[11px]" style={{ background: "rgba(10,40,22,0.9)", color: D.sub, border: "1px solid rgba(255,255,255,0.08)" }}>
+      <div className="rounded-lg p-3 text-[11px]" style={{ background: surfaces.dealChoicePanelBg, color: D.sub, border: `1px solid ${surfaces.subtleBorder}` }}>
         Hand #{handNumber}: waiting on your right neighbor to split their cards.
       </div>
     );
@@ -196,7 +193,7 @@ function SolomonChooseRow({
   return (
     <div
       className="grid gap-3 rounded-lg p-3"
-      style={{ background: "rgba(10,40,22,0.9)", border: "1px solid rgba(255,255,255,0.08)" }}
+      style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
     >
       <VariantStatusBar
         label={`Hand #${handNumber}`}

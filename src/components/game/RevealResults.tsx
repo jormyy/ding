@@ -43,7 +43,7 @@ function ShowdownEffectChips({ gameState }: { gameState: GameState }): React.Rea
   if (gameState.scoreRuleOverride) {
     chips.push({
       key: "score-rule",
-      bg: "rgba(201, 165, 74, 0.15)",
+      bg: surfaces.goldFaint,
       fg: D.gold,
       label: `Scoring: ${gameState.scoreRuleOverride.toUpperCase()}`,
     });
@@ -200,7 +200,7 @@ export default function RevealResults({
         >
           <div
             className="flex-none grid gap-2 px-2.5 pb-1 text-[8px] font-black uppercase tracking-widest"
-            style={{ gridTemplateColumns: "28px 58px minmax(0,1fr) 62px 48px 20px", color: "rgba(201,165,74,0.55)" }}
+            style={{ gridTemplateColumns: "28px 58px minmax(0,1fr) 62px 48px 20px", color: surfaces.goldEmphasis }}
           >
             <div>True</div>
             <div>Hole</div>

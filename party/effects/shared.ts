@@ -3,11 +3,11 @@
  * so individual effect files can stay focused on the mechanic, not on rank
  * arithmetic / hand traversal boilerplate.
  */
-import type { Card, Rank, Suit } from "../../src/lib/types";
+import type { Card, Rank } from "../../src/lib/types";
+import { RANKS, SUITS, isFace, isRed } from "../../src/lib/deckUtils";
 import type { ServerGameState } from "../state";
 
-export const RANKS: readonly Rank[] = ["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"];
-export const SUITS: readonly Suit[] = ["H", "D", "C", "S"];
+export { RANKS, SUITS, isFace, isRed };
 
 export const INVERTED_RANK: Record<Rank, Rank> = {
   A: "2",
@@ -90,10 +90,3 @@ export function removeAndRefillBoard(state: ServerGameState, predicate: (card: C
   }
 }
 
-export function isFace(rank: Rank): boolean {
-  return rank === "J" || rank === "Q" || rank === "K";
-}
-
-export function isRed(suit: Suit): boolean {
-  return suit === "H" || suit === "D";
-}

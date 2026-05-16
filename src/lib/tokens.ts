@@ -54,6 +54,16 @@ export const gradients = {
     "linear-gradient(180deg, rgba(20,60,36,0.92) 0%, rgba(10,40,22,0.96) 100%)",
 } as const;
 
+/**
+ * Composed box-shadow strings used by raised gold buttons (Lobby Start, Ready
+ * pill, page CTA, reveal play-again). The 3px rail underline + soft drop is
+ * the signature press-affordance shape; centralized so a rail-color change
+ * propagates everywhere.
+ */
+export const shadows = {
+  goldButton: `0 3px 0 ${colors.rail}, 0 6px 16px rgba(0,0,0,0.35)`,
+} as const;
+
 export const overlays = {
   panelBorder: "rgba(201,165,74,0.28)",
 } as const;
@@ -68,6 +78,29 @@ export const surfaces = {
   accentLight: "rgba(47,184,115,0.18)",
   dangerLight: "rgba(240,138,108,0.18)",
   disabledBg: "rgba(0,0,0,0.22)",
+  subtleBorder: "rgba(255,255,255,0.08)",
+  neutralFaint: "rgba(255,255,255,0.06)",
+  dealChoicePanelBg: "rgba(10,40,22,0.9)",
+  goldMid: "rgba(201,165,74,0.2)",
+  dividerLine: "rgba(255,255,255,0.1)",
+  panelDeep: "rgba(0,0,0,0.28)",
+  disabledOverlay: "rgba(255,255,255,0.04)",
+  faintFill: "rgba(255,255,255,0.05)",
+  tagBg: "rgba(255,255,255,0.07)",
+  dimmed: "rgba(255,255,255,0.2)",
+  goldLight: "rgba(201,165,74,0.18)",
+  goldEmphasis: "rgba(201,165,74,0.55)",
+  whiteBorder: "rgba(255,255,255,0.15)",
+  goldFaint: "rgba(201,165,74,0.15)",
+  accentBorder: "rgba(47,184,115,0.35)",
+  panelOverlay: "rgba(10,30,18,0.6)",
+} as const;
+
+/** Shadow / scrim rgba fragments — composable inside boxShadow/textShadow
+ *  expressions, or used as standalone dark fills for modal backdrops. */
+export const shades = {
+  shadowSoft: "rgba(0,0,0,0.3)",
+  shadowMedium: "rgba(0,0,0,0.5)",
 } as const;
 
 export const typography = {

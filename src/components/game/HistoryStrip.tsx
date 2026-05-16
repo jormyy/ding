@@ -1,6 +1,7 @@
 "use client";
 
 import { PHASES_META } from "@/lib/constants";
+import { surfaces } from "@/lib/tokens";
 
 const SHORT_LABELS = PHASES_META.filter((m) => m.short !== undefined).map((m) => m.short!);
 
@@ -17,32 +18,32 @@ export default function HistoryStrip({ ranks, total }: HistoryStripProps) {
         const isFirst = r === 1;
         const isLast = r !== null && r === total;
         const bg = r === null
-          ? "rgba(255,255,255,0.05)"
+          ? surfaces.faintFill
           : isFirst
           ? "#c9a54a"
           : isLast
           ? "#6a1822"
-          : "rgba(255,255,255,0.1)";
+          : surfaces.dividerLine;
         const col = r === null
-          ? "rgba(255,255,255,0.2)"
+          ? surfaces.dimmed
           : isFirst
           ? "#2a1a08"
           : isLast
           ? "#e06070"
           : "rgba(245,230,184,0.85)";
         const bdr = r === null
-          ? "rgba(255,255,255,0.1)"
+          ? surfaces.dividerLine
           : isFirst
           ? "#f0d278"
           : isLast
           ? "#a84040"
-          : "rgba(255,255,255,0.2)";
+          : surfaces.dimmed;
         return (
           <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             <div
               style={{
                 fontSize: 7,
-                color: "rgba(201,165,74,0.55)",
+                color: surfaces.goldEmphasis,
                 fontWeight: 900,
                 letterSpacing: 0.4,
               }}

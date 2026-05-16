@@ -18,4 +18,4 @@ import "./draftFromFlop";
 export { applyStandardKeep } from "./peekKeep";
 export { dealChoiceVariantRegistry, registerDealChoiceVariant, registeredDealChoiceVariants } from "./registry";
 export type { DealChoiceVariantHandler } from "./registry";
-export { fallbackKeepIndexes, fallbackExposeIndexes, fallbackTradeUpIndexes, refreshHandVisibility } from "./shared";
+export { fallbackKeepIndexes } from "./shared";

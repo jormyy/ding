@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameState } from "@/lib/types";
 import { D } from "@/lib/theme";
+import { surfaces } from "@/lib/tokens";
 
 interface GameTimerProps {
   gameState: GameState;
@@ -97,8 +98,8 @@ export default function GameTimer({ gameState, onAutoReady }: GameTimerProps) {
         <div
           className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black tabular-nums transition-colors"
           style={{
-            background: gameUrgent ? "rgba(192,96,96,0.15)" : "rgba(10,30,18,0.6)",
-            border: `1px solid ${gameUrgent ? "rgba(192,96,96,0.35)" : "rgba(255,255,255,0.08)"}`,
+            background: gameUrgent ? "rgba(192,96,96,0.15)" : surfaces.panelOverlay,
+            border: `1px solid ${gameUrgent ? "rgba(192,96,96,0.35)" : surfaces.subtleBorder}`,
             color: gameUrgent ? "#e07070" : D.sub,
           }}
           title="Game timer"

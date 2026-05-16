@@ -1,39 +1,9 @@
-import type { Card, Rank } from "../types";
-import { cardToPokersolverStr } from "../utils";
+import type { Card } from "../types";
+import { cardKey, cardToPokersolverStr, normalizeSolverStrings } from "../utils";
 import { createDeck } from "../deckUtils";
+import { RANK_VALUE } from "../rankValue";
 
 import { Hand as PokerHand } from "pokersolver";
-
-const RANK_VALUE: Record<Rank, number> = {
-  "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9,
-  T: 10, J: 11, Q: 12, K: 13, A: 14,
-};
-
-function cardKey(c: Card): string {
-  return c.rank + c.suit;
-}
-
-const POKER_SUITS = ["h", "d", "c", "s"] as const;
-
-function normalizeSolverStrings(cards: readonly string[]): string[] {
-  const used = new Set<string>();
-  const out: string[] = [];
-  for (const raw of cards) {
-    if (!used.has(raw)) {
-      used.add(raw);
-      out.push(raw);
-      continue;
-    }
-    const rank = raw.slice(0, -1);
-    const replacement = POKER_SUITS
-      .map((suit) => `${rank}${suit}`)
-      .find((candidate) => !used.has(candidate));
-    if (!replacement) continue;
-    used.add(replacement);
-    out.push(replacement);
-  }
-  return out;
-}
 
 /**
  * Tier-based preflop scoring per the strategy guide.

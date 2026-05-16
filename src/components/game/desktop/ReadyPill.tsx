@@ -6,6 +6,7 @@
 
 import { memo } from "react";
 import type { Player } from "@/lib/types";
+import { shades, surfaces } from "@/lib/tokens";
 import ReadyButton from "../../ReadyButton";
 
 export interface ReadyPillProps {
@@ -30,10 +31,10 @@ function ReadyPillImpl({
         bottom: 14,
         right: 20,
         gap: 10,
-        background: "rgba(0,0,0,0.5)",
+        background: shades.shadowMedium,
         borderRadius: 22,
         padding: "6px 10px 6px 14px",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: `1px solid ${surfaces.subtleBorder}`,
       }}
     >
       <div style={{ display: "flex", gap: 3 }}>
@@ -44,7 +45,7 @@ function ReadyPillImpl({
               width: 8,
               height: 8,
               borderRadius: "50%",
-              background: p.ready ? "#2fb873" : "rgba(255,255,255,0.15)",
+              background: p.ready ? "#2fb873" : surfaces.whiteBorder,
               boxShadow: p.ready ? "0 0 6px rgba(47,184,115,0.5)" : "none",
             }}
             aria-label={`${p.name} ${p.ready ? "ready" : "not ready"}`}

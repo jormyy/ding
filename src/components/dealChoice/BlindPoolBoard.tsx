@@ -27,7 +27,7 @@ export default function BlindPoolBoard({ gameState, myId, onSend }: DealChoiceBo
           <div
             key={hand.id}
             className="grid gap-3 rounded-lg p-3"
-            style={{ background: "rgba(10,40,22,0.9)", border: "1px solid rgba(255,255,255,0.08)" }}
+            style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
           >
             <VariantStatusBar
               label={`Hand #${idx + 1}`}
@@ -46,7 +46,7 @@ export default function BlindPoolBoard({ gameState, myId, onSend }: DealChoiceBo
                     className="rounded-lg p-1 transition-all disabled:cursor-default"
                     style={{
                       background: isContrib ? surfaces.dangerLight : surfaces.disabledBg,
-                      border: isContrib ? "2px solid #f08a6c" : "2px solid rgba(255,255,255,0.08)",
+                      border: isContrib ? "2px solid #f08a6c" : `2px solid ${surfaces.subtleBorder}`,
                       opacity: submitted && !isContrib ? 0.35 : 1,
                     }}
                   >

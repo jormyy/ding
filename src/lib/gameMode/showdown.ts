@@ -1,33 +1,16 @@
 import type { Card, Hand, Rank, Suit } from "../types";
+import { RANK_VALUE } from "../rankValue";
+import { RANKS, SUITS } from "../deckUtils";
 import { getGameModeDefinition } from "./registry";
 import type { HierarchyId, QualifierId, ScoreRule, SolvedHand } from "./types";
 import { dingEvaluator } from "../../modes/ding/evaluator";
 import { Hand as PokerHand } from "pokersolver";
-import { cardToPokersolverStr } from "../utils";
+import { cardToPokersolverStr, normalizeSolverStrings } from "../utils";
 import { QUALIFIERS, type QualifierResult } from "./qualifiers";
 import { HIERARCHIES } from "./hierarchies";
 
-const RANK_VALUE: Record<Rank, number> = {
-  "2": 2,
-  "3": 3,
-  "4": 4,
-  "5": 5,
-  "6": 6,
-  "7": 7,
-  "8": 8,
-  "9": 9,
-  T: 10,
-  J: 11,
-  Q: 12,
-  K: 13,
-  A: 14,
-};
-
 const RED_SUITS = new Set<Suit>(["H", "D"]);
 const BLACK_SUITS = new Set<Suit>(["C", "S"]);
-const RANKS: readonly Rank[] = ["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"];
-const SUITS: readonly Suit[] = ["H", "D", "C", "S"];
-const POKER_SUITS = ["h", "d", "c", "s"] as const;
 const INVERTED_RANK: Record<Rank, Rank> = {
   A: "2",
   K: "3",
@@ -459,26 +442,6 @@ function syntheticPairCard(kind: "adjacent" | "spread", cards: readonly Card[], 
 function nextSuit(suit: Suit): Suit {
   const index = SUITS.indexOf(suit);
   return SUITS[(index + 1) % SUITS.length];
-}
-
-function normalizeSolverStrings(cards: readonly string[]): string[] {
-  const used = new Set<string>();
-  const out: string[] = [];
-  for (const raw of cards) {
-    if (!used.has(raw)) {
-      used.add(raw);
-      out.push(raw);
-      continue;
-    }
-    const rank = raw.slice(0, -1);
-    const replacement = POKER_SUITS
-      .map((suit) => `${rank}${suit}`)
-      .find((candidate) => !used.has(candidate));
-    if (!replacement) continue;
-    used.add(replacement);
-    out.push(replacement);
-  }
-  return out;
 }
 
 function describeRaw(raw: RawPokerSolved): string {

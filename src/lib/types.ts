@@ -349,12 +349,6 @@ export type ChaosEvent = {
   modeId: string;
 };
 
-export type ChaosEventAction = {
-  type: "chaos-event";
-  event: ChaosEventType;
-  affected: string[];
-};
-
 /**
  * All messages sent from the client to the PartyKit server.
  * Each variant corresponds to a handler in `party/handlers/`.

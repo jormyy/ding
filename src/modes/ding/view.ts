@@ -26,7 +26,7 @@ for (const mode of listGameModes()) {
   registerMode(buildView(mode.id));
 }
 
-const view: GameModeView = {
+registerMode({
   id: "ding",
   phases: dingPhases.map((p) => ({
     phase: p.id,
@@ -35,8 +35,4 @@ const view: GameModeView = {
     short: p.short,
     history: p.history,
   })),
-};
-
-registerMode(view);
-
-export const dingView = view;
+});

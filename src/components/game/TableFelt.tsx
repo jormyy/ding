@@ -2,6 +2,7 @@
 
 import type { BoardLayout } from "@/lib/gameMode";
 import type { Card, ModeInfo, Phase } from "@/lib/types";
+import { surfaces } from "@/lib/tokens";
 import { CardFace } from "../CardFace";
 
 interface TableFeltProps {
@@ -51,7 +52,7 @@ export default function TableFelt({
           outline: "3px solid #92400e33",
         }}
       >
-        <div className="absolute inset-3 rounded-[50%] pointer-events-none" style={{ border: "1px solid rgba(201,165,74,0.15)" }} />
+        <div className="absolute inset-3 rounded-[50%] pointer-events-none" style={{ border: `1px solid ${surfaces.goldFaint}` }} />
       </div>
 
       {/* Community cards + phase label + children (board slots) */}

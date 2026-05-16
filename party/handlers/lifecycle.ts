@@ -1,19 +1,9 @@
-import type { Phase } from "../../src/lib/types";
-import type { ChaosEvent } from "../../src/lib/types";
+import type { ChaosEvent, Phase } from "../../src/lib/types";
+import { ALL_PHASES as PHASE_ORDER } from "../../src/lib/phases";
 import {
   type ServerGameState,
   createInitialState,
 } from "../state";
-
-const PHASE_ORDER: Phase[] = [
-  "lobby",
-  "dealChoice",
-  "preflop",
-  "flop",
-  "turn",
-  "river",
-  "reveal",
-];
 import {
   computeShowdownForMode,
   countInversionsForRanks,

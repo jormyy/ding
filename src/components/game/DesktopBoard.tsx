@@ -10,6 +10,7 @@
  */
 
 import type { GameState } from "@/lib/types";
+import { surfaces } from "@/lib/tokens";
 import type { UseBoardReturn } from "@/hooks/useGameBoard";
 import PokerTable from "../PokerTable";
 import RequestItem from "./RequestItem";
@@ -164,7 +165,7 @@ export default function DesktopBoard({
       {(incomingRequests.length > 0 || outgoingRequests.length > 0) && (
         <div
           className="sm:hidden flex-none px-3 py-2 flex flex-col gap-2 max-h-40 overflow-y-auto"
-          style={{ background: "#0a1813", borderTop: "1px solid rgba(201,165,74,0.15)" }}
+          style={{ background: "#0a1813", borderTop: `1px solid ${surfaces.goldFaint}` }}
         >
           <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">
             Requests

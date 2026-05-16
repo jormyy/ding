@@ -1,4 +1,5 @@
 import type { Card, CardMeta, Hand, Rank } from "../types";
+import { RANK_VALUE } from "../rankValue";
 import type { DingGameModeDefinition, HierarchyId } from "./types";
 
 /**
@@ -18,11 +19,6 @@ export interface HierarchyContext {
 }
 
 export type Hierarchy = (ctx: HierarchyContext) => string[];
-
-const RANK_VALUE: Record<Rank, number> = {
-  "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9,
-  T: 10, J: 11, Q: 12, K: 13, A: 14,
-};
 
 function handsById(hands: readonly Hand[]): Map<string, Hand> {
   return new Map(hands.map((hand) => [hand.id, hand]));

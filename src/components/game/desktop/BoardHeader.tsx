@@ -9,6 +9,7 @@ import { memo } from "react";
 import type { GameState } from "@/lib/types";
 import { PHASES_META } from "@/lib/constants";
 import { getGameModeDefinition } from "@/lib/gameMode";
+import { surfaces } from "@/lib/tokens";
 import GameTimer from "../GameTimer";
 
 export interface BoardHeaderProps {
@@ -39,7 +40,7 @@ function BoardHeaderImpl({
         height: 54,
         background:
           "linear-gradient(180deg, rgba(20,60,36,0.95) 0%, rgba(10,40,22,0.98) 100%)",
-        borderBottom: "1px solid rgba(201,165,74,0.2)",
+        borderBottom: `1px solid ${surfaces.goldMid}`,
         flexShrink: 0,
       }}
     >
@@ -59,8 +60,8 @@ function BoardHeaderImpl({
         className="hidden md:block max-w-28 truncate rounded-full px-2 py-0.5 text-[10px] font-black uppercase"
         style={{
           color: "#f5e6b8",
-          background: "rgba(255,255,255,0.06)",
-          border: "1px solid rgba(255,255,255,0.08)",
+          background: surfaces.neutralFaint,
+          border: `1px solid ${surfaces.subtleBorder}`,
         }}
         title={mode.detail}
       >
@@ -74,7 +75,7 @@ function BoardHeaderImpl({
             <div key={meta.phase} className="flex items-center">
               <div
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl transition-colors"
-                style={{ background: active ? "rgba(201,165,74,0.15)" : "transparent" }}
+                style={{ background: active ? surfaces.goldFaint : "transparent" }}
               >
                 <div
                   className="w-2 h-2 rounded-full"
@@ -83,7 +84,7 @@ function BoardHeaderImpl({
                       ? "#c9a54a"
                       : done
                       ? "#2fb873"
-                      : "rgba(255,255,255,0.15)",
+                      : surfaces.whiteBorder,
                     boxShadow: active ? "0 0 10px #c9a54a" : "none",
                   }}
                 />
@@ -99,7 +100,7 @@ function BoardHeaderImpl({
               {i < PHASES_META.length - 1 && (
                 <div
                   className="w-3 h-px"
-                  style={{ background: "rgba(255,255,255,0.08)" }}
+                  style={{ background: surfaces.subtleBorder }}
                 />
               )}
             </div>

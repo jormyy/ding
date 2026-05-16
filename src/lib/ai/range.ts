@@ -14,7 +14,7 @@
 
 import type { Card } from "../types";
 import { Hand as PokerHand } from "pokersolver";
-import { cardToPokersolverStr } from "../utils";
+import { cardKey, cardToPokersolverStr } from "../utils";
 import { createDeck } from "../deckUtils";
 import { preflopTierStrength, currentHandStrength } from "./handStrength";
 
@@ -32,10 +32,6 @@ export type RangeBelief = {
 /** Create an empty range belief with no weights. */
 export function newRangeBelief(): RangeBelief {
   return { weights: new Map(), observations: 0 };
-}
-
-function cardKey(c: Card): string {
-  return c.rank + c.suit;
 }
 
 /**

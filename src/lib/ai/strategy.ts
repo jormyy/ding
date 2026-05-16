@@ -10,6 +10,7 @@
  */
 
 import type { AcquireRequest, ClientMessage, GameState } from "../types";
+import { GAME_PHASES } from "../phases";
 import { classifyHand, type ClassifiedHand } from "./handClassifier";
 import type { Traits } from "./personality";
 import {
@@ -202,8 +203,7 @@ export function decideAction(
   }
 
   if (state.phase === "lobby") return null;
-  const gamePhases = ["preflop", "flop", "turn", "river"];
-  if (!gamePhases.includes(state.phase)) return null;
+  if (!GAME_PHASES.includes(state.phase)) return null;
 
   // Strategy guide: wait-and-watch at the start of each ranking phase so
   // teammate chip movement can reveal who improved on the new board.

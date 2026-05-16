@@ -170,7 +170,7 @@ export default function InversionsGraph({ data }: { data: InversionsData }) {
     <div
       className="flex flex-col gap-2 flex-1 min-h-0"
       style={{
-        background: "rgba(0,0,0,0.28)",
+        background: surfaces.panelDeep,
         border: `1px solid ${D.panelBorder}`,
         borderRadius: 12,
         padding: 12,

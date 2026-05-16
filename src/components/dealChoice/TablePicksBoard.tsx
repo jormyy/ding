@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Hand } from "@/lib/types";
 import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
+import { toggleInSet } from "@/lib/utils";
 import { CardFace } from "../CardFace";
 import { NeighborView, VariantStatusBar } from "./SharedAffordances";
 import type { DealChoiceBoardProps } from "./types";
@@ -36,7 +37,7 @@ export default function TablePicksBoard({ gameState, myId, onSend }: DealChoiceB
             <div
               key={hand.id}
               className="grid gap-2 rounded-lg p-3"
-              style={{ background: "rgba(10,40,22,0.9)", border: "1px solid rgba(255,255,255,0.08)" }}
+              style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
             >
               <VariantStatusBar
                 label={`Hand #${idx + 1}`}
@@ -57,7 +58,7 @@ export default function TablePicksBoard({ gameState, myId, onSend }: DealChoiceB
                       className="rounded-lg p-1"
                       style={{
                         background: isWinner ? surfaces.accentLight : surfaces.disabledBg,
-                        border: isWinner ? "2px solid rgba(47,184,115,0.6)" : "2px solid rgba(255,255,255,0.08)",
+                        border: isWinner ? "2px solid rgba(47,184,115,0.6)" : `2px solid ${surfaces.subtleBorder}`,
                       }}
                     >
                       <CardFace card={card} small />
@@ -115,18 +116,13 @@ function TablePicksVoteRow({
   const [selected, setSelected] = useState<Set<number>>(new Set());
   function toggle(i: number) {
     if (voted || submitted) return;
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(i)) next.delete(i);
-      else if (next.size < keep) next.add(i);
-      return next;
-    });
+    setSelected((prev) => toggleInSet(prev, i, keep));
   }
   const canSubmit = !voted && !submitted && selected.size === keep;
   return (
     <div
       className="grid gap-2 rounded-lg p-3"
-      style={{ background: "rgba(10,40,22,0.9)", border: "1px solid rgba(255,255,255,0.08)" }}
+      style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
     >
       <VariantStatusBar
         label={playerName}

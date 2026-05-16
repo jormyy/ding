@@ -5,6 +5,7 @@ import type { ClientMessage, GameState, Hand } from "@/lib/types";
 import { getGameModeDefinition } from "@/lib/gameMode";
 import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
+import { toggleInSet } from "@/lib/utils";
 import { CardFace } from "./CardFace";
 import { resolveDealChoiceVariant } from "@/lib/gameMode/dealChoiceVariant";
 import PeekBoardBoard from "./dealChoice/PeekBoardBoard";
@@ -45,7 +46,7 @@ export default function DealChoiceBoard({
           height: 54,
           background:
             "linear-gradient(180deg, rgba(20,60,36,0.95) 0%, rgba(10,40,22,0.98) 100%)",
-          borderBottom: "1px solid rgba(201,165,74,0.2)",
+          borderBottom: `1px solid ${surfaces.goldMid}`,
         }}
       >
         <span className="font-serif font-black" style={{ fontSize: 22, color: "#f5e6b8" }}>
@@ -60,8 +61,8 @@ export default function DealChoiceBoard({
           className="rounded-full px-2 py-0.5 text-[10px] font-black uppercase"
           style={{
             color: "#f5e6b8",
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            background: surfaces.neutralFaint,
+            border: `1px solid ${surfaces.subtleBorder}`,
           }}
         >
           {mode.shortName}
@@ -163,7 +164,7 @@ export default function DealChoiceBoard({
               className="rounded-lg p-4 flex flex-col gap-3"
               style={{
                 background: "rgba(6,30,16,0.9)",
-                border: "1px solid rgba(255,255,255,0.08)",
+                border: `1px solid ${surfaces.subtleBorder}`,
               }}
             >
               <div className="text-[10px] font-black uppercase tracking-[0.25em]" style={{ color: D.sub }}>
@@ -176,7 +177,7 @@ export default function DealChoiceBoard({
                   <div
                     key={player.id}
                     className="flex items-center justify-between gap-3 rounded px-3 py-2"
-                    style={{ background: "rgba(255,255,255,0.04)" }}
+                    style={{ background: surfaces.disabledOverlay }}
                   >
                     <span className="text-sm font-bold truncate">
                       {player.name}
@@ -230,21 +231,13 @@ function ChoiceHandRow({
 
   function toggle(index: number) {
     if (submitted) return;
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index);
-      } else if (next.size < keepCards) {
-        next.add(index);
-      }
-      return next;
-    });
+    setSelected((prev) => toggleInSet(prev, index, keepCards));
   }
 
   return (
     <div
       className="grid gap-3 md:grid-cols-[120px_1fr_140px] md:items-center rounded-lg p-3"
-      style={{ background: "rgba(10,40,22,0.9)", border: "1px solid rgba(255,255,255,0.08)" }}
+      style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
     >
       <div>
         <div className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: D.sub }}>
@@ -265,8 +258,8 @@ function ChoiceHandRow({
               disabled={submitted}
               className="rounded-lg p-1 transition-all disabled:cursor-default"
               style={{
-                background: isSelected ? "rgba(201,165,74,0.2)" : surfaces.disabledBg,
-                border: isSelected ? "2px solid #c9a54a" : "2px solid rgba(255,255,255,0.08)",
+                background: isSelected ? surfaces.goldMid : surfaces.disabledBg,
+                border: isSelected ? "2px solid #c9a54a" : `2px solid ${surfaces.subtleBorder}`,
                 opacity: submitted && !isSelected ? 0.35 : 1,
               }}
               aria-pressed={isSelected}
@@ -285,7 +278,7 @@ function ChoiceHandRow({
             onClick={onMulligan}
             className="h-8 rounded-md text-[11px] font-black uppercase tracking-wide transition-all active:scale-95 disabled:opacity-45 disabled:cursor-not-allowed"
             style={{
-              background: mulliganUsed ? "rgba(255,255,255,0.06)" : surfaces.dangerLight,
+              background: mulliganUsed ? surfaces.neutralFaint : surfaces.dangerLight,
               color: mulliganUsed ? D.sub : "#f08a6c",
               border: "1px solid rgba(240,138,108,0.32)",
             }}
@@ -304,7 +297,7 @@ function ChoiceHandRow({
               ? surfaces.accentLight
               : `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`,
             color: submitted ? D.accent : D.ink,
-            border: submitted ? "1px solid rgba(47,184,115,0.35)" : "none",
+            border: submitted ? `1px solid ${surfaces.accentBorder}` : "none",
           }}
         >
           {submitted ? "Locked" : tradeUp ? "Trade" : inheritance ? "Inherit" : exposeChoice ? "Expose" : "Keep"}

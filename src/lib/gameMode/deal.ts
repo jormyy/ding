@@ -1,23 +1,8 @@
 import type { Card, Hand, Rank } from "../types";
-import { createDeck, shuffleDeck } from "../deckUtils";
+import { createDeck, isFace, isRed, shuffleDeck } from "../deckUtils";
+import { RANK_VALUE } from "../rankValue";
 import { getGameModeDefinition } from "./registry";
 import type { PublicHoleCardSelection } from "./types";
-
-const RANK_VALUE: Record<Rank, number> = {
-  "2": 2,
-  "3": 3,
-  "4": 4,
-  "5": 5,
-  "6": 6,
-  "7": 7,
-  "8": 8,
-  "9": 9,
-  T: 10,
-  J: 11,
-  Q: 12,
-  K: 13,
-  A: 14,
-};
 
 export interface ModeDealResult {
   hands: Hand[];
@@ -258,7 +243,7 @@ function dealConstrainedHands(
     case "highRanks":
       return dealRankBandHands(remainingDeck, playerIds, handsPerPlayer, cardsToDeal, isHighRank);
     case "atLeastOneFace":
-      return dealAtLeastOneRankHands(remainingDeck, playerIds, handsPerPlayer, cardsToDeal, isFaceRank);
+      return dealAtLeastOneRankHands(remainingDeck, playerIds, handsPerPlayer, cardsToDeal, (card) => isFace(card.rank));
     case "bichrome":
       return dealColorPredicateHands(remainingDeck, playerIds, handsPerPlayer, cardsToDeal, false);
     case "monochrome":
@@ -270,13 +255,6 @@ function dealConstrainedHands(
   }
 }
 
-function isFaceRank(card: Card): boolean {
-  return card.rank === "J" || card.rank === "Q" || card.rank === "K";
-}
-
-function isRedSuit(suit: Card["suit"]): boolean {
-  return suit === "H" || suit === "D";
-}
 
 function dealAtLeastOneRankHands(
   remainingDeck: Card[],
@@ -340,10 +318,10 @@ function drawColorPairAndFill(remainingDeck: Card[], cardsToDeal: number, sameCo
   }
   for (let firstIndex = 0; firstIndex < remainingDeck.length; firstIndex++) {
     const first = remainingDeck[firstIndex];
-    const firstIsRed = isRedSuit(first.suit);
+    const firstIsRed = isRed(first.suit);
     const secondIndex = remainingDeck.findIndex((candidate, index) => {
       if (index === firstIndex) return false;
-      const secondIsRed = isRedSuit(candidate.suit);
+      const secondIsRed = isRed(candidate.suit);
       return sameColor ? secondIsRed === firstIsRed : secondIsRed !== firstIsRed;
     });
     if (secondIndex === -1) continue;

@@ -5,6 +5,7 @@ import { CardFace } from "../../CardFace";
 import VolumeControl from "../../VolumeControl";
 import CustomOutputButton from "../../CustomOutputButton";
 import { D } from "@/lib/theme";
+import { shades, shadows, surfaces } from "@/lib/tokens";
 import { getGameModeDefinition } from "@/lib/gameMode";
 
 interface RevealHeaderProps {
@@ -44,7 +45,7 @@ export default function RevealHeader({
         height: 62,
         background: D.panel,
         borderBottom: `1px solid ${D.panelBorder}`,
-        boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+        boxShadow: `0 4px 20px ${shades.shadowSoft}`,
       }}
     >
       <div>
@@ -59,7 +60,7 @@ export default function RevealHeader({
         </div>
       </div>
 
-      <div style={{ width: 1, height: 36, background: "rgba(255,255,255,0.1)" }} />
+      <div style={{ width: 1, height: 36, background: surfaces.dividerLine }} />
 
       <div className="flex items-baseline gap-2">
         <div
@@ -84,7 +85,7 @@ export default function RevealHeader({
         </div>
       </div>
 
-      <div style={{ width: 1, height: 36, background: "rgba(255,255,255,0.1)" }} />
+      <div style={{ width: 1, height: 36, background: surfaces.dividerLine }} />
 
       <div className="flex items-center gap-2">
         <div className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: D.gold }}>Board</div>
@@ -98,11 +99,11 @@ export default function RevealHeader({
       <div className="flex-1" />
 
       <div className="flex gap-2">
-        <button onClick={onDing} className="w-8 h-8 flex items-center justify-center rounded-full text-lg select-none transition-all active:scale-90" style={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.1)" }}>🔔</button>
-        <button onClick={onFuckoff} className="w-8 h-8 flex items-center justify-center rounded-full text-lg select-none transition-all active:scale-90" style={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.1)" }}>🖕</button>
-        <VolumeControl size="sm" buttonStyle={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.1)" }} />
-        {isCustom && <CustomOutputButton size="sm" buttonStyle={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.1)" }} onSpeak={onCustomOutput} />}
-        <button onClick={onToggleMobileChat} className="sm:hidden w-8 h-8 flex items-center justify-center rounded-full text-lg select-none" style={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.1)" }}>💬</button>
+        <button onClick={onDing} className="w-8 h-8 flex items-center justify-center rounded-full text-lg select-none transition-all active:scale-90" style={{ background: "rgba(0,0,0,0.35)", border: `1px solid ${surfaces.dividerLine}` }}>🔔</button>
+        <button onClick={onFuckoff} className="w-8 h-8 flex items-center justify-center rounded-full text-lg select-none transition-all active:scale-90" style={{ background: "rgba(0,0,0,0.35)", border: `1px solid ${surfaces.dividerLine}` }}>🖕</button>
+        <VolumeControl size="sm" buttonStyle={{ background: "rgba(0,0,0,0.35)", border: `1px solid ${surfaces.dividerLine}` }} />
+        {isCustom && <CustomOutputButton size="sm" buttonStyle={{ background: "rgba(0,0,0,0.35)", border: `1px solid ${surfaces.dividerLine}` }} onSpeak={onCustomOutput} />}
+        <button onClick={onToggleMobileChat} className="sm:hidden w-8 h-8 flex items-center justify-center rounded-full text-lg select-none" style={{ background: "rgba(0,0,0,0.35)", border: `1px solid ${surfaces.dividerLine}` }}>💬</button>
       </div>
 
       <div className="flex flex-col items-end gap-1 pointer-events-none absolute top-14 right-4 z-50">
@@ -125,7 +126,7 @@ export default function RevealHeader({
           style={{
             background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`,
             color: D.ink,
-            boxShadow: `0 3px 0 ${D.rail}, 0 6px 16px rgba(0,0,0,0.35)`,
+            boxShadow: shadows.goldButton,
           }}
         >
           Deal again →

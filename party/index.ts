@@ -18,9 +18,6 @@ import { RoomStorage } from "./server/roomStorage";
 import { dispatchAction } from "./pipeline/dispatch";
 import { getMaxHandsPerPlayerForMode } from "../src/lib/gameMode";
 
-export { buildClientState } from "./state";
-export type { ServerGameState } from "./state";
-
 /**
  * Main PartyKit server for Ding — now a thin orchestrator over the
  * server-module split:

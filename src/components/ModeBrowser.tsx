@@ -18,6 +18,7 @@ import {
 } from "@/lib/gameMode";
 import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
+import { toggleInSet } from "@/lib/utils";
 
 const MODE_RECENT_KEY = "ding.recentModes.v1";
 const MODE_FAVORITES_KEY = "ding.favoriteModes.v1";
@@ -189,12 +190,7 @@ export default function ModeBrowser({
   }
 
   function toggleAxis(axis: ModeAxis) {
-    setAxisFilters((previous) => {
-      const next = new Set(previous);
-      if (next.has(axis)) next.delete(axis);
-      else next.add(axis);
-      return next;
-    });
+    setAxisFilters((previous) => toggleInSet(previous, axis));
   }
 
   const selectMode = useCallback((modeId: string, closeBrowser: boolean) => {
@@ -256,7 +252,7 @@ export default function ModeBrowser({
     <>
       <div
         className="rounded-lg px-3 py-2 min-w-0"
-        style={{ background: "rgba(10,30,18,0.6)", border: "1px solid rgba(255,255,255,0.06)" }}
+        style={{ background: surfaces.panelOverlay, border: `1px solid ${surfaces.neutralFaint}` }}
       >
         <div className="flex items-center justify-between gap-2 mb-1.5 min-w-0">
           <div
@@ -295,7 +291,7 @@ export default function ModeBrowser({
             style={{
               background: "rgba(0,0,0,0.32)",
               color: D.goldBright,
-              border: "1px solid rgba(255,255,255,0.1)",
+              border: `1px solid ${surfaces.dividerLine}`,
             }}
           >
             Browse modes
@@ -349,7 +345,7 @@ export default function ModeBrowser({
                     style={
                       activeTier === tier
                         ? { background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink, border: "none" }
-                        : { background: "rgba(255,255,255,0.05)", color: D.sub, border: "1px solid rgba(255,255,255,0.08)" }
+                        : { background: surfaces.faintFill, color: D.sub, border: `1px solid ${surfaces.subtleBorder}` }
                     }
                   >
                     {tier}
@@ -361,7 +357,7 @@ export default function ModeBrowser({
                 onClick={() => setBrowserOpen(false)}
                 aria-label="Close mode browser"
                 className="w-8 h-8 rounded-md text-lg font-black leading-none"
-                style={{ background: "rgba(255,255,255,0.06)", color: D.sub, border: "1px solid rgba(255,255,255,0.08)" }}
+                style={{ background: surfaces.neutralFaint, color: D.sub, border: `1px solid ${surfaces.subtleBorder}` }}
               >
                 x
               </button>
@@ -379,7 +375,7 @@ export default function ModeBrowser({
                   <label
                     key={axis}
                     className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-bold"
-                    style={{ background: "rgba(255,255,255,0.04)", color: D.goldBright }}
+                    style={{ background: surfaces.disabledOverlay, color: D.goldBright }}
                   >
                     <input
                       type="checkbox"
@@ -394,7 +390,7 @@ export default function ModeBrowser({
                   type="button"
                   onClick={() => setAxisFilters(new Set())}
                   className="h-7 rounded-md text-[11px] font-bold"
-                  style={{ background: "rgba(0,0,0,0.28)", color: D.muted, border: "1px solid rgba(255,255,255,0.08)" }}
+                  style={{ background: surfaces.panelDeep, color: D.muted, border: `1px solid ${surfaces.subtleBorder}` }}
                 >
                   Clear filters
                 </button>
@@ -415,7 +411,7 @@ export default function ModeBrowser({
                       style={
                         axisFilters.has(axis)
                           ? { background: D.accent, color: "#03150d", border: "none" }
-                          : { background: "rgba(255,255,255,0.05)", color: D.sub, border: "1px solid rgba(255,255,255,0.08)" }
+                          : { background: surfaces.faintFill, color: D.sub, border: `1px solid ${surfaces.subtleBorder}` }
                       }
                     >
                       {axis}
@@ -441,7 +437,7 @@ export default function ModeBrowser({
                         style={
                           selectSubFilter === tag
                             ? { background: D.accent, color: "#03150d", border: "none" }
-                            : { background: "rgba(255,255,255,0.05)", color: D.sub, border: "1px solid rgba(255,255,255,0.08)" }
+                            : { background: surfaces.faintFill, color: D.sub, border: `1px solid ${surfaces.subtleBorder}` }
                         }
                       >
                         {tag}
@@ -452,7 +448,7 @@ export default function ModeBrowser({
                         type="button"
                         onClick={() => setSelectSubFilter(null)}
                         className="h-7 px-2 rounded-md text-[10px] font-bold"
-                        style={{ background: "rgba(0,0,0,0.28)", color: D.muted, border: "1px solid rgba(255,255,255,0.08)" }}
+                        style={{ background: surfaces.panelDeep, color: D.muted, border: `1px solid ${surfaces.subtleBorder}` }}
                       >
                         clear
                       </button>
@@ -524,7 +520,7 @@ export default function ModeBrowser({
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search flush, hidden, wild..."
                 className="h-9 rounded-md px-3 text-sm font-bold outline-none"
-                style={{ background: "rgba(0,0,0,0.35)", color: D.goldBright, border: "1px solid rgba(255,255,255,0.1)" }}
+                style={{ background: "rgba(0,0,0,0.35)", color: D.goldBright, border: `1px solid ${surfaces.dividerLine}` }}
                 aria-label="Search game modes"
               />
               <button
@@ -668,13 +664,13 @@ function ModeCard({
         onDoubleClick={onSelect}
         className="h-full w-full rounded-lg p-2 pr-7 text-left flex flex-col transition-all active:scale-[0.98]"
         style={{
-          background: selected ? "rgba(201,165,74,0.18)" : focused ? "rgba(47,184,115,0.14)" : "rgba(10,30,18,0.76)",
+          background: selected ? surfaces.goldLight : focused ? "rgba(47,184,115,0.14)" : "rgba(10,30,18,0.76)",
           color: D.goldBright,
           border: selected
             ? `1px solid ${D.gold}`
             : focused
             ? `1px solid ${D.accent}`
-            : "1px solid rgba(255,255,255,0.08)",
+            : `1px solid ${surfaces.subtleBorder}`,
         }}
         aria-label={`${mode.name}, ${axes.join(" ")}, ${mode.tier} tier`}
       >
@@ -688,7 +684,7 @@ function ModeCard({
               <span
                 key={axis}
                 className="rounded px-1 py-0.5 text-[8px] font-black uppercase tracking-wide"
-                style={{ background: "rgba(255,255,255,0.07)", color: D.sub }}
+                style={{ background: surfaces.tagBg, color: D.sub }}
               >
                 {axis}
               </span>
@@ -713,9 +709,9 @@ function ModeCard({
         }}
         className="absolute right-1.5 top-1.5 w-5 h-5 rounded text-[11px] font-black"
         style={{
-          background: favorite ? "rgba(201,165,74,0.22)" : "rgba(255,255,255,0.06)",
+          background: favorite ? "rgba(201,165,74,0.22)" : surfaces.neutralFaint,
           color: favorite ? D.gold : D.muted,
-          border: "1px solid rgba(255,255,255,0.08)",
+          border: `1px solid ${surfaces.subtleBorder}`,
         }}
         aria-pressed={favorite}
         aria-label={`${favorite ? "Remove favorite" : "Favorite"} ${mode.name}`}
@@ -751,11 +747,11 @@ function ModeDetail({
         {mode.name}
       </h2>
       <div className="mt-2 flex flex-wrap gap-1">
-        <span className="rounded px-2 py-1 text-[10px] font-black uppercase" style={{ background: "rgba(255,255,255,0.07)", color: D.sub }}>
+        <span className="rounded px-2 py-1 text-[10px] font-black uppercase" style={{ background: surfaces.tagBg, color: D.sub }}>
           {mode.tier}
         </span>
         {axes.map((axis) => (
-          <span key={axis} className="rounded px-2 py-1 text-[10px] font-black uppercase" style={{ background: "rgba(255,255,255,0.07)", color: D.sub }}>
+          <span key={axis} className="rounded px-2 py-1 text-[10px] font-black uppercase" style={{ background: surfaces.tagBg, color: D.sub }}>
             {axis}
           </span>
         ))}
@@ -766,18 +762,18 @@ function ModeDetail({
       <p className="mt-3 text-sm leading-relaxed" style={{ color: D.sub }}>
         {mode.detail}
       </p>
-      <div className="mt-3 rounded-lg p-3" style={{ background: surfaces.disabledBg, border: "1px solid rgba(255,255,255,0.08)" }}>
+      <div className="mt-3 rounded-lg p-3" style={{ background: surfaces.disabledBg, border: `1px solid ${surfaces.subtleBorder}` }}>
         <div className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: D.muted }}>
           Example preflop
         </div>
         <div className="mt-2 flex items-center gap-2">
-          <div className="rounded-md px-2 py-1 text-xs font-black" style={{ background: "rgba(255,255,255,0.07)", color: D.goldBright }}>
+          <div className="rounded-md px-2 py-1 text-xs font-black" style={{ background: surfaces.tagBg, color: D.goldBright }}>
             {mode.deal.holeCards} dealt
           </div>
-          <div className="rounded-md px-2 py-1 text-xs font-black" style={{ background: "rgba(255,255,255,0.07)", color: D.goldBright }}>
+          <div className="rounded-md px-2 py-1 text-xs font-black" style={{ background: surfaces.tagBg, color: D.goldBright }}>
             {mode.deal.keepCards ?? mode.deal.holeCards} kept
           </div>
-          <div className="rounded-md px-2 py-1 text-xs font-black" style={{ background: "rgba(255,255,255,0.07)", color: D.goldBright }}>
+          <div className="rounded-md px-2 py-1 text-xs font-black" style={{ background: surfaces.tagBg, color: D.goldBright }}>
             {mode.deal.communityCards} board
           </div>
         </div>
@@ -790,7 +786,7 @@ function ModeDetail({
           <span
             key={tag}
             className="rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide"
-            style={{ background: "rgba(255,255,255,0.06)", color: D.muted }}
+            style={{ background: surfaces.neutralFaint, color: D.muted }}
           >
             {tag}
           </span>
@@ -801,7 +797,7 @@ function ModeDetail({
           type="button"
           onClick={onFavorite}
           className="h-9 rounded-md text-xs font-black"
-          style={{ background: "rgba(255,255,255,0.06)", color: D.goldBright, border: "1px solid rgba(255,255,255,0.08)" }}
+          style={{ background: surfaces.neutralFaint, color: D.goldBright, border: `1px solid ${surfaces.subtleBorder}` }}
         >
           {favorite ? "Favorited" : "Favorite"}
         </button>

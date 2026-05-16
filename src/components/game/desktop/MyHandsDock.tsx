@@ -10,6 +10,7 @@ import type { Hand } from "@/lib/types";
 import { CardFace } from "../../CardFace";
 import RankChip, { HistoryChip } from "../../RankChip";
 import { PHASES_META } from "@/lib/constants";
+import { surfaces } from "@/lib/tokens";
 
 const HISTORY_LABELS = PHASES_META.filter((m) => m.history !== undefined).map((m) => m.history!);
 
@@ -48,7 +49,7 @@ function MyHandsDockImpl({
         borderRadius: 14,
         padding: "10px 20px",
         boxShadow:
-          "0 12px 40px rgba(0,0,0,0.55), 0 0 30px rgba(201,165,74,0.2)",
+          `0 12px 40px rgba(0,0,0,0.55), 0 0 30px ${surfaces.goldMid}`,
         whiteSpace: "nowrap",
       }}
     >
@@ -88,7 +89,7 @@ function MyHandsDockImpl({
                 style={{
                   width: 1,
                   height: 56,
-                  background: "rgba(255,255,255,0.1)",
+                  background: surfaces.dividerLine,
                   flexShrink: 0,
                 }}
               />

@@ -1,6 +1,7 @@
 "use client";
 
 import { D } from "@/lib/theme";
+import { surfaces } from "@/lib/tokens";
 import { CardFace } from "../CardFace";
 import { PoolStrip, VariantStatusBar } from "./SharedAffordances";
 import type { DealChoiceBoardProps } from "./types";
@@ -37,7 +38,7 @@ export default function AuctionBoard({ gameState, myId, onSend }: DealChoiceBoar
           <div
             key={hand.id}
             className="rounded-lg p-3"
-            style={{ background: "rgba(10,40,22,0.9)", border: "1px solid rgba(255,255,255,0.08)" }}
+            style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
           >
             <VariantStatusBar
               label={`Hand #${idx + 1}`}
@@ -47,7 +48,7 @@ export default function AuctionBoard({ gameState, myId, onSend }: DealChoiceBoar
             <div className="mt-2 flex flex-wrap gap-2">
               {hand.cards.map((card, i) => (
                 <div key={i} className="rounded-lg p-1" style={{
-                  background: "rgba(201,165,74,0.18)",
+                  background: surfaces.goldLight,
                   border: "2px solid #c9a54a",
                 }}>
                   <CardFace card={card} small />

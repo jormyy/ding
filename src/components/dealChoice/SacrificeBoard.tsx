@@ -19,7 +19,7 @@ export default function SacrificeBoard({ gameState, myId, onSend }: DealChoiceBo
           <div
             key={hand.id}
             className="grid gap-3 rounded-lg p-3"
-            style={{ background: "rgba(10,40,22,0.9)", border: "1px solid rgba(255,255,255,0.08)" }}
+            style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
           >
             <div className="flex items-center justify-between gap-3">
               <VariantStatusBar
@@ -50,7 +50,7 @@ export default function SacrificeBoard({ gameState, myId, onSend }: DealChoiceBo
                     className="rounded-lg p-1 transition-all disabled:cursor-default"
                     style={{
                       background: isSacrificed ? surfaces.dangerLight : surfaces.disabledBg,
-                      border: isSacrificed ? "2px solid #f08a6c" : "2px solid rgba(255,255,255,0.08)",
+                      border: isSacrificed ? "2px solid #f08a6c" : `2px solid ${surfaces.subtleBorder}`,
                       opacity: isSacrificed ? 0.55 : 1,
                     }}
                     aria-pressed={isSacrificed}

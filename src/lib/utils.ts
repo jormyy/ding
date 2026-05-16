@@ -10,6 +10,40 @@ export function generateRoomCode(): string {
   return code;
 }
 
+/** Stable string key for a card — useful as a Set/Map key. */
+export function cardKey(card: Card): string {
+  return card.rank + card.suit;
+}
+
+/** Pokersolver's lowercase suit chars, in canonical order (h, d, c, s). */
+export const POKER_SUITS = ["h", "d", "c", "s"] as const;
+
+/**
+ * Deduplicate a list of pokersolver-format card strings (e.g. ["Ah","Kh"]).
+ * On collision, picks the next unused suit for the same rank; drops the
+ * candidate entirely if every suit is taken. Used when synthesizing inputs
+ * for hypothetical hand evaluations.
+ */
+export function normalizeSolverStrings(cards: readonly string[]): string[] {
+  const used = new Set<string>();
+  const out: string[] = [];
+  for (const raw of cards) {
+    if (!used.has(raw)) {
+      used.add(raw);
+      out.push(raw);
+      continue;
+    }
+    const rank = raw.slice(0, -1);
+    const replacement = POKER_SUITS
+      .map((suit) => `${rank}${suit}`)
+      .find((candidate) => !used.has(candidate));
+    if (!replacement) continue;
+    used.add(replacement);
+    out.push(replacement);
+  }
+  return out;
+}
+
 export function cardToPokersolverStr(card: Card): string {
   const rankMap: Record<string, string> = {
     "2": "2",
@@ -47,4 +81,19 @@ export function getSuitSymbol(suit: Suit): string {
 
 export function getRankDisplay(rank: Rank): string {
   return rank === "T" ? "10" : rank;
+}
+
+/**
+ * Returns a new Set with `item` toggled — added if absent, removed if present.
+ * When `maxSize` is provided, adds are skipped past that size (the original
+ * Set is returned via the new copy unchanged in the over-cap case).
+ */
+export function toggleInSet<T>(prev: ReadonlySet<T>, item: T, maxSize?: number): Set<T> {
+  const next = new Set(prev);
+  if (next.has(item)) {
+    next.delete(item);
+  } else if (maxSize === undefined || next.size < maxSize) {
+    next.add(item);
+  }
+  return next;
 }

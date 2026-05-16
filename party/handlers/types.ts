@@ -1,9 +1,8 @@
 import type * as Party from "partykit/server";
-import type { ClientMessage, Phase, Player } from "../../src/lib/types";
+import type { ClientMessage, Player } from "../../src/lib/types";
+import { GAME_PHASES } from "../../src/lib/phases";
 import type { ServerGameState } from "../state";
 import type { BotController } from "../bots";
-
-const GAME_PHASES: Phase[] = ["preflop", "flop", "turn", "river"];
 
 export type HandlerResult =
   | { kind: "ignore" }

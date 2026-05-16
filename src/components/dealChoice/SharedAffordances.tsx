@@ -62,8 +62,8 @@ export function PoolStrip({
               disabled={!canClaim}
               className="rounded-lg p-1 transition-all disabled:cursor-default"
               style={{
-                background: canClaim ? "rgba(201,165,74,0.18)" : surfaces.disabledBg,
-                border: canClaim ? "2px solid #c9a54a" : "2px solid rgba(255,255,255,0.08)",
+                background: canClaim ? surfaces.goldLight : surfaces.disabledBg,
+                border: canClaim ? "2px solid #c9a54a" : `2px solid ${surfaces.subtleBorder}`,
                 opacity: claimed ? 0.25 : 1,
               }}
               aria-label={claimed ? "Claimed" : `Pool card ${i + 1}`}
@@ -114,7 +114,7 @@ export function NeighborView({
               className="rounded-lg p-1 transition-all disabled:cursor-default"
               style={{
                 background: isSelected ? "rgba(201,165,74,0.22)" : surfaces.disabledBg,
-                border: isSelected ? "2px solid #c9a54a" : "2px solid rgba(255,255,255,0.08)",
+                border: isSelected ? "2px solid #c9a54a" : `2px solid ${surfaces.subtleBorder}`,
                 opacity: disabled && !isSelected ? 0.4 : 1,
               }}
               aria-pressed={isSelected}

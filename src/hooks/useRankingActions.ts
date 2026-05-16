@@ -8,8 +8,6 @@ export interface RankingActions {
   localRanking: (string | null)[];
   selectedHandId: string | null;
   selectedSlot: number | null;
-  setSelectedHandId: (id: string | null) => void;
-  setSelectedSlot: (idx: number | null) => void;
   handleSlotClick: (slotIndex: number) => void;
   handleHandClick: (handId: string) => void;
   handleUnclaim: (handId: string) => void;
@@ -237,8 +235,6 @@ export function useRankingActions(
     localRanking,
     selectedHandId,
     selectedSlot,
-    setSelectedHandId,
-    setSelectedSlot,
     handleSlotClick,
     handleHandClick,
     handleUnclaim,

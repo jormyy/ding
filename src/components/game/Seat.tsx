@@ -8,6 +8,7 @@
 
 import { memo, useMemo } from "react";
 import type { AcquireRequest, Hand, Player } from "@/lib/types";
+import { shades, surfaces } from "@/lib/tokens";
 import { SeatNameRow } from "./seat/SeatNameRow";
 import { SeatFlipPrompt } from "./seat/SeatFlipPrompt";
 import { SeatHandSlot } from "./seat/SeatHandSlot";
@@ -124,10 +125,10 @@ function SeatImpl({
           ? "1.5px solid rgba(255,215,0,0.8)"
           : isMe
           ? "1.5px solid #c9a54a"
-          : "1.5px solid rgba(255,255,255,0.08)",
+          : `1.5px solid ${surfaces.subtleBorder}`,
         boxShadow: isMe
-          ? "0 6px 18px rgba(201,165,74,0.2)"
-          : "0 2px 6px rgba(0,0,0,0.3)",
+          ? `0 6px 18px ${surfaces.goldMid}`
+          : `0 2px 6px ${shades.shadowSoft}`,
         backdropFilter: "blur(4px)",
       }}
     >
