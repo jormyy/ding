@@ -171,7 +171,7 @@ export default function ModeBrowser({
         .map((id) => modeById.get(id))
         .filter((mode): mode is DingGameModeDefinition => Boolean(mode))
         .filter((mode) => modeMatchesQuery(mode, query))
-        .slice(0, 8),
+        .slice(0, 4),
     [modeById, query, storage.recentIds],
   );
 
