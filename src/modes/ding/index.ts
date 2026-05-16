@@ -21,7 +21,7 @@ export {
   classifyChipMoveKind,
   applyChipMoveToRanking,
   clearRequestsForHands,
-} from "./trading";
+} from "../../lib/chipMove";
 
 /** Stable identifier matching `BaseGameState.modeId`. */
 export const DING_MODE_ID = "ding";
