@@ -144,19 +144,21 @@ export default function ModeBrowser({
   //   search: when non-empty, ignores tier/axis filters and matches across all modes.
   const filteredTierModes = useMemo(
     () =>
-      modeOptions.filter((mode) => {
-        if (searchActive) return modeMatchesQuery(mode, query);
-        if (mode.tier !== activeTier) return false;
-        if (axisFilters.size > 0) {
-          const axes = modeAxes(mode);
-          const hasAny = axes.some((axis) => axisFilters.has(axis));
-          if (!hasAny) return false;
-        }
-        if (selectSubFilter && !mode.tags.includes(selectSubFilter)) {
-          return false;
-        }
-        return modeMatchesQuery(mode, query);
-      }),
+      modeOptions
+        .filter((mode) => {
+          if (searchActive) return modeMatchesQuery(mode, query);
+          if (mode.tier !== activeTier) return false;
+          if (axisFilters.size > 0) {
+            const axes = modeAxes(mode);
+            const hasAny = axes.some((axis) => axisFilters.has(axis));
+            if (!hasAny) return false;
+          }
+          if (selectSubFilter && !mode.tags.includes(selectSubFilter)) {
+            return false;
+          }
+          return modeMatchesQuery(mode, query);
+        })
+        .sort((a, b) => a.name.localeCompare(b.name)),
     [activeTier, axisFilters, modeOptions, query, searchActive, selectSubFilter],
   );
 
