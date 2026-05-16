@@ -296,9 +296,8 @@ export type GameState = {
   /**
    * Per-feature extension slot keyed by stable feature id (e.g. "auction",
    * "bridge-bid"). New mode-specific state opts in here instead of growing
-   * `GameState` proper. Visibility is feature-controlled — features that
-   * need to expose anything register a masker via `registerModeExtMasker`.
-   * Anything without a registered masker is omitted from the broadcast.
+   * `GameState` proper. Visibility is feature-controlled via maskers;
+   * anything without a registered masker is omitted from the broadcast.
    */
   modeExt?: Record<string, unknown>;
 };

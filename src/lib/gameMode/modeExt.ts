@@ -9,14 +9,6 @@
  * each feature its own namespaced pocket so the state shape stays flat at
  * the engine layer and features stay isolated.
  *
- * Usage
- * -----
- *   // Lazy init the feature's pocket on first read.
- *   const log = getModeExt(state, "bridge-bid", () => ({ entries: [] }));
- *
- *   // Expose it to clients (default: omitted from broadcast).
- *   registerModeExtMasker("bridge-bid", (value, viewerId) => publicView(value));
- *
  * Invariants
  * ----------
  * - Additive only. Existing Ding fields stay on `ServerGameState` proper;
@@ -25,21 +17,11 @@
  *   broadcast. Features opt-in explicitly when they have something safe
  *   to expose.
  */
-import type { ServerGameState } from "../../../party/state";
-
-export function getModeExt<T>(state: ServerGameState, key: string, init: () => T): T {
-  if (state.modeExt[key] === undefined) state.modeExt[key] = init();
-  return state.modeExt[key] as T;
-}
 
 /** Returns whatever should be exposed to `viewerId`, or `undefined` to omit. */
 export type ModeExtMasker = (value: unknown, viewerId: string) => unknown | undefined;
 
 const modeExtMaskers = new Map<string, ModeExtMasker>();
-
-export function registerModeExtMasker(key: string, masker: ModeExtMasker): void {
-  modeExtMaskers.set(key, masker);
-}
 
 /** Build the client-facing snapshot of `modeExt` from the server state. */
 export function maskModeExt(

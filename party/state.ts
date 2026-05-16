@@ -75,8 +75,8 @@ export interface ServerGameState extends GameState {
 
   /**
    * Per-feature extension namespace. Keyed by stable feature id; values are
-   * opaque to the engine and only visible to clients via maskers registered
-   * through `registerModeExtMasker`. See `src/lib/gameMode/modeExt.ts`.
+   * opaque to the engine and only visible to clients via maskers. See
+   * `src/lib/gameMode/modeExt.ts`.
    */
   modeExt: Record<string, unknown>;
 }

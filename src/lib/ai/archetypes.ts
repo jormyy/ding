@@ -169,7 +169,3 @@ export function archetypePatch(a: Archetype): TraitPatch {
 export function archetypeFlavor(a: Archetype): ArchetypeFlavor {
   return FLAVORS[a];
 }
-
-export function allArchetypes(): readonly Archetype[] {
-  return ALL;
-}

@@ -27,7 +27,6 @@ import type {
   Card,
   CardMeta,
   ChatMessage,
-  ClientMessage,
   Hand,
   Phase,
   Player,
@@ -855,8 +854,3 @@ export interface GameMode<
   evaluator?: HandEvaluator;
   strengthScaler?: StrengthScaler;
 }
-
-// -------- Convenience aliases -------------------------------------------
-
-export type DingPhase = Phase;
-export type DingAction = ClientMessage;

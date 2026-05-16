@@ -23,29 +23,12 @@ export interface LeaderboardEntry {
   rank: number;
 }
 
-export interface DisplacementResult {
+interface DisplacementResult {
   ranked: LeaderboardEntry[];
   best: LeaderboardEntry;
   worst: LeaderboardEntry;
   maxOff: number;
   myEntry: LeaderboardEntry | undefined;
-}
-
-export interface PhasePerformanceEntry {
-  playerId: string;
-  name: string;
-  mine: boolean;
-  preflopAvg: number | null;
-  flopAvg: number | null;
-  turnAvg: number | null;
-  riverAvg: number | null;
-  cumulativeAvg: number;
-}
-
-export interface PhasePerformanceData {
-  phaseLeaders: { preflop: string | null; flop: string | null; turn: string | null; river: string | null };
-  teamInversions: { preflop: number; flop: number; turn: number; river: number };
-  entries: PhasePerformanceEntry[];
 }
 
 export function computeRevealRows(gameState: GameState, myId: string): RevealRow[] {
@@ -159,129 +142,30 @@ export interface InversionsData {
 
 const PHASE_KEYS = ["preflop", "flop", "turn", "river"] as const;
 
-export function computePhasePerformance(
-  gameState: GameState,
-  myId: string
-): PhasePerformanceData {
-  const { hands, rankHistory, trueRanking, trueRanks } = gameState;
-  if (!trueRanking || !trueRanks) {
-    return {
-      phaseLeaders: { preflop: null, flop: null, turn: null, river: null },
-      teamInversions: { preflop: 0, flop: 0, turn: 0, river: 0 },
-      entries: [],
-    };
-  }
-
-  const totalHands = hands.length;
-
-  const phaseRankings: Record<string, (string | null)[]> = {};
-  const teamInversions: Record<string, number> = { preflop: 0, flop: 0, turn: 0, river: 0 };
-
+function computeTeamInversionsByPhase(
+  rankHistory: GameState["rankHistory"],
+  trueRanks: Record<string, number>,
+  totalHands: number,
+): { preflop: number; flop: number; turn: number; river: number } {
+  const out = { preflop: 0, flop: 0, turn: 0, river: 0 };
   for (let pi = 0; pi < 4; pi++) {
     const ranking: (string | null)[] = new Array(totalHands).fill(null);
     for (const [handId, history] of Object.entries(rankHistory)) {
       const rank = history[pi];
-      if (rank !== null && rank !== undefined) {
-        ranking[rank - 1] = handId;
-      }
+      if (rank !== null && rank !== undefined) ranking[rank - 1] = handId;
     }
-    phaseRankings[PHASE_KEYS[pi]] = ranking;
-
     const claimed = ranking.filter((id): id is string => id !== null);
     let inversions = 0;
     for (let i = 0; i < claimed.length; i++) {
       for (let j = i + 1; j < claimed.length; j++) {
         const rankI = trueRanks[claimed[i]];
         const rankJ = trueRanks[claimed[j]];
-        if (rankI !== undefined && rankJ !== undefined && rankI > rankJ) {
-          inversions++;
-        }
+        if (rankI !== undefined && rankJ !== undefined && rankI > rankJ) inversions++;
       }
     }
-    teamInversions[PHASE_KEYS[pi]] = inversions;
+    out[PHASE_KEYS[pi]] = inversions;
   }
-
-  const playerMap = new Map<
-    string,
-    {
-      playerId: string;
-      name: string;
-      mine: boolean;
-      ranks: Record<string, number[]>;
-    }
-  >();
-
-  for (const hand of hands) {
-    const pid = hand.playerId;
-    if (!playerMap.has(pid)) {
-      playerMap.set(pid, {
-        playerId: pid,
-        name: gameState.players.find((p) => p.id === pid)?.name ?? "?",
-        mine: pid === myId,
-        ranks: { preflop: [], flop: [], turn: [], river: [] },
-      });
-    }
-    const pd = playerMap.get(pid)!;
-    const history = rankHistory[hand.id];
-    if (!history) continue;
-    for (let pi = 0; pi < 4; pi++) {
-      const rank = history[pi];
-      if (rank !== null && rank !== undefined) {
-        pd.ranks[PHASE_KEYS[pi]].push(rank);
-      }
-    }
-  }
-
-  const entries: PhasePerformanceEntry[] = [];
-  const phaseLeaders: Record<string, string | null> = { preflop: null, flop: null, turn: null, river: null };
-  let bestPreflop = Infinity;
-  let bestFlop = Infinity;
-  let bestTurn = Infinity;
-  let bestRiver = Infinity;
-
-  for (const [, pd] of playerMap) {
-    const preflopAvg = pd.ranks.preflop.length > 0
-      ? pd.ranks.preflop.reduce((s, r) => s + r, 0) / pd.ranks.preflop.length
-      : null;
-    const flopAvg = pd.ranks.flop.length > 0
-      ? pd.ranks.flop.reduce((s, r) => s + r, 0) / pd.ranks.flop.length
-      : null;
-    const turnAvg = pd.ranks.turn.length > 0
-      ? pd.ranks.turn.reduce((s, r) => s + r, 0) / pd.ranks.turn.length
-      : null;
-    const riverAvg = pd.ranks.river.length > 0
-      ? pd.ranks.river.reduce((s, r) => s + r, 0) / pd.ranks.river.length
-      : null;
-
-    const validAvgs = [preflopAvg, flopAvg, turnAvg, riverAvg].filter((a): a is number => a !== null);
-    const cumulativeAvg = validAvgs.length > 0
-      ? validAvgs.reduce((s, a) => s + a, 0) / validAvgs.length
-      : totalHands;
-
-    entries.push({
-      playerId: pd.playerId,
-      name: pd.name,
-      mine: pd.mine,
-      preflopAvg,
-      flopAvg,
-      turnAvg,
-      riverAvg,
-      cumulativeAvg,
-    });
-
-    if (preflopAvg !== null && preflopAvg < bestPreflop) { bestPreflop = preflopAvg; phaseLeaders.preflop = pd.name; }
-    if (flopAvg !== null && flopAvg < bestFlop) { bestFlop = flopAvg; phaseLeaders.flop = pd.name; }
-    if (turnAvg !== null && turnAvg < bestTurn) { bestTurn = turnAvg; phaseLeaders.turn = pd.name; }
-    if (riverAvg !== null && riverAvg < bestRiver) { bestRiver = riverAvg; phaseLeaders.river = pd.name; }
-  }
-
-  entries.sort((a, b) => a.cumulativeAvg - b.cumulativeAvg);
-
-  return {
-    phaseLeaders: phaseLeaders as PhasePerformanceData["phaseLeaders"],
-    teamInversions: teamInversions as PhasePerformanceData["teamInversions"],
-    entries,
-  };
+  return out;
 }
 
 export function computeInversionsData(gameState: GameState, myId: string): InversionsData {
@@ -338,7 +222,7 @@ export function computeInversionsData(gameState: GameState, myId: string): Inver
     }
   }
 
-  const teamInv = computePhasePerformance(gameState, myId).teamInversions;
+  const teamInv = computeTeamInversionsByPhase(rankHistory, trueRanks, hands.length);
   const finalSorted = [...hands]
     .map((h) => ({ idx: ranking.indexOf(h.id), trueRank: trueRanks[h.id] ?? 0 }))
     .filter((x) => x.idx !== -1)
