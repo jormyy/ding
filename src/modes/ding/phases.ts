@@ -1,7 +1,6 @@
 /**
- * Ding's phase definitions. Engine reads `PhaseSpec[]` from the mode; the
- * legacy arrays in `src/lib/constants.ts` are derived from the same metadata
- * for backwards compatibility while the migration completes.
+ * Ding's phase definitions — the source of truth for engine phase iteration.
+ * `src/lib/constants.ts` holds only display metadata (PhaseMeta) for UI.
  */
 
 import type { PhaseSpec } from "../../lib/gameMode/types";

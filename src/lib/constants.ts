@@ -18,20 +18,6 @@ export const MAX_CHAT_LENGTH = 200;
 export const CHAT_THROTTLE_MS = 1000;
 export const MAX_SIGNAL_LOG = 20;
 
-// Phase order (mode-agnostic shape; Ding currently uses all six entries).
-export const PHASE_ORDER: Phase[] = [
-  "lobby",
-  "dealChoice",
-  "preflop",
-  "flop",
-  "turn",
-  "river",
-  "reveal",
-];
-
-// Game phases where chip moves are allowed
-export const GAME_PHASES: Phase[] = ["preflop", "flop", "turn", "river"];
-
 /**
  * Single source of truth for phase display metadata. Components derive
  * whatever per-phase strings they need from this list. The Ding metadata
