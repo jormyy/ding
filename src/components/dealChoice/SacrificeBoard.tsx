@@ -1,17 +1,11 @@
 "use client";
 
-import type { ClientMessage, GameState } from "@/lib/types";
 import { D } from "@/lib/theme";
 import { CardFace } from "../CardFace";
 import { CommunityPreviewStrip, VariantStatusBar } from "./SharedAffordances";
+import type { DealChoiceBoardProps } from "./types";
 
-interface Props {
-  gameState: GameState;
-  myId: string;
-  onSend: (msg: ClientMessage) => void;
-}
-
-export default function SacrificeBoard({ gameState, myId, onSend }: Props) {
+export default function SacrificeBoard({ gameState, myId, onSend }: DealChoiceBoardProps) {
   const myHands = gameState.hands.filter((h) => h.playerId === myId);
   const choices = gameState.dealChoices ?? {};
   return (

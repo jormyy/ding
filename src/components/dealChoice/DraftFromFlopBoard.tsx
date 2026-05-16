@@ -1,17 +1,11 @@
 "use client";
 
-import type { ClientMessage, GameState } from "@/lib/types";
 import { D } from "@/lib/theme";
 import { PoolStrip, VariantStatusBar } from "./SharedAffordances";
-
-interface Props {
-  gameState: GameState;
-  myId: string;
-  onSend: (msg: ClientMessage) => void;
-}
+import type { DealChoiceBoardProps } from "./types";
 
 // Mounted by GameBoard (NOT DealChoiceBoard) when state.phaseSubstep === "flopDraftPending".
-export default function DraftFromFlopBoard({ gameState, myId, onSend }: Props) {
+export default function DraftFromFlopBoard({ gameState, myId, onSend }: DealChoiceBoardProps) {
   const pool = gameState.flopDraftPool;
   if (!pool) return null;
   const myDrafts = pool.draftedBy[myId] ?? [];

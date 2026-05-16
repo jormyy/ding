@@ -1,19 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import type { ClientMessage, GameState, Hand } from "@/lib/types";
+import type { GameState, Hand } from "@/lib/types";
 import { handIndexFromId } from "@/lib/handId";
 import { D } from "@/lib/theme";
 import { CardFace } from "../CardFace";
 import { NeighborView, VariantStatusBar } from "./SharedAffordances";
+import type { DealChoiceBoardProps } from "./types";
 
-interface Props {
-  gameState: GameState;
-  myId: string;
-  onSend: (msg: ClientMessage) => void;
-}
-
-export default function RecruitBoard({ gameState, myId, onSend }: Props) {
+export default function RecruitBoard({ gameState, myId, onSend }: DealChoiceBoardProps) {
   const myHands = gameState.hands.filter((h) => h.playerId === myId);
   const choices = gameState.dealChoices ?? {};
   // Right neighbor (recruit takes from THEIR discard) — same convention as inheritance:

@@ -1,17 +1,11 @@
 "use client";
 
-import type { ClientMessage, GameState } from "@/lib/types";
 import { D } from "@/lib/theme";
 import { CardFace } from "../CardFace";
 import { PoolStrip, VariantStatusBar } from "./SharedAffordances";
+import type { DealChoiceBoardProps } from "./types";
 
-interface Props {
-  gameState: GameState;
-  myId: string;
-  onSend: (msg: ClientMessage) => void;
-}
-
-export default function AuctionBoard({ gameState, myId, onSend }: Props) {
+export default function AuctionBoard({ gameState, myId, onSend }: DealChoiceBoardProps) {
   const pool = gameState.auctionPool;
   if (!pool) {
     return (

@@ -1,18 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import type { ClientMessage, GameState, Hand } from "@/lib/types";
+import type { Hand } from "@/lib/types";
 import { D } from "@/lib/theme";
 import { CardFace } from "../CardFace";
 import { NeighborView, VariantStatusBar } from "./SharedAffordances";
+import type { DealChoiceBoardProps } from "./types";
 
-interface Props {
-  gameState: GameState;
-  myId: string;
-  onSend: (msg: ClientMessage) => void;
-}
-
-export default function TablePicksBoard({ gameState, myId, onSend }: Props) {
+export default function TablePicksBoard({ gameState, myId, onSend }: DealChoiceBoardProps) {
   const myHands = gameState.hands.filter((h) => h.playerId === myId);
   const otherHands = gameState.hands.filter((h) => h.playerId !== myId);
   const choices = gameState.dealChoices ?? {};
