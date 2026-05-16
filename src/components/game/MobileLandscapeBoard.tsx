@@ -2,7 +2,7 @@
 
 import type { GameState } from "@/lib/types";
 import type { UseBoardReturn } from "@/hooks/useGameBoard";
-import { PHASE_LABELS } from "@/lib/constants";
+import { PHASES_META } from "@/lib/constants";
 import { getGameModeDefinition } from "@/lib/gameMode";
 import PokerTable from "../PokerTable";
 import ChatPanel from "../ChatPanel";
@@ -13,6 +13,8 @@ import VolumeControl from "../VolumeControl";
 import CustomOutputButton from "../CustomOutputButton";
 import RequestItem from "./RequestItem";
 import GameTimer from "./GameTimer";
+
+const PLAYABLE_PHASES = PHASES_META.filter((m) => m.short !== undefined).map((m) => m.phase);
 
 interface MobileLandscapeBoardProps {
   board: UseBoardReturn;
@@ -67,7 +69,7 @@ export default function MobileLandscapeBoard({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {PHASE_LABELS.map((phase) => (
+          {PLAYABLE_PHASES.map((phase) => (
             <div key={phase} className="text-[9px] font-black uppercase tracking-widest" style={{ color: gameState.phase === phase ? "#c9a54a" : "rgba(255,255,255,0.2)" }}>
               {phase === "preflop" ? "pre" : phase}
             </div>

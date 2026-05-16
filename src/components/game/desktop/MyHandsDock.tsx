@@ -9,7 +9,9 @@ import { memo } from "react";
 import type { Hand } from "@/lib/types";
 import { CardFace } from "../../CardFace";
 import RankChip, { HistoryChip } from "../../RankChip";
-import { PHASE_HISTORY_LABELS } from "@/lib/constants";
+import { PHASES_META } from "@/lib/constants";
+
+const HISTORY_LABELS = PHASES_META.filter((m) => m.history !== undefined).map((m) => m.history!);
 
 export interface MyHandsDockProps {
   myHands: Hand[];
@@ -143,7 +145,7 @@ function MyHandsDockImpl({
                       key={phaseIdx}
                       rank={r}
                       total={totalHands}
-                      phaseLabel={PHASE_HISTORY_LABELS[phaseIdx] ?? ""}
+                      phaseLabel={HISTORY_LABELS[phaseIdx] ?? ""}
                     />
                   ))}
                 </div>

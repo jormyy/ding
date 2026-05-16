@@ -7,7 +7,9 @@
 
 import { memo } from "react";
 import { HistoryChip } from "../../RankChip";
-import { PHASE_HISTORY_LABELS } from "@/lib/constants";
+import { PHASES_META } from "@/lib/constants";
+
+const HISTORY_LABELS = PHASES_META.filter((m) => m.history !== undefined).map((m) => m.history!);
 
 export interface SeatHistoryStripProps {
   history: (number | null)[];
@@ -23,7 +25,7 @@ function SeatHistoryStripImpl({ history, totalHands }: SeatHistoryStripProps) {
           key={phaseIdx}
           rank={r}
           total={totalHands}
-          phaseLabel={PHASE_HISTORY_LABELS[phaseIdx] ?? ""}
+          phaseLabel={HISTORY_LABELS[phaseIdx] ?? ""}
         />
       ))}
     </div>

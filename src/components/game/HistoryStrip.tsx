@@ -1,6 +1,8 @@
 "use client";
 
-import { PHASE_SHORT_LABELS } from "@/lib/constants";
+import { PHASES_META } from "@/lib/constants";
+
+const SHORT_LABELS = PHASES_META.filter((m) => m.short !== undefined).map((m) => m.short!);
 
 interface HistoryStripProps {
   ranks: (number | null)[];
@@ -10,7 +12,7 @@ interface HistoryStripProps {
 export default function HistoryStrip({ ranks, total }: HistoryStripProps) {
   return (
     <div style={{ display: "flex", gap: 3 }}>
-      {PHASE_SHORT_LABELS.map((lab, i) => {
+      {SHORT_LABELS.map((lab, i) => {
         const r = ranks[i] ?? null;
         const isFirst = r === 1;
         const isLast = r !== null && r === total;

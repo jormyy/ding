@@ -11,3 +11,4 @@ tmp/
 .vscode
 .claude
 *.png
+scripts/Stage-3-results.md

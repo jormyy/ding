@@ -1,8 +1,8 @@
 import { colors, gradients, overlays, typography } from "./tokens";
 
 /**
- * Legacy design-token alias. New code should import from `./tokens` directly.
- * Kept for backward compatibility while consumers migrate.
+ * Flat alias over tokens for terse component imports. Prefer this over
+ * importing colors/gradients/overlays separately at component sites.
  */
 export const D = {
   gold: colors.gold,

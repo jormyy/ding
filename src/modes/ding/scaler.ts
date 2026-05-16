@@ -12,8 +12,8 @@
 
 import type { Card } from "../../lib/types";
 import {
-  buildAbsoluteStrengthMap as legacyBuildAbsoluteStrengthMap,
-  buildPercentileMap as legacyBuildPercentileMap,
+  buildAbsoluteStrengthMap,
+  buildPercentileMap,
 } from "../../lib/ai/range";
 import {
   currentHandStrength,
@@ -66,7 +66,7 @@ export const dingScaler: StrengthScaler = {
     const key = makeKey(excluded, board);
     const hit = percentileCache.get(key);
     if (hit) return hit;
-    const built = legacyBuildPercentileMap(excluded, board);
+    const built = buildPercentileMap(excluded, board);
     percentileCache.set(key, built);
     trimCache(percentileCache);
     return built;
@@ -75,7 +75,7 @@ export const dingScaler: StrengthScaler = {
     const key = makeKey(excluded, board);
     const hit = absStrengthCache.get(key);
     if (hit) return hit;
-    const built = legacyBuildAbsoluteStrengthMap(excluded, board);
+    const built = buildAbsoluteStrengthMap(excluded, board);
     absStrengthCache.set(key, built);
     trimCache(absStrengthCache);
     return built;
