@@ -3,8 +3,9 @@ name: Eclipse Color
 shortName: Eclipse C
 summary: Community cards show only red or black until reveal.
 detail: The board exposes color pressure while hiding exact ranks and suits until the final reveal.
+family: info
 tags:
-  - visibility
+  - info-public
 tier: twist
 deal:
   extends: standard

@@ -3,12 +3,12 @@ name: Tornado Trade
 shortName: Tornado T
 summary: Pass one card left before the turn-rotation hits the table.
 detail: "A select-stage Tornado: each hand chooses one of two dealt cards to pass left before preflop, then the turn rotates everyone's hand clockwise as usual."
+family: selection
 tags:
   - positional
   - relational
-  - select-stage
   - trade-up
-tier: select
+tier: wild
 deal:
   extends: standard
   dealChoice:

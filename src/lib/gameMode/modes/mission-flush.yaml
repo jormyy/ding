@@ -3,6 +3,7 @@ name: Mission Flush
 shortName: M Flush
 summary: Win only if the rank-1 hand is a flush.
 detail: Standard ranking applies, but the round only counts if the strongest hand is a flush — otherwise the table voids regardless of order.
+family: identity
 tags:
   - late-detonation
   - mission

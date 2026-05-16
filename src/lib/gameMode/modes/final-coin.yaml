@@ -3,6 +3,7 @@ name: Final Coin
 shortName: Final Coin
 summary: Coin flip at reveal decides high vs lowball.
 detail: Players rank with high in mind through the river; reveal flips a public coin to choose between high and lowball as the live scoring rule.
+family: tempo
 tags:
   - late-detonation
   - score-pivot

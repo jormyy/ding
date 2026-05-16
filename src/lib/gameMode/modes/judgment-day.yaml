@@ -3,6 +3,7 @@ name: Judgment Day
 shortName: Judgment
 summary: Blessed cards override at reveal; if none exist, cursed do.
 detail: At reveal the table searches for blessed metas to dictate the winner; absent any, cursed cards take over the hierarchy.
+family: identity
 tags:
   - identity-token
   - late-detonation

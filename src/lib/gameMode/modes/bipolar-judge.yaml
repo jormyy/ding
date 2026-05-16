@@ -3,6 +3,7 @@ name: Bipolar Judge
 shortName: Bipolar
 summary: Two scoring rules run in parallel; the live one rotates each phase.
 detail: An info chip names which scoring rule is in force this street; players must rank with the active rule while preparing for the swap to bite at reveal.
+family: info
 tags:
   - info-overlay
 tier: wild

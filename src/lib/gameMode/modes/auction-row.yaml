@@ -3,9 +3,9 @@ name: Auction Row
 shortName: Auction
 summary: Five face-up cards auctioned by ready-order; pick one then draft another.
 detail: At deal, five public candidates wait in an auction row; players claim one each in ready-up order, then a second pass fills the second hole.
-tags:
-  - select-stage
-tier: select
+family: selection
+tags: []
+tier: twist
 deal:
   extends: standard
   dealChoice:

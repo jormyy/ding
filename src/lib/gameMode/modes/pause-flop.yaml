@@ -3,6 +3,7 @@ name: Pause Flop
 shortName: Pause
 summary: The flop phase happens twice — re-rank, no new cards between.
 detail: The flop street duplicates; the table re-ranks once, then re-ranks again on the same flop before turn arrives.
+family: tempo
 tags:
   - phase-tempo
 tier: wild

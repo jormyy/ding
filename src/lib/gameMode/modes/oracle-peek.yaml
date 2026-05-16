@@ -3,9 +3,9 @@ name: Oracle Peek
 shortName: Oracle
 summary: Peek 1 community card before locking your hand.
 detail: At deal, each player sees one upcoming community slot in private, then locks their two hole cards with that information in mind.
-tags:
-  - select-stage
-tier: select
+family: selection
+tags: []
+tier: twist
 deal:
   extends: standard
   dealChoice:

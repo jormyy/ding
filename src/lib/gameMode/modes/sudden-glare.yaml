@@ -3,6 +3,7 @@ name: Sudden Glare
 shortName: Glare
 summary: One revealed board card retro-marks as wild at reveal.
 detail: At reveal a single previously-shown board card flips to wild, retroactively scrambling the reads players already locked in.
+family: environment
 tags:
   - late-detonation
   - weather

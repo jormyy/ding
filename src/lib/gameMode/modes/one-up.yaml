@@ -3,8 +3,9 @@ name: One Up
 shortName: One Up
 summary: One card from every hand is public from the start.
 detail: The exposed card gives the table shared anchors without revealing the full hand.
+family: info
 tags:
-  - visibility
+  - info-public
 tier: standard
 deal:
   extends: standard

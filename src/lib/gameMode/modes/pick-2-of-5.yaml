@@ -3,10 +3,10 @@ name: Pick 2 of 5
 shortName: Pick 2
 summary: Every hand is dealt five cards; the owner keeps any two before ranking starts.
 detail: A deeper deal-choice phase gives each player five private candidates and asks them to sculpt a two-card start.
+family: selection
 tags:
   - peek-keep
-  - select-stage
-tier: select
+tier: twist
 deal:
   extends: standard
   dealChoice:

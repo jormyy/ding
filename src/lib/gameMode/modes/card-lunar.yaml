@@ -3,8 +3,8 @@ name: Card Lunar
 shortName: Lunar
 summary: Hearts wax full and play as wild cards at showdown.
 detail: Every heart in a hand or on the board can stand in for whichever rank or suit completes the strongest reveal hand.
+family: hand
 tags:
-  - insanity
   - wild
 tier: insanity
 deal:

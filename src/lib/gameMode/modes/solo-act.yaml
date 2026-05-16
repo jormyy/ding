@@ -3,6 +3,7 @@ name: Solo Act
 shortName: Solo Act
 summary: A hand only scores if no other hand shares its rank class.
 detail: Two hands holding pairs cancel each other; trips alongside other trips cancel; only unique hand classes survive to score.
+family: identity
 tags:
   - late-detonation
   - relational

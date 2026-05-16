@@ -3,6 +3,7 @@ name: Cold Snap
 shortName: Cold
 summary: At turn, all face cards become twos.
 detail: Jacks, queens, and kings in hands and board convert to twos when turn begins.
+family: environment
 tags:
   - weather
 tier: wild

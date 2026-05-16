@@ -3,8 +3,8 @@ name: Pulled Rug
 shortName: Pulled Rug
 summary: A named rank inverts at reveal — announced at river.
 detail: River names the rank; reveal flips that rank's strength so anyone leaning on it for ranking suddenly sees their hand collapse.
+family: tempo
 tags:
-  - insanity
   - late-detonation
   - score-pivot
 tier: insanity

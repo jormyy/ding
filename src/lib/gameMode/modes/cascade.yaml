@@ -3,8 +3,9 @@ name: Cascade
 shortName: Cascade
 summary: The oldest visible board cards fade face-down as streets advance.
 detail: One more early community card becomes unknown at each board street, while reveal restores the true board.
+family: info
 tags:
-  - visibility
+  - info-public
 tier: twist
 deal:
   extends: standard

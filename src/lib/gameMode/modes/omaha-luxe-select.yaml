@@ -3,10 +3,10 @@ name: Omaha Select
 shortName: Omaha+
 summary: Peek five deal cards and keep any four before ranking starts.
 detail: "A select-stage Omaha Luxe: each hand sees five private candidates and sculpts a four-card start."
+family: selection
 tags:
   - peek-keep
-  - select-stage
-tier: select
+tier: twist
 deal:
   extends: standard
   dealChoice:

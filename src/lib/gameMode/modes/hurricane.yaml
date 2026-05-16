@@ -3,6 +3,7 @@ name: Hurricane
 shortName: Hurricane
 summary: At river, every player loses one hole card.
 detail: Each hand loses its final hole card when river begins.
+family: environment
 tags:
   - late-detonation
   - weather

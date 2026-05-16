@@ -3,9 +3,10 @@ name: Behemoth
 shortName: Behemoth
 summary: Nine community cards are dealt; best five-card poker hand wins.
 detail: The river dumps the rest of a huge board, creating a crowded final comparison across eleven available cards.
+family: hand
 tags:
   - big-hands
-  - visibility
+  - info-public
 tier: twist
 deal:
   extends: standard

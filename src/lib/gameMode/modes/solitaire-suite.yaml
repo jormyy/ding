@@ -3,6 +3,7 @@ name: Solitaire Suite
 shortName: Solitaire
 summary: Seven private cards per hand; the board is mostly a side dish.
 detail: Every hand gets seven hole cards and scores the best five-card poker hand available with the board.
+family: hand
 tags:
   - big-hands
 tier: standard

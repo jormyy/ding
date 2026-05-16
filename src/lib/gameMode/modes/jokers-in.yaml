@@ -3,6 +3,7 @@ name: Jokers In
 shortName: Jokers
 summary: Two jokers are added to the deck as wild cards.
 detail: Each joker can become the best possible card identity for the hand holding it at showdown.
+family: identity
 tags:
   - identity-token
 tier: standard

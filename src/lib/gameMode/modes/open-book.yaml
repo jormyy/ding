@@ -3,8 +3,9 @@ name: Open Book
 shortName: Open
 summary: Everyone's hole cards are public.
 detail: A low-bluff, high-coordination mode where disagreements are about interpretation.
+family: info
 tags:
-  - visibility
+  - info-public
 tier: standard
 deal:
   extends: standard

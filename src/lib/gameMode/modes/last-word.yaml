@@ -3,6 +3,7 @@ name: Last Word
 shortName: Last Word
 summary: River overwrites every same-suit board card.
 detail: At reveal, the river card's identity rewrites every board card sharing its suit, collapsing flush draws into a single rank.
+family: environment
 tags:
   - late-detonation
   - weather

@@ -3,8 +3,8 @@ name: Card Singularity
 shortName: Singularity
 summary: At turn, each hand's cards collapse together.
 detail: The first two hole cards in each hand merge into one averaged-rank card when turn begins.
+family: environment
 tags:
-  - insanity
   - weather
 tier: insanity
 deal:

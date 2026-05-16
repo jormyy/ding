@@ -3,11 +3,11 @@ name: Flood Select
 shortName: Flood+
 summary: Peek 3 cards and sculpt your start, knowing low cards will play wild.
 detail: "A select-stage Flood: each hand sees three private candidates and sculpts a two-card start, knowing every two, three, four, and five substitutes into stronger identities at reveal."
+family: selection
 tags:
   - peek-keep
-  - select-stage
   - wild
-tier: select
+tier: twist
 deal:
   extends: standard
   dealChoice:

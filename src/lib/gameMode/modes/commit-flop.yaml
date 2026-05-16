@@ -3,6 +3,7 @@ name: Commit Flop
 shortName: Commit
 summary: Top half of the ranking locks at flop; bottom half re-ranks freely.
 detail: Whatever you commit at flop for the top of the ranking is final; only the lower half can be reshuffled across the remaining streets.
+family: tempo
 tags:
   - phase-tempo
 tier: chaos

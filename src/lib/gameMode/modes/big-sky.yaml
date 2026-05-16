@@ -3,10 +3,11 @@ name: Big Sky
 shortName: Big Sky
 summary: A seven-card board gives every hand more ways to connect.
 detail: The board grows to four on the flop, five on the turn, and seven on the river.
+family: tempo
 tags:
   - big-hands
   - phase-tempo
-  - visibility
+  - info-public
 tier: standard
 deal:
   extends: standard

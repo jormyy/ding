@@ -3,8 +3,8 @@ name: Tomorrow
 shortName: Tomorrow
 summary: Reveal swaps each hand's first card with the next hand's last card.
 detail: At reveal a clockwise cross-swap fires — the cards you ranked with don't end up scoring against you the way you expected.
+family: identity
 tags:
-  - insanity
   - late-detonation
   - positional
 tier: insanity

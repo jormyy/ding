@@ -3,6 +3,7 @@ name: Doppelganger Deck
 shortName: Doppel
 summary: Every card has a hidden twin somewhere else.
 detail: The deck is doubled so duplicate identities can appear across hands and board.
+family: environment
 tags:
   - deck-swap
 tier: twist

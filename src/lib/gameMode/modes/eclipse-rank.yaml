@@ -3,8 +3,9 @@ name: Eclipse Rank
 shortName: Eclipse R
 summary: Community cards show ranks only until reveal.
 detail: The board's rank structure is visible, but suits stay hidden until the final reveal.
+family: info
 tags:
-  - visibility
+  - info-public
 tier: twist
 deal:
   extends: standard

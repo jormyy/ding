@@ -3,6 +3,7 @@ name: Double Deck
 shortName: Double
 summary: Two full decks are merged before the deal.
 detail: Duplicate identities can appear, increasing rank collisions and strange shared-outs.
+family: environment
 tags:
   - deck-swap
 tier: standard

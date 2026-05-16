@@ -3,11 +3,11 @@ name: Vault Card
 shortName: Vault
 summary: A sixth community card waits in a vault lane until reveal opens it.
 detail: The main board fills normally through river while a separate vault slot stays empty; reveal exposes its hidden card alongside the five primary board cards.
+family: environment
 tags:
-  - big-hands
   - multi-board
   - phase-tempo
-  - visibility
+  - big-hands
 tier: twist
 deal:
   extends: standard

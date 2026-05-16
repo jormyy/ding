@@ -3,6 +3,7 @@ name: Relic
 shortName: Relic
 summary: A blessed hole card auto-elevates the hand by one tier.
 detail: Holding a blessed card upgrades the hand's class one step at reveal — the relic carries weight beyond its raw rank.
+family: identity
 tags:
   - identity-token
   - late-detonation

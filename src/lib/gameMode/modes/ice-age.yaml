@@ -3,6 +3,7 @@ name: Ice Age
 shortName: Ice
 summary: Even ranks are frozen out of scoring.
 detail: Even-ranked cards are skipped by the reveal evaluator.
+family: environment
 tags:
   - deck-swap
 tier: wild

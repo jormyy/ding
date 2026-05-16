@@ -3,6 +3,7 @@ name: Flood
 shortName: Flood
 summary: Every two, three, four, and five plays as a wild card at showdown.
 detail: The four lowest ranks all substitute into stronger identities at reveal, turning otherwise dead low cards into the building blocks of big made hands.
+family: hand
 tags:
   - wild
 tier: wild

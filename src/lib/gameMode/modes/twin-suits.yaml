@@ -3,6 +3,7 @@ name: Twin Suits
 shortName: Twins
 summary: Hearts/diamonds and clubs/spades merge for flushes.
 detail: Red suits evaluate as one suit and black suits evaluate as one suit for showdown.
+family: hand
 tags:
   - wild
 tier: twist

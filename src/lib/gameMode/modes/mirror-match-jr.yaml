@@ -3,6 +3,7 @@ name: Mirror Match Jr.
 shortName: Mirror Jr
 summary: Two adjacent hands always tie; rank everyone else around them.
 detail: A pair of adjacent seats are forced into a tie, so the table's job is to slot the remaining hands above or below the locked pair.
+family: identity
 tags:
   - relational
 tier: twist

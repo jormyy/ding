@@ -3,6 +3,7 @@ name: Chromatic
 shortName: Chromatic
 summary: Every hand's holes are one red plus one black.
 detail: Every seat starts with exactly one red and one black hole, killing color-heavy reads on hole cards alone.
+family: environment
 tags:
   - constrained-deal
 tier: twist

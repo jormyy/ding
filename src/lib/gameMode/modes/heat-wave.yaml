@@ -3,6 +3,7 @@ name: Heat Wave
 shortName: Heat W
 summary: At turn, all face cards become aces.
 detail: Jacks, queens, and kings in hands and board convert to aces when turn begins.
+family: environment
 tags:
   - weather
 tier: wild

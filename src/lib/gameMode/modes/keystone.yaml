@@ -3,6 +3,7 @@ name: Keystone
 shortName: Keystone
 summary: One marked board card is the only scoring rank-class.
 detail: At flop, one community card is marked as the keystone; only its rank-class scores at reveal — every other rank is decoration.
+family: tempo
 tags:
   - identity-token
   - phase-tempo

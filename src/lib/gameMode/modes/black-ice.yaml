@@ -3,6 +3,7 @@ name: Black Ice
 shortName: Black
 summary: Black cards are the primary scoring resource.
 detail: More clubs and spades rank higher; poker strength breaks close black counts.
+family: identity
 tags:
   - mission
 tier: twist

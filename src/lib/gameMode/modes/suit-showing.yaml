@@ -3,8 +3,9 @@ name: Suit Showing
 shortName: Suits
 summary: Every hole-card suit is public, but ranks stay hidden.
 detail: The table sees suit texture from the deal while actual ranks remain private until reveal.
+family: info
 tags:
-  - visibility
+  - info-public
 tier: standard
 deal:
   extends: standard

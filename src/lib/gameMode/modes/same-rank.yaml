@@ -3,6 +3,7 @@ name: Same Rank
 shortName: Same Rank
 summary: Every hand is a forced pocket pair, but pairs don't score.
 detail: Each hand is dealt a pocket pair, then the pair tier is excluded from scoring — the table fights for trips, two pair, or flushes built around the pair.
+family: identity
 tags:
   - constrained-deal
   - late-detonation

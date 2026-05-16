@@ -3,6 +3,7 @@ name: Clergy
 shortName: Clergy
 summary: Forced first hole per hand is blessed; second hole is normal.
 detail: Every seat's first hole card is guaranteed blessed; the second arrives standard. Each hand carries an absolute scoring anchor.
+family: identity
 tags:
   - identity-token
 tier: wild

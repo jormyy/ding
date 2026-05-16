@@ -3,6 +3,7 @@ name: Suit-Heavy
 shortName: Heavy
 summary: Hearts are doubled in the deck, making heart flushes far more common.
 detail: The heart suit appears twice as often, biasing every street toward red flush draws while ranks stay normal.
+family: environment
 tags:
   - deck-swap
 tier: twist

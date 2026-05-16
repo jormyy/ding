@@ -3,6 +3,7 @@ name: Mission Red River
 shortName: M Red Riv
 summary: Win only if all river-revealed community cards are red.
 detail: Every community card revealed at river must be red — a single black card down the river kills the round.
+family: identity
 tags:
   - late-detonation
   - mission

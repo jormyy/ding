@@ -3,8 +3,8 @@ name: Worst Of All
 shortName: Worst Of All
 summary: Pure lowball, but only after a pair-qualification check.
 detail: The lowest hand wins, but the round only resolves if at least one paired hand exists at reveal — otherwise the round voids.
+family: identity
 tags:
-  - insanity
   - late-detonation
   - mission
 tier: insanity

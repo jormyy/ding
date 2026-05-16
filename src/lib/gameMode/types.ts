@@ -551,7 +551,8 @@ export type InfoFeatureId =
   | "worst-of-all"
   | "meta-legend";
 
-export type ModeTier = "standard" | "twist" | "select" | "wild" | "chaos" | "insanity";
+export type { ModeFamily, ModeTier, SubTag } from "./tagVocabulary";
+import type { ModeFamily, ModeTier, SubTag } from "./tagVocabulary";
 
 export interface DingGameModeDefinition {
   id: string;
@@ -559,7 +560,9 @@ export interface DingGameModeDefinition {
   shortName: string;
   summary: string;
   detail: string;
-  tags: readonly string[];
+  /** Primary mechanic group — the most load-bearing "what kind of thing is this". */
+  family: ModeFamily;
+  tags: readonly SubTag[];
   /** Curation tier shown in the lobby browser. Set explicitly per mode. */
   tier: ModeTier;
   deal: GameModeDealRule;

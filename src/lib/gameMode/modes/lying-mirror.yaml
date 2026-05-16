@@ -3,6 +3,7 @@ name: Lying Mirror
 shortName: Mirror
 summary: At the flop, a public chip shows a fake three-card flop next to the real one.
 detail: Only the flop street displays the decoy three cards; turn, river, and reveal score against the genuine board with no chip in sight.
+family: info
 tags:
   - info-overlay
 tier: chaos

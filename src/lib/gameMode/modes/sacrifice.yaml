@@ -3,9 +3,9 @@ name: Sacrifice
 shortName: Sacrifice
 summary: Discard 1 hole at deal to peek the flop one phase early.
 detail: Players may give up one of their two starting cards to peek a flop card during preflop, trading raw strength for early information.
-tags:
-  - select-stage
-tier: select
+family: selection
+tags: []
+tier: twist
 deal:
   extends: standard
   dealChoice:

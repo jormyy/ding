@@ -3,9 +3,10 @@ name: Staircase
 shortName: Staircase
 summary: Diagonal 5-slot grid; reveals step-by-step.
 detail: Cards land along a diagonal staircase; the visible community grows one step at a time, narrating ascent through the streets.
+family: tempo
 tags:
   - phase-tempo
-  - visibility
+  - info-public
 tier: twist
 deal:
   extends: standard
@@ -13,11 +14,16 @@ deal:
   boardLayout:
     kind: grid
     slots:
-      - { row: 0, col: 0 }
-      - { row: 1, col: 1 }
-      - { row: 2, col: 2 }
-      - { row: 3, col: 3 }
-      - { row: 4, col: 4 }
+      - row: 0
+        col: 0
+      - row: 1
+        col: 1
+      - row: 2
+        col: 2
+      - row: 3
+        col: 3
+      - row: 4
+        col: 4
   visibleCommunityCards:
     preflop: 0
     flop: 2

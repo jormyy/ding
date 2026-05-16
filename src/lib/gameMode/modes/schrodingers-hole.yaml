@@ -3,9 +3,9 @@ name: Schrodinger's Hole
 shortName: Schrodinger
 summary: Hole cards stay in superposition until reveal collapses them.
 detail: Every hand's private cards carry multiple possible identities through preflop, flop, turn, and river; reveal resolves each card to the strongest version for scoring.
+family: identity
 tags:
   - identity-token
-  - insanity
 tier: insanity
 deal:
   extends: standard

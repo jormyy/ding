@@ -3,8 +3,8 @@ name: Card Eclipse Total
 shortName: Eclipse T
 summary: At river, the highest rank in play vanishes.
 detail: Every card of the current highest rank is removed from hands and board at river.
+family: environment
 tags:
-  - insanity
   - late-detonation
   - weather
 tier: insanity

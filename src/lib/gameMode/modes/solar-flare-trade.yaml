@@ -3,12 +3,12 @@ name: Solar Flare Trade
 shortName: Flare T
 summary: Pass one card left before the turn reassigns every suit on the table.
 detail: "A select-stage Solar Flare: each hand passes one of two dealt cards to the left neighbor, then the turn reshuffles suits across hands and board on a fixed cycle."
+family: selection
 tags:
   - relational
-  - select-stage
   - trade-up
   - weather
-tier: select
+tier: wild
 deal:
   extends: standard
   dealChoice:

@@ -3,8 +3,8 @@ name: Reverse Universe
 shortName: Reverse U
 summary: At river, table order and board order reverse.
 detail: The board and player order reverse when river begins while hand identities remain rankable.
+family: tempo
 tags:
-  - insanity
   - late-detonation
   - phase-tempo
 tier: insanity

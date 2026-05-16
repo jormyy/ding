@@ -3,11 +3,11 @@ name: Trade-Up
 shortName: Trade-Up
 summary: At the deal, each hand passes one selected card to the left neighbor.
 detail: Every owner chooses one hole card to trade away. Cards move simultaneously around the table before preflop ranking starts.
+family: selection
 tags:
   - relational
-  - select-stage
   - trade-up
-tier: select
+tier: twist
 deal:
   extends: standard
   dealChoice:

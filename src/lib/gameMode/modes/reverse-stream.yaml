@@ -3,18 +3,32 @@ name: Reverse Stream
 shortName: Reverse
 summary: River dealt first (preflop), turn second, flop last.
 detail: Reveal order inverts — the river card is the very first community card on the felt, and the flop trio is the last to arrive.
+family: tempo
 tags:
   - phase-tempo
-  - visibility
+  - info-public
 tier: chaos
 deal:
   extends: standard
   visibleCommunityIndexes:
     preflop: []
-    flop: [4]
-    turn: [3, 4]
-    river: [0, 1, 2, 3, 4]
-    reveal: [0, 1, 2, 3, 4]
+    flop:
+      - 4
+    turn:
+      - 3
+      - 4
+    river:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+    reveal:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
 infoFeatures:
   - reverse-stream
 score: high

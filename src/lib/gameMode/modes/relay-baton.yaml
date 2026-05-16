@@ -3,8 +3,8 @@ name: Relay Baton
 shortName: Relay
 summary: At reveal each hand passes its best card clockwise.
 detail: Reveal triggers a clockwise relay — every hand sends its best card to the next seat and scores using whatever arrives in its place.
+family: identity
 tags:
-  - insanity
   - late-detonation
   - positional
 tier: insanity

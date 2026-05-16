@@ -3,10 +3,10 @@ name: Recruit
 shortName: Recruit
 summary: Steal one card from the next player's discard pile at deal.
 detail: After deal-choice, each player can grab a card their right-neighbor just discarded, inverting the inheritance flow.
+family: selection
 tags:
   - relational
-  - select-stage
-tier: select
+tier: twist
 deal:
   extends: standard
   dealChoice:

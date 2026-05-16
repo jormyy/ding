@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { FAMILIES, SUB_TAGS, TIERS } from "./tagVocabulary";
 import { standardDeal, type DingGameModeDefinition, type GameModeDealRule } from "./types";
 
 const Rank = z.enum([
@@ -95,14 +96,9 @@ const DealConstraint = z.enum([
   "fixedGap5",
 ]);
 
-const ModeTier = z.enum([
-  "standard",
-  "twist",
-  "select",
-  "wild",
-  "chaos",
-  "insanity",
-]);
+const ModeTier = z.enum(TIERS);
+const ModeFamily = z.enum(FAMILIES);
+const SubTag = z.enum(SUB_TAGS);
 
 const PhaseEffectId = z.enum([
   "randomReplaceVisibleCommunity",
@@ -577,7 +573,8 @@ export const ModeYamlSchema = z
     shortName: z.string().min(1),
     summary: z.string().min(1),
     detail: z.string().min(1),
-    tags: z.array(z.string()),
+    family: ModeFamily,
+    tags: z.array(SubTag).max(3),
     tier: ModeTier,
     deal: DealYaml,
     phaseEffects: PhaseRecord(z.array(PhaseEffectId)).optional(),

@@ -3,6 +3,7 @@ name: Solar Flare
 shortName: Flare
 summary: At the turn, every card on the table swaps to a new suit.
 detail: When the turn begins, suits reassign across hands and board on a fixed cycle, scrambling flush draws while ranks stay intact.
+family: environment
 tags:
   - weather
 tier: wild

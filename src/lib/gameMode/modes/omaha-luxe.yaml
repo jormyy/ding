@@ -3,6 +3,7 @@ name: Omaha Luxe
 shortName: Omaha
 summary: Four private cards per hand, best five-card poker hand wins.
 detail: More private information creates bigger late-street reversals and tougher negotiation.
+family: hand
 tags:
   - big-hands
 tier: standard

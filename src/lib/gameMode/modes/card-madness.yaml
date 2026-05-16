@@ -3,8 +3,8 @@ name: Card Madness
 shortName: Madness
 summary: At turn, every card swaps places.
 detail: All hole and community cards rotate one position through a single shared stream.
+family: identity
 tags:
-  - insanity
   - positional
 tier: insanity
 deal:

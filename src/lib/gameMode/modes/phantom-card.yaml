@@ -3,6 +3,7 @@ name: Phantom Card
 shortName: Phantom
 summary: A public chip names a rank that at least one hand is missing.
 detail: The phantom announces a single rank that is absent from at least one hand at the table, leaving the table to infer which hand it points at.
+family: info
 tags:
   - info-overlay
 tier: chaos

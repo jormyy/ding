@@ -3,6 +3,7 @@ name: Straight Hunt
 shortName: Straight
 summary: Hands rank by their longest rank run first.
 detail: Poker strength breaks ties, but connected cards define the table order.
+family: identity
 tags:
   - mission
 tier: twist

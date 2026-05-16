@@ -3,6 +3,7 @@ name: Inverted Deck
 shortName: Invert
 summary: Aces are low and twos rank above kings.
 detail: Showdown maps rank strength through an inverted order before comparing poker hands.
+family: hand
 tags:
   - score-pivot
 tier: twist

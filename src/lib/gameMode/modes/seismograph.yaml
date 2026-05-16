@@ -3,6 +3,7 @@ name: Seismograph
 shortName: Seismo
 summary: Info chip rates how much rank-1 might shift on the next phase.
 detail: Each street the chip estimates the volatility of the leader hand; high readings mean ranking the top is dangerous to commit to.
+family: info
 tags:
   - info-overlay
 tier: wild

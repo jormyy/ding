@@ -3,9 +3,9 @@ name: Memory Hole
 shortName: Mem Hole
 summary: At turn, one community card is forgotten.
 detail: One visible community card is replaced at turn and then masked through river.
+family: environment
 tags:
-  - insanity
-  - visibility
+  - info-public
   - weather
 tier: insanity
 deal:

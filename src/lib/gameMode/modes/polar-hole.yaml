@@ -3,6 +3,7 @@ name: Polar Hole
 shortName: Polar
 summary: Every hand starts with one high card and one low card.
 detail: Each two-card hand is split between the 8-A high band and the 2-7 low band, creating visible kicker asymmetry.
+family: environment
 tags:
   - constrained-deal
 tier: twist

@@ -3,6 +3,7 @@ name: Audit Trail
 shortName: Audit
 summary: Every ranking change is logged with a public attribution chip.
 detail: Each rank movement on the table is publicly logged with the player who made it, encouraging explicit reasoning and post-hoc reads.
+family: info
 tags:
   - info-overlay
 tier: twist

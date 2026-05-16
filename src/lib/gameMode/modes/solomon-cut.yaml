@@ -3,10 +3,10 @@ name: Solomon Cut
 shortName: Solomon
 summary: Split 4 cards into two pairs; another player picks which pair you keep.
 detail: Each player splits four dealt cards into two pairs of two; the seat to their left chooses which pair becomes the kept hand.
+family: selection
 tags:
   - relational
-  - select-stage
-tier: select
+tier: twist
 deal:
   extends: standard
   dealChoice:

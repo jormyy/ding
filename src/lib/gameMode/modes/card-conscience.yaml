@@ -3,6 +3,7 @@ name: Card Conscience
 shortName: Conscience
 summary: The deck announces a rank that has gone unused.
 detail: A public chip names the first rank that no one is holding and no community card shows, refreshing as the streets unfold.
+family: info
 tags:
   - info-overlay
 tier: chaos

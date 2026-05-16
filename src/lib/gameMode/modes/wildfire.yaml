@@ -3,6 +3,7 @@ name: Wildfire
 shortName: Wildfire
 summary: When the river hits, the two ranks adjacent to it are wiped from the table.
 detail: On river street, both neighbor ranks of the river card burn out of every hand and the board, so each made hand has to rebuild around the gap.
+family: environment
 tags:
   - late-detonation
   - weather

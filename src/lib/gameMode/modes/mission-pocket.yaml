@@ -3,6 +3,7 @@ name: Mission Pocket
 shortName: M Pocket
 summary: Win only if rank-1 hand's strength is entirely pocket-sourced.
 detail: The leading hand's scoring read must come purely from its hole cards — no top-five contribution from the board.
+family: identity
 tags:
   - late-detonation
   - mission

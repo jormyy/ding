@@ -3,6 +3,7 @@ name: Pent
 shortName: Pent
 summary: Five private cards per hand make every hand information-dense.
 detail: Each hand starts with five hole cards, then still uses the shared board to find its best five-card poker hand.
+family: hand
 tags:
   - big-hands
 tier: standard

@@ -3,6 +3,7 @@ name: Red Shift
 shortName: Red
 summary: Red cards are the primary scoring resource.
 detail: More hearts and diamonds rank higher; poker strength breaks close red counts.
+family: identity
 tags:
   - mission
 tier: twist

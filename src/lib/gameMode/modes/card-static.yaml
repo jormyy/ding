@@ -3,8 +3,8 @@ name: Card Static
 shortName: C Static
 summary: Cards flicker into new ranks as the hand progresses.
 detail: The first hole card and first board card shift upward each street.
+family: environment
 tags:
-  - insanity
   - late-detonation
   - weather
 tier: insanity

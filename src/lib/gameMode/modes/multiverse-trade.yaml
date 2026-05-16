@@ -3,15 +3,12 @@ name: Multiverse Trade
 shortName: MV T
 summary: Trade one card left before four parallel universes play out.
 detail: "A select-stage Card Multiverse: each hand passes one of two dealt cards to the left neighbor, then twenty community cards form four parallel five-card boards for showdown."
+family: selection
 tags:
-  - big-hands
+  - trade-up
   - multi-board
   - phase-tempo
-  - relational
-  - select-stage
-  - trade-up
-  - visibility
-tier: select
+tier: chaos
 deal:
   extends: standard
   dealChoice:

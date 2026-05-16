@@ -3,11 +3,11 @@ name: Two Boards
 shortName: 2 Boards
 summary: Two parallel boards are dealt; every hand scores against its better board.
 detail: Each street reveals cards on both boards, and showdown evaluates every hand on both boards before keeping its strongest result.
+family: environment
 tags:
-  - big-hands
   - multi-board
   - phase-tempo
-  - visibility
+  - big-hands
 tier: chaos
 deal:
   extends: standard

@@ -3,6 +3,7 @@ name: Clock
 shortName: Clock
 summary: Each phase shows a countdown of one named rank's remaining cards.
 detail: The chip names a rank and tracks how many of it remain in the deal deck across each street, biasing reads toward when the rank lands.
+family: info
 tags:
   - info-overlay
 tier: wild

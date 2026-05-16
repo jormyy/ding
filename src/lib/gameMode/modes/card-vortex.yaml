@@ -3,8 +3,8 @@ name: Card Vortex
 shortName: Vortex
 summary: At turn, ranks rotate around the table.
 detail: Hole-card ranks rotate across table order while suits stay in their slots.
+family: identity
 tags:
-  - insanity
   - positional
 tier: insanity
 deal:

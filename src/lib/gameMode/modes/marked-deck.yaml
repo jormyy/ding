@@ -3,6 +3,7 @@ name: Marked Deck
 shortName: Marked
 summary: One card carries a public marker the whole table can see.
 detail: The marked card is visible as it moves through hands and board; the marker is cosmetic and does not affect reveal scoring.
+family: identity
 tags:
   - identity-token
 tier: wild

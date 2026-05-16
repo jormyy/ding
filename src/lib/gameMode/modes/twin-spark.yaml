@@ -3,6 +3,7 @@ name: Twin Spark
 shortName: Twin
 summary: Both hole cards in every hand come from the low ranks.
 detail: Every hand starts with two cards from 2 through 7, compressing early strength and making board improvement matter more.
+family: environment
 tags:
   - constrained-deal
 tier: twist

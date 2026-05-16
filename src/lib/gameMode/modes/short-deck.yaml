@@ -3,6 +3,7 @@ name: Short Deck
 shortName: Short
 summary: Cards two through five are removed before the deal.
 detail: Compressed ranks make strong hands common and hand reading more volatile.
+family: environment
 tags:
   - deck-swap
 tier: standard

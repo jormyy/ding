@@ -3,8 +3,9 @@ name: Spotlight Rotation
 shortName: Spotlight
 summary: A rotating hand is fully face-up to the table each street.
 detail: Every street, a different hand takes the spotlight and exposes both its hole cards while the other hands stay private until reveal.
+family: info
 tags:
-  - visibility
+  - info-public
 tier: chaos
 deal:
   extends: standard

@@ -3,11 +3,11 @@ name: Card Resurrection
 shortName: Resurrect
 summary: Discarded cards reappear as community cards.
 detail: Each hand is dealt three, keeps two automatically, and the discarded cards join the board at reveal.
+family: tempo
 tags:
   - big-hands
-  - insanity
   - late-detonation
-  - visibility
+  - info-public
 tier: insanity
 deal:
   extends: standard

@@ -3,9 +3,10 @@ name: Double River
 shortName: 2 River
 summary: The river reveals two final community cards.
 detail: Six-card boards create dramatic final re-sorts without changing the core loop.
+family: hand
 tags:
   - big-hands
-  - visibility
+  - info-public
 tier: standard
 deal:
   extends: standard

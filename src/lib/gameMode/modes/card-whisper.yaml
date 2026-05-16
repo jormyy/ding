@@ -3,6 +3,7 @@ name: Card Whisper
 shortName: Whisper
 summary: At the river, a public whisper names one community card's true identity.
 detail: The chip stays silent through preflop, flop, and turn, then reveals one board slot's rank and suit on river street as a late-stage anchor.
+family: info
 tags:
   - info-overlay
 tier: chaos

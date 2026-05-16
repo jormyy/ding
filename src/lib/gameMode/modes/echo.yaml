@@ -3,6 +3,7 @@ name: Echo
 shortName: Echo
 summary: Both hole cards in every hand share a rank.
 detail: Every hand starts as a pocket pair, creating dense rank collisions and sharper kicker races through the board.
+family: environment
 tags:
   - constrained-deal
 tier: twist

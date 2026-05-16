@@ -3,8 +3,9 @@ name: Smoke Hole
 shortName: Smoke
 summary: Hole cards are suit-only until turn.
 detail: Every hand exposes only suit hints through flop, then full visible hole cards from turn onward.
+family: info
 tags:
-  - visibility
+  - info-public
 tier: chaos
 deal:
   extends: standard

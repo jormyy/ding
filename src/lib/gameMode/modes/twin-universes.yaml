@@ -3,12 +3,11 @@ name: Twin Universes
 shortName: Twin U
 summary: Two board universes play out side-by-side.
 detail: Ten community cards form two five-card boards; each hand scores against its better universe.
+family: environment
 tags:
-  - big-hands
-  - insanity
   - multi-board
   - phase-tempo
-  - visibility
+  - big-hands
 tier: insanity
 deal:
   extends: standard

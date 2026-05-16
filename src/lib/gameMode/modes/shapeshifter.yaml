@@ -3,8 +3,8 @@ name: Shapeshifter
 shortName: Shifter
 summary: One community card changes identity each street.
 detail: The first community card upgrades one rank at flop, turn, and river.
+family: environment
 tags:
-  - insanity
   - late-detonation
   - weather
 tier: insanity

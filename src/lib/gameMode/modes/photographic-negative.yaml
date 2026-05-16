@@ -3,8 +3,9 @@ name: Photographic Negative
 shortName: Negative
 summary: Card colors invert visually after turn.
 detail: The board is color-only from turn through river, forcing players to reason through the negative display.
+family: info
 tags:
-  - visibility
+  - info-public
 tier: twist
 deal:
   extends: standard

@@ -3,6 +3,7 @@ name: Gapped Hole
 shortName: Gapped
 summary: Hole cards in every hand are guaranteed two ranks apart.
 detail: Every hand starts with a one-rank gap between its cards, creating less direct straight texture than Connected Hole.
+family: environment
 tags:
   - constrained-deal
 tier: twist

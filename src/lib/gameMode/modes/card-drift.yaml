@@ -3,8 +3,8 @@ name: Card Drift
 shortName: Drift
 summary: Every street, private cards drift upward.
 detail: Hole-card ranks shift +1 at flop, turn, and river.
+family: environment
 tags:
-  - insanity
   - late-detonation
   - weather
 tier: insanity

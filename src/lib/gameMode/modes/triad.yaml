@@ -3,6 +3,7 @@ name: Triad
 shortName: Triad
 summary: Three private cards per hand, best five-card poker hand wins.
 detail: A lighter multi-card mode with enough extra texture to make rankings less obvious.
+family: hand
 tags:
   - big-hands
 tier: standard

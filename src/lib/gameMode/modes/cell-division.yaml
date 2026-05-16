@@ -3,8 +3,8 @@ name: Cell Division
 shortName: Division
 summary: At reveal, every hand splits in two.
 detail: Each two-card hand divides into two one-card hands at reveal, and the ranking expands to include the split hands.
+family: identity
 tags:
-  - insanity
   - late-detonation
   - relational
 tier: insanity

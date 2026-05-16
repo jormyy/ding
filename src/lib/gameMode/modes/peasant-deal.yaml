@@ -3,6 +3,7 @@ name: Peasant Deal
 shortName: Peasant
 summary: Every hand starts with two pip cards (2–9).
 detail: Hole-card distribution forces both cards into the low pip range, suppressing pair-of-aces openers and rewarding board-built hands.
+family: environment
 tags:
   - constrained-deal
 tier: twist

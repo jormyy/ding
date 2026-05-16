@@ -3,6 +3,7 @@ name: Rainbow Hole
 shortName: Rainbow
 summary: Hole cards in every hand are guaranteed different suits.
 detail: Every hand starts with two suits represented, reducing suited-hole certainty while keeping classic high-hand scoring.
+family: environment
 tags:
   - constrained-deal
 tier: twist

@@ -3,9 +3,9 @@ name: Schrodinger's Board
 shortName: S Board
 summary: The board exists in two possible versions.
 detail: Every community card carries a second possible identity; reveal scoring picks the strongest coherent version per hand.
+family: identity
 tags:
   - identity-token
-  - insanity
 tier: insanity
 deal:
   extends: standard

@@ -3,6 +3,7 @@ name: Card Festival
 shortName: Festival
 summary: At the river, one community card boosts all the way up to an ace.
 detail: When river begins, the first board card becomes an ace, often shifting straight, set, and high-card reads going into reveal.
+family: environment
 tags:
   - late-detonation
   - weather

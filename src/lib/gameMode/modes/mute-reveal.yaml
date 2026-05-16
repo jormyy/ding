@@ -3,6 +3,7 @@ name: Mute Reveal
 shortName: Mute
 summary: Suits strip from the board at reveal — ranks-only scoring.
 detail: At reveal the board's suits are erased; flushes evaporate and only rank-based hands resolve.
+family: environment
 tags:
   - late-detonation
   - weather

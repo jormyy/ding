@@ -3,6 +3,7 @@ name: Decoys
 shortName: Decoys
 summary: Every hand has one counterfeit hole the player believes is real.
 detail: One hole per hand is silently a decoy — looks normal in display, contributes nothing to the score at reveal.
+family: identity
 tags:
   - identity-token
 tier: wild

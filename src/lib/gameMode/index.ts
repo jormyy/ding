@@ -1,4 +1,5 @@
 export * from "./types";
+export * from "./tagVocabulary";
 export * from "./catalog.generated";
 export * from "./registry";
 export * from "./visibility";

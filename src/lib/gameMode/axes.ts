@@ -3,6 +3,7 @@
  * itself only knows mechanical fields; these derive lobby-friendly axes,
  * chaos rating, and search/filter behavior from those fields.
  */
+import { TIERS } from "./tagVocabulary";
 import type { DingGameModeDefinition, ModeTier } from "./types";
 
 export type ModeAxis =
@@ -15,6 +16,7 @@ export type ModeAxis =
   | "Choice"
   | "Objective";
 
+/** Selection-family sub-mechanics surfaced in the lobby filter. */
 export type SelectSubTag =
   | "peek-keep"
   | "mulligan"
@@ -22,14 +24,7 @@ export type SelectSubTag =
   | "inheritance"
   | "expose-choice";
 
-export const MODE_TIERS: readonly ModeTier[] = [
-  "standard",
-  "twist",
-  "select",
-  "wild",
-  "chaos",
-  "insanity",
-];
+export const MODE_TIERS: readonly ModeTier[] = TIERS;
 
 export const MODE_AXES: readonly ModeAxis[] = [
   "Deal",
@@ -59,7 +54,8 @@ export function modeAxes(mode: DingGameModeDefinition): readonly ModeAxis[] {
     mode.deal.visibleHoleCardDetail ||
     mode.deal.visibleCommunityCardDetail ||
     mode.deal.visibleCommunityCardDetails ||
-    mode.tags.includes("visibility")
+    mode.deal.publicCards ||
+    mode.family === "info"
   ) {
     axes.push("Visibility");
   }
@@ -101,7 +97,6 @@ export function modeChaosLevel(mode: DingGameModeDefinition): number {
     case "insanity": return 5;
     case "chaos": return 4;
     case "wild": return 3;
-    case "select": return 2;
     case "twist": return 2;
     case "standard": return 1;
   }

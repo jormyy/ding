@@ -3,8 +3,8 @@ name: Card Convergence
 shortName: Converge
 summary: At river, one rank converges into aces.
 detail: When river begins, every seven in hands and on the board converges into an ace before reveal scoring.
+family: environment
 tags:
-  - insanity
   - late-detonation
   - weather
 tier: insanity

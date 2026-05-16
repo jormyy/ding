@@ -3,12 +3,11 @@ name: Recursive Board
 shortName: Recursive
 summary: At turn, the board duplicates itself.
 detail: The board recursively mirrors into ten displayed cards at turn.
+family: environment
 tags:
-  - insanity
   - multi-board
-  - phase-tempo
-  - visibility
   - weather
+  - phase-tempo
 tier: insanity
 deal:
   extends: standard

@@ -3,6 +3,7 @@ name: Decoy
 shortName: Decoy
 summary: A public chip warns that one community card is a decoy without saying which.
 detail: Players know exactly one board card is non-scoring but never see which slot; reads must rely on inference and table talk.
+family: info
 tags:
   - info-overlay
 tier: chaos

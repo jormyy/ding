@@ -3,6 +3,7 @@ name: Rainstorm
 shortName: Rain
 summary: Every phase, one community card is replaced.
 detail: A fresh deck card replaces one visible community card at flop, turn, and river.
+family: environment
 tags:
   - late-detonation
   - weather

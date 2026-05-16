@@ -3,8 +3,9 @@ name: Late Hand Reveal
 shortName: Late Hand
 summary: At the river, every hand turns face up before the final ranking.
 detail: Hole cards stay private through preflop, flop, and turn, then flip publicly when the river arrives so the final read is fully open.
+family: info
 tags:
-  - visibility
+  - info-public
 tier: chaos
 deal:
   extends: standard

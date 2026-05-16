@@ -3,6 +3,7 @@ name: Counter-Cuff
 shortName: Counter
 summary: Counterfeit card flips its scoring at reveal — high becomes low.
 detail: One hole card per hand is counterfeit; at reveal its rank inverts on the inverted-rank ladder, swapping high for low and vice versa.
+family: identity
 tags:
   - identity-token
   - late-detonation

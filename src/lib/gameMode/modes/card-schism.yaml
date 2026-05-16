@@ -3,8 +3,8 @@ name: Card Schism
 shortName: Schism
 summary: At the turn, the remaining deck splits and only the high half stays in play.
 detail: When turn begins, every later draw — for board replacements or other effects — comes only from the deck's high ranks.
+family: environment
 tags:
-  - insanity
   - weather
 tier: insanity
 deal:

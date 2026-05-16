@@ -3,6 +3,7 @@ name: Civil War
 shortName: Civil War
 summary: Reds vs blacks; first hole picks a team.
 detail: At preflop each hand joins a color team based on its first hole card; teams compete in aggregate at reveal.
+family: identity
 tags:
   - relational
 tier: wild

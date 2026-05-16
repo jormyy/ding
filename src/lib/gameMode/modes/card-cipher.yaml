@@ -3,8 +3,8 @@ name: Card Cipher
 shortName: Cipher
 summary: At river, values are encoded through the river card.
 detail: Every rank shifts by the river card's rank index when river begins.
+family: environment
 tags:
-  - insanity
   - late-detonation
   - weather
 tier: insanity

@@ -3,8 +3,8 @@ name: Card Plague Spread
 shortName: Spread
 summary: A plague rank infects more cards each phase.
 detail: One additional card converts to seven at flop, turn, and river.
+family: environment
 tags:
-  - insanity
   - late-detonation
   - weather
 tier: insanity

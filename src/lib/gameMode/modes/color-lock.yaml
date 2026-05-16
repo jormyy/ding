@@ -3,6 +3,7 @@ name: Color Lock
 shortName: Color Lock
 summary: At reveal only majority-color cards score.
 detail: When the board is fully revealed, the minority color is stripped and only the majority's cards count toward final ranking.
+family: environment
 tags:
   - late-detonation
   - weather

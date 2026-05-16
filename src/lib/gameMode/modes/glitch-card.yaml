@@ -3,6 +3,7 @@ name: Glitch Card
 shortName: Glitch
 summary: One glitched card hides its identity, then resolves wild at reveal.
 detail: The glitched card's true rank and suit stay unknown until reveal, where it plays as a wild card for whichever hand holds it.
+family: identity
 tags:
   - identity-token
 tier: wild

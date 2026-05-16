@@ -3,8 +3,8 @@ name: Identity Crisis
 shortName: Crisis
 summary: At turn, a hole card and board card swap identities.
 detail: The first hand's first hole card swaps with the first community card when turn begins.
+family: environment
 tags:
-  - insanity
   - weather
 tier: insanity
 deal:

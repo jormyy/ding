@@ -3,11 +3,11 @@ name: Inheritance
 shortName: Inherit
 summary: Keep one hole card; your second card comes from the right neighbor's discard.
 detail: Every owner chooses one card to keep. The other card is discarded left, so each final hand combines one kept card with the right neighbor's discarded card.
+family: selection
 tags:
   - inheritance
   - relational
-  - select-stage
-tier: select
+tier: twist
 deal:
   extends: standard
   dealChoice:

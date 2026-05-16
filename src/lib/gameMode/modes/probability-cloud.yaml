@@ -3,9 +3,9 @@ name: Probability Cloud
 shortName: Cloud
 summary: Community cards carry unresolved alternate ranks.
 detail: Board cards have alternate identities before reveal; scoring resolves to the strongest possible version.
+family: identity
 tags:
   - identity-token
-  - insanity
 tier: insanity
 deal:
   extends: standard

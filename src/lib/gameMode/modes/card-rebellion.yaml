@@ -3,8 +3,8 @@ name: Card Rebellion
 shortName: Rebellion
 summary: At the turn, every hand rotates one seat clockwise around the table.
 detail: When turn begins, each player passes their two-card hand to the next seat and inherits the previous seat's hand for the rest of the showdown.
+family: identity
 tags:
-  - insanity
   - positional
 tier: insanity
 deal:

@@ -3,6 +3,7 @@ name: Mission Tight
 shortName: M Tight
 summary: Win only if best and worst hands are within 2 rank-tiers.
 detail: A tightness mission — the table's best hand can sit at most two tiers above the weakest, otherwise the round voids.
+family: identity
 tags:
   - late-detonation
   - mission

@@ -3,12 +3,11 @@ name: Quantum Flop
 shortName: Q Flop
 summary: Three possible flops exist at once.
 detail: Nine community cards form three flop boards; each hand scores against its best quantum board.
+family: environment
 tags:
-  - big-hands
-  - insanity
   - multi-board
   - phase-tempo
-  - visibility
+  - big-hands
 tier: insanity
 deal:
   extends: standard

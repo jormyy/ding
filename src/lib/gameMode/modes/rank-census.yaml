@@ -3,6 +3,7 @@ name: Rank Census
 shortName: Rank C
 summary: A public chip breaks down how many cards of each rank remain in the deck.
 detail: The rank counts refresh every street so the table can see which ranks are depleted; scoring still uses the standard five-card board.
+family: info
 tags:
   - info-overlay
 tier: chaos

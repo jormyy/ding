@@ -1,138 +1,142 @@
-# Ding Mode Tag Vocabulary
+# Ding Mode Taxonomy
 
-Canonical mechanic-grouped tags for the 328-YAML catalog. Replaces the ad-hoc
-386-tag soup that accumulated as modes were authored. Every mode carries
-1–4 tags drawn from this list and **nothing else**. New mechanic → new tag,
-documented here, then propagated through every YAML.
+Each mode in the catalog is classified along three axes, all schema-enforced
+in `src/lib/gameMode/schema.ts` and centrally defined in `tagVocabulary.ts`:
 
-Source: `~/vault/projects/ding/ding-mode-tag-vocabulary.md` (vault), reconciled
-with the 13 mechanic clusters specified in the audit goal. Tags are mechanic-
-grouped: they describe what the engine actually does to the hand, not vibe.
+1. **`family`** — required, exactly one. The single most load-bearing mechanic
+   group; the answer to "what kind of thing is this mode?".
+2. **`tier`** — required, exactly one. Chaos level on a 5-step curve.
+3. **`tags`** — 0–3 sub-tags from the canonical enum that refine the mode
+   further. Sub-tags can cross families (a `tempo` mode can carry `weather`
+   when environment is a secondary aspect).
 
-## Authoring
+Codegen rejects YAMLs that drift; new mechanics either map to an existing
+slot or get a new sub-tag added here and propagated across the catalog.
 
-Tags live in each mode's YAML under `tags:` and are hand-written from this
-vocabulary. The schema (`src/lib/gameMode/schema.ts`) types `tags` as
-`z.array(z.string())`, so the constraint is documentary — keep new modes
-inside the 23 tags below, derive the right set from the table, and add a
-new cluster only when a mechanic genuinely doesn't fit.
+## Axis 1: family (6 values)
 
-Pick tags from these signals in the YAML:
+| Family | What it captures |
+|---|---|
+| `info` | What players see or know about cards and game state. |
+| `selection` | Pre-deal or mid-game card choice (peek, mulligan, trade, inherit, expose, auction, …). |
+| `tempo` | When phases happen and when twists fire. |
+| `environment` | Board, world, or deck-level effects. |
+| `identity` | Player roles, seats, tokens, objectives. |
+| `hand` | What hands look like and how they score. |
 
-- `deal.deck`, `deal.publicCards`, `deal.visibleHoleCards/...Detail/...Indexes`
-- `deal.visibleCommunityCards/...Indexes/...Detail`
-- `deal.dealChoice.{mulligan,tradeUp,inheritance,auction,...}`
-- `deal.constraint`, `deal.boards`, `deal.boardLayout`
-- `wildCards`, `wildCardsByPhase`, `excludedMetas`, `forceRankByMeta`
-- `phaseEffects.*` (every PhaseEffectId)
-- `infoFeatures.*`, `tier`
+Families are mutually exclusive. When a mode spans two, pick the one a player
+would name first when describing it; the other becomes a sub-tag.
 
-## The 23 canonical tags
+### Priority order for ambiguous modes
 
-### Baseline (one)
+The codemod uses this order — selection wins above all because the deal-choice
+is the defining moment of a hand. Below it, the priority orders the most
+structurally-defining mechanic first:
 
-| Tag    | Meaning                          | Derived from                |
-|--------|----------------------------------|-----------------------------|
-| `core` | Classic Ding, no twist           | `id === "ding"` exclusively |
+1. `selection` (any dealChoice mechanic)
+2. `environment` (multi-board, deck-swap)
+3. `identity` (mission)
+4. `tempo` (phase-tempo)
+5. `identity` (relational, positional, identity-token)
+6. `environment` (weather, constrained-deal)
+7. `tempo` (late-detonation)
+8. `hand` (big-hands, wild, score-pivot)
+9. `info` (info-public, info-private, info-overlay)
 
-### Mechanic clusters (one or more)
+## Axis 2: tier (5 values)
 
-| Tag                 | What it does to the hand                                                                                       | Derived from |
-|---------------------|-----------------------------------------------------------------------------------------------------------------|--------------|
-| `deck-swap`         | Deck composition replaced (short, stripped, double, triple, half, pinochle, bottomHalf, suitHeavy, suitLight)   | `deal.deck` in non-token set |
-| `visibility`        | Hole-card or community-card reveal schedule differs from baseline (public holes, suit-show, phased exposure)    | `publicCards` / `visibleHoleCards*` / `visibleCommunityCards*` |
-| `select-stage`      | Player-driven deal-time decision (peek-keep, mulligan, trade, inherit, expose, auction, …)                      | `deal.dealChoice` present    |
-| `constrained-deal`  | Hand composition constraint at deal (pocket-pair, same-suit, polar ranks, …)                                    | `deal.constraint` present    |
-| `identity-token`    | Cards carry hidden identity meta (joker/tarot/cursed/blessed/counterfeit/glitched/twoSuited/marked/trickster)   | `deal.deck` in token set / `excludedMetas` / `forceRankByMeta` / wild metas |
-| `wild`              | Designated ranks/suits substitute at showdown (jokers-in, wild-suit, wild-rank, wild-rank-roulette); also `syntheticPair`/`suitTransform` rank-substitution | `wildCards` / `wildCardsByPhase` ranks or suits, `syntheticPair`, `suitTransform` |
-| `multi-board`       | Two or more separately scored boards (multiverse, twin-boards, bridge)                                          | `deal.boards.count > 1` / multi-group `boardLayout: grid` |
-| `big-hands`         | Non-baseline deal shape: any hole / community count other than 2/5 (Omaha-style, Behemoth, single-spark, tiny-board) | `holeCards !== 2` / `communityCards !== 5` |
-| `positional`        | Seat-relative effects: clockwise rotations, neighbor swaps, hierarchy by seat order                              | `rotateHoleCardsClockwise`, `rotateFirstHoleCardsClockwise`, `rotateAllCardPositions`, `bestCardClockwise`, `swapFirstCardsFirstTwoHands`, `crossHandCardSwap`, `rotateHoleRanksAcrossHands`, `shuffleHandAssignment` |
-| `relational`        | Cross-hand effects: one hand's contents affect another's score / qualifier / inheritance                         | `hierarchyByMeta`, `cyclicHandHierarchy`, `pactMergeFirstLast`, `colorTeamAssign`, `matchRankInherit`, `forceAdjacentTie`, `crowdedRankPenalty`, `enforceOneCardPerBoardRow`, `absorbLastHandToBoard`, `requirePocketSourceTop`, `splitHandsAtReveal`, `solomon`, `tablePicks`, `inheritance`, `tradeUp`, `recruit` |
-| `mission`           | Alternate qualifier or score rule: round only counts when a property holds, or scoring runs lowball/flush/etc.    | any `require*` effect, `excludePairTier`, `requirePairToQualify`, `score !== "high"` |
-| `score-pivot`       | Mid-hand scoring rule swap (red, black, lowball, invert, coin-flip); also `rankTransform: inverted`              | `adoptRedScoring`, `adoptBlackScoring`, `invertScoringNow`, `coinflipScoreRule`, `armRankInvert`, `executeRankInvert`, `rankTransform` |
-| `late-detonation`   | Twist that fires at river or reveal — board state changes after most decisions are locked                        | any phase effect at `river` or `reveal` |
-| `phase-tempo`       | Phase order or pacing changes (revert, reroll, duplicate flop, one-at-a-time, rewind, slow-burn, blackout, turnpike) | `revert/reroll/duplicate/rewind/lock/markFirst/reverseTableAndBoard` phase effects; `visibleCommunityCards` schedule diverges from `flop=3, turn=4, river=communityCards` |
-| `weather`           | Atmospheric mid-game chaos hitting all hands equally (storm surge, plague spread, static flicker, replacement)   | `stormSurge`, `spreadPlagueToFirstCard`, `staticFlickerFirstCards`, `cipherRanksWithRiver`, `randomReplaceVisibleCommunity`, `shuffleCommunity`, `scrambleCommunitySuits`, `removeAdjacentToRiver`, `removeLastCommunity`, `mixHolesWithBurn`, `convergeSevensToAces`, `removeHighestRankInPlay`, `singularityAverageFirstTwoHoles`, `schismDeckHighOnly`, `lockMajorityColor`, `zeroHighRanks`, `breakBoardPairs`, `stripBoardSuits`, `markOneBoardWild`, `firstCommunityAbsorbsSecondSuit`, `riverOverwritesSuit`, `incrementAllRanks`, `incrementAllHoleRanks`, `incrementFirstCommunityRank`, `incrementFirstHolePerHand`, `festivalBoostFirstCommunity`, `upgradeHighestHole`, `faceCardsToAces`, `faceCardsToTwos`, `removeFaceCards`, `removeSevens`, `removeOneHolePerHand`, `removeFirstHolePerHand`, `shuffleAllHoleCards`, `swapFirstHoleWithFirstCommunity`, `reverseCommunity`, `mirrorCommunity`, `reassignAllSuits`, `invertAllRanks` |
-| `info-overlay`      | Pure informational chip — board state is unchanged; players just see more (census, whisper, hint, periscope)     | mode has `infoFeatures` and no engine-effect tag would otherwise apply |
-| `insanity`          | Tier `insanity`: multiple twists stack, or a single twist is surreal (multiverse, soup, schrodinger)             | `tier === "insanity"` |
+| Tier | Definition |
+|---|---|
+| `standard` | 1 mechanic, low surprise — closest to baseline poker. |
+| `twist` | 1 mechanic with a clear hook. |
+| `wild` | 2 mechanics or 1 large-effect mechanic. |
+| `chaos` | 3+ mechanics or compounding effects. |
+| `insanity` | Multiple twists stack; designed to overwhelm. |
 
-### Select-stage sub-mechanics (under `select-stage`)
+`select` is **not** a tier — selection-family modes redistribute to twist /
+wild / chaos / insanity based on how many non-selection mechanics they carry.
 
-When a mode has `deal.dealChoice`, exactly one of these sub-tags is added so the
-lobby filter can split the Select tier by exact variant.
+## Axis 3: sub-tags (21 values, 0–3 per mode)
 
-| Tag             | Mechanic                                                              | Derived from                       |
-|-----------------|-----------------------------------------------------------------------|------------------------------------|
-| `peek-keep`     | Owner sees N candidates, keeps a subset (3→2, 5→2, etc.)              | `dealChoice` + none of the below   |
-| `mulligan`      | Owner can lock or take a one-time full redraw                          | `dealChoice.mulligan = true`       |
-| `trade-up`      | Owner picks one card to pass left before preflop                       | `dealChoice.tradeUp = true`        |
-| `inheritance`   | Owner keeps one card; second comes from the right neighbor's discard   | `dealChoice.inheritance = true`    |
-| `expose-choice` | Owner picks which of their hole cards is publicly visible              | `dealChoice` + `publicCardSelection: playerChoice` |
+Grouped by their "home" family. A sub-tag may be applied to modes outside its
+home family when the trait is a secondary aspect.
 
-(Note: `auction`, `blindPool`, `peekBoard`, `sacrificeForPeek`, `recruit`,
-`solomon`, `tablePicks`, `optInHole3WithPenalty` are exotic enough that they
-get `select-stage` alone — they don't share a sub-family with siblings.)
+### info family
+| Tag | Meaning |
+|---|---|
+| `info-public` | All players see the same extra card info (public reveal schedule). |
+| `info-private` | Owner or a subset peek at info hidden from others. |
+| `info-overlay` | Informational chip only — board state unchanged. |
 
-## Removed from vocabulary
+### selection family
+| Tag | Mechanic |
+|---|---|
+| `peek-keep` | Owner sees N candidates and keeps a subset. |
+| `mulligan` | Owner can take a one-time full redraw. |
+| `trade-up` | Owner passes one card to a neighbor before preflop. |
+| `inheritance` | Owner keeps one card; another comes from a neighbor's discard. |
+| `expose-choice` | Owner chooses which hole card is publicly visible. |
 
-The following ad-hoc tags accumulated in YAMLs and are folded back into the
-canonical set during derivation:
+Exotic dealChoice variants (`auction`, `blindPool`, `peekBoard`,
+`sacrificeForPeek`, `recruit`, `solomon`, `tablePicks`,
+`optInHole3WithPenalty`) carry no sub-tag — their family is `selection`,
+sub-tag list empty.
 
-- info-feature ids (`avalanche`, `aurora`, `card-soup`, …) — these belong in
-  `infoFeatures:`, not `tags:`. Folded into the canonical mechanic tag.
-- mode ids (`one-up`, `tarot-tower`, `behemoth`, …) — accidental self-reference.
-  Folded.
-- vibe tags (`compact`, `dense`, `swingy`, `friendly`, `lock`, `peek`, `team`,
-  `tower`, `tiny-board`, `dark-flop`, `slow-burn`, …) — non-mechanical. Folded.
-- `event` (54×), `board` (53×), `ranks` (51×), `holes` (32×), `suits` (26×),
-  `reveal` (25×), `info` (38×), `objective` (18×), `tempo` (13×) — domain-of-
-  effect tags from the legacy 14-family vault doc. Replaced by mechanic-specific
-  tags above. `info` collapses to `info-overlay`; `objective` collapses to
-  `mission`; `tempo` collapses to `phase-tempo`; `event` to `weather` /
-  `late-detonation` depending on phase; `board`/`ranks`/`suits`/`holes` are
-  descriptive of the deal shape and aren't independent mechanics.
-- single-card-meta tags (`marked`, `wild`, `colors`, etc.) — folded into
-  `identity-token` / `wild` / `visibility` per the meta.
-- numeric stragglers (`"2"`, `"7"`, `Q`, etc.) — typos in YAML, dropped.
+### tempo family
+| Tag | Meaning |
+|---|---|
+| `phase-tempo` | Phase order or pacing diverges from the baseline schedule. |
+| `late-detonation` | Twist fires at river or reveal after most decisions are locked. |
 
-## Examples after derivation
+### environment family
+| Tag | Meaning |
+|---|---|
+| `weather` | Atmospheric mid-game effect hitting all hands equally. |
+| `multi-board` | Two or more separately scored boards. |
+| `constrained-deal` | Hand composition constraint at deal (pocket pair, same suit, …). |
+| `deck-swap` | Deck composition replaced (short, stripped, double, …). |
 
-| Mode             | Canonical tags                                       |
-|------------------|------------------------------------------------------|
-| `ding`           | `core`                                               |
-| `one-up`         | `visibility`                                         |
-| `open-book`      | `visibility`                                         |
-| `short-deck`     | `deck-swap`                                          |
-| `cursed-card`    | `identity-token`, `late-detonation`                  |
-| `jokers-in`      | `identity-token`, `wild`                             |
-| `lying-mirror`   | `info-overlay`                                       |
-| `card-multiverse`| `multi-board`, `big-hands`, `insanity`               |
-| `inheritance`    | `select-stage`, `inheritance`, `relational`          |
-| `mission-flush`  | `mission`, `late-detonation`                         |
-| `bridge`         | `multi-board`, `big-hands`, `late-detonation`        |
-| `last-rites`     | `relational`, `late-detonation`                      |
-| `card-soup`      | `weather`, `insanity`                                |
-| `tarot-tower`    | `identity-token`, `weather`, `late-detonation`       |
-| `solomon-cut`    | `select-stage`, `relational`                         |
-| `multiverse-trade` | `select-stage`, `trade-up`, `multi-board`, `big-hands`, `insanity` |
+### identity family
+| Tag | Meaning |
+|---|---|
+| `identity-token` | Cards carry hidden identity metadata (joker, tarot, cursed, …). |
+| `positional` | Seat-relative effects: clockwise rotations, neighbor swaps. |
+| `relational` | One hand's contents affect another's score, qualifier, or inheritance. |
+| `mission` | Alternate qualifier or score rule — round only counts when a property holds. |
 
-## How to use in the ModeBrowser
+### hand family
+| Tag | Meaning |
+|---|---|
+| `big-hands` | Non-baseline deal shape (Omaha-style, tiny-board, behemoth). |
+| `wild` | Designated ranks/suits substitute at showdown. |
+| `score-pivot` | Mid-hand scoring rule swap (red, black, lowball, invert). |
 
-The lobby's tag filter surfaces these 23 tags. Each acts as a coherent
-cluster — clicking `weather` shows storms, plagues, replacements; clicking
-`select-stage` shows every deal-choice variant; clicking `mission` shows
-qualifier-based modes. No filter pulls a one-off info-feature id.
+## Migration notes (2026-05-16)
 
-## Adding a new tag
+The previous flat 23-tag vocabulary collapsed into this two-axis structure:
 
-If a new mechanic doesn't fit one of these 23, **don't bolt a tag on**:
+- `core` (singleton) — **dropped**. `ding` is now `family: hand`, no tags.
+- `insanity` — **dropped** (redundant with `tier: insanity`).
+- `select-stage` — **dropped** (now the `selection` family marker).
+- `visibility` — **split** into `info-public` / `info-private`; the codemod
+  defaulted everything to `info-public` since prior usages were broadcast
+  reveals. Hand-correct any private-peek modes as you spot them.
+- `info-overlay` — kept, now a sub-tag under `info` family.
+- All other tags map 1:1 to themselves as sub-tags.
 
-1. Decide whether the mechanic is genuinely orthogonal (a new cluster) or
-   a variant of an existing one (a new sub-mechanic).
-2. If new cluster: add a row to "Mechanic clusters" above and apply the
-   tag to every existing YAML that matches the new signal.
-3. If new sub-mechanic under `select-stage`: add a row under sub-mechanics
-   and update affected YAMLs.
+The `tier: select` value was retired. The 41 modes that lived there
+redistributed to twist (26) / wild (9) / chaos (5) / insanity (1) based on
+how many non-selection mechanics they carried.
+
+## Authoring a new mode
+
+1. Look at the mode's defining mechanic. Pick the family using the priority
+   list above.
+2. Pick the tier by counting effective mechanics (each non-base behavior =
+   one mechanic; insanity is reserved for stacking twists or surreal
+   single-effect modes).
+3. Pick 0–3 sub-tags from the canonical 21. If the mode does something the
+   enum can't describe, add a new sub-tag to `tagVocabulary.ts` and document
+   it here.
 
 The vocabulary is for the catalog as a whole — never for one mode.

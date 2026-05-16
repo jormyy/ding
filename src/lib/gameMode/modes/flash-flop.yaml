@@ -3,9 +3,10 @@ name: Flash Flop
 shortName: Flash
 summary: The flop is visible before anyone ranks a hand.
 detail: Players start with real board context, so early rankings are less random.
+family: tempo
 tags:
   - phase-tempo
-  - visibility
+  - info-public
 tier: twist
 deal:
   extends: standard

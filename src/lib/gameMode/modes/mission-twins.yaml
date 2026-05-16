@@ -3,6 +3,7 @@ name: Mission Twins
 shortName: M Twins
 summary: Win only if two adjacent hands tie at reveal.
 detail: At least one adjacent pair of hands must end up tied — the table coordinates to deliver a tie somewhere among the seats.
+family: identity
 tags:
   - late-detonation
   - mission

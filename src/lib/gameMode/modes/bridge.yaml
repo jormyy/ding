@@ -3,6 +3,7 @@ name: Bridge
 shortName: Bridge
 summary: Two boards share a single bridging card that votes a side at reveal.
 detail: Nine community cards form two boards joined by one shared bridge; at reveal the bridge picks the side it'll score for and gives that board the win.
+family: environment
 tags:
   - big-hands
   - late-detonation
@@ -20,8 +21,16 @@ deal:
     count: 2
     cardsPerBoard: 5
     cardIndexes:
-      - [0, 1, 2, 3, 4]
-      - [4, 5, 6, 7, 8]
+      - - 0
+        - 1
+        - 2
+        - 3
+        - 4
+      - - 4
+        - 5
+        - 6
+        - 7
+        - 8
     scoring: best
 phaseEffects:
   reveal:

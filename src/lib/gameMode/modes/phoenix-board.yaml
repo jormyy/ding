@@ -3,11 +3,11 @@ name: Phoenix Board
 shortName: Phoenix
 summary: Every discarded third hole card rises back into a reveal-only vault row.
 detail: Each hand keeps two of three dealt cards through the streets; reveal opens a vault lane that shows every discard the table threw away.
+family: environment
 tags:
-  - big-hands
-  - late-detonation
   - multi-board
-  - visibility
+  - late-detonation
+  - big-hands
 tier: twist
 deal:
   extends: standard

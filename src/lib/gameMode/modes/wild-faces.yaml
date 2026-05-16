@@ -3,6 +3,7 @@ name: Wild Faces
 shortName: Faces
 summary: Jacks, queens, and kings are wild.
 detail: Face cards can substitute into stronger identities at reveal, creating volatile high-card and made-hand swings.
+family: hand
 tags:
   - wild
 tier: twist

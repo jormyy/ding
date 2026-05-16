@@ -3,8 +3,8 @@ name: Quantum Shuffle
 shortName: Quantum
 summary: At turn, all hole cards are redistributed.
 detail: Hole cards are gathered, rotated, and redealt across the table when turn begins.
+family: environment
 tags:
-  - insanity
   - weather
 tier: insanity
 deal:

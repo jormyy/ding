@@ -3,6 +3,7 @@ name: Card Whisper Network
 shortName: Network
 summary: A public chip names one community card's true identity from the start.
 detail: From preflop onward, a network whisper exposes one community-card slot's rank and suit, giving every seat the same guaranteed anchor.
+family: info
 tags:
   - info-overlay
 tier: chaos

@@ -3,9 +3,9 @@ name: Drunken Display
 shortName: Drunken
 summary: Cards wobble between possible ranks until reveal sobers them up.
 detail: Hands and board carry alternate rank identities through preflop, flop, turn, and river; reveal collapses every card to whichever rank scores best.
+family: identity
 tags:
   - identity-token
-  - insanity
 tier: insanity
 deal:
   extends: standard

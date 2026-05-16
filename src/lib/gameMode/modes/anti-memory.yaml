@@ -3,10 +3,10 @@ name: Anti-Memory
 shortName: Anti-Memory
 summary: Seen cards fade while unseen cards surface.
 detail: The board starts fully visible, then progressively hides through river before reveal restores truth.
+family: tempo
 tags:
-  - insanity
   - phase-tempo
-  - visibility
+  - info-public
 tier: insanity
 deal:
   extends: standard

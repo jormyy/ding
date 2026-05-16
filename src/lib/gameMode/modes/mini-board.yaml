@@ -3,9 +3,10 @@ name: Mini Board
 shortName: Mini
 summary: Four community cards are dealt.
 detail: The board gets a normal flop and one turn card, then stays fixed through river.
+family: hand
 tags:
   - big-hands
-  - visibility
+  - info-public
 tier: standard
 deal:
   extends: standard

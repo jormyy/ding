@@ -3,6 +3,7 @@ name: Crab Bucket
 shortName: Crab Bucket
 summary: Top hand drops a tier for every neighbor within a tier of it.
 detail: At reveal the highest hand pays a crowdedness penalty — every hand near it in tier pulls it down one rank-tier.
+family: identity
 tags:
   - late-detonation
   - relational

@@ -3,10 +3,11 @@ name: Card Decoy
 shortName: Decoy
 summary: Six community cards are dealt; one is a decoy that does not score, but the chip does not say which.
 detail: The felt grows to a six-card row across flop/turn/river and a chip warns that one community card does not score, but the decoy is not marked on the felt — players cannot identify it without inference.
+family: tempo
 tags:
   - big-hands
   - phase-tempo
-  - visibility
+  - info-public
 tier: chaos
 deal:
   extends: standard

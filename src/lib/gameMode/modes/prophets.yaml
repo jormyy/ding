@@ -3,6 +3,7 @@ name: Prophets
 shortName: Prophets
 summary: Forced last hole per hand is a tarot card.
 detail: Every seat's final hole card arrives as a tarot, biasing each hand's late-deal read toward whatever the tarot deck implies.
+family: identity
 tags:
   - identity-token
 tier: wild

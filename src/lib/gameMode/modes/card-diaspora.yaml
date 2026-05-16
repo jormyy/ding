@@ -3,8 +3,8 @@ name: Card Diaspora
 shortName: Diaspora
 summary: At turn, every hand gives one card away.
 detail: The first hole card in each hand rotates to the next hand when turn begins.
+family: identity
 tags:
-  - insanity
   - positional
 tier: insanity
 deal:

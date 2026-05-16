@@ -3,9 +3,10 @@ name: Late Flop
 shortName: Late Flop
 summary: Flop appears at turn; turn at river; river at reveal.
 detail: Every revelation is shifted one street later, so the table makes its early calls on no information at all.
+family: tempo
 tags:
   - phase-tempo
-  - visibility
+  - info-public
 tier: twist
 deal:
   extends: standard

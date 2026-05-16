@@ -3,11 +3,11 @@ name: Half-Lit Expose
 shortName: Half X
 summary: Pick which of your two hole cards rotates public each phase.
 detail: "A select-stage Half-Lit Holes: each hand picks one of two dealt cards to make public from the deal; the alternating-visibility rotation still shows one hole per street, but the owner controls which card anchored the table."
+family: selection
 tags:
   - expose-choice
-  - select-stage
-  - visibility
-tier: select
+  - info-public
+tier: twist
 deal:
   extends: standard
   publicCards: 1

@@ -3,9 +3,10 @@ name: Tiny Board
 shortName: Tiny
 summary: Only three community cards are dealt.
 detail: The flop is the whole board, so private cards matter longer and there is no late board rescue.
+family: hand
 tags:
   - big-hands
-  - visibility
+  - info-public
 tier: standard
 deal:
   extends: standard

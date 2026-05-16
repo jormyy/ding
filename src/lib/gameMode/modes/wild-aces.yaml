@@ -3,6 +3,7 @@ name: Wild Aces
 shortName: Wild A
 summary: Aces are wild for showdown.
 detail: Every ace can substitute into the strongest available identity at reveal.
+family: hand
 tags:
   - wild
 tier: standard

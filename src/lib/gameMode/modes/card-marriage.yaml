@@ -3,6 +3,7 @@ name: Card Marriage
 shortName: Marriage
 summary: Cards are bonded into pairs that move and score together.
 detail: A public marker announces which cards are wedded; bonded cards travel as a unit and contribute to the same made-hand reads at reveal.
+family: hand
 tags:
   - wild
 tier: twist

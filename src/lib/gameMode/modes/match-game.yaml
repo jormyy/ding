@@ -3,6 +3,7 @@ name: Match Game
 shortName: Match Game
 summary: Two hands sharing a rank swap strength — weaker inherits stronger.
 detail: At reveal any pair of hands sharing a rank exchange strengths so the weaker becomes the stronger; the stronger drops to the weaker's class.
+family: identity
 tags:
   - late-detonation
   - relational

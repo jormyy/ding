@@ -3,10 +3,11 @@ name: Two-Step River
 shortName: 2-Step
 summary: The river has two final cards; one waits until reveal.
 detail: A sixth board card is dealt, but only one of the two final river cards is visible before reveal.
+family: tempo
 tags:
   - big-hands
   - phase-tempo
-  - visibility
+  - info-public
 tier: twist
 deal:
   extends: standard

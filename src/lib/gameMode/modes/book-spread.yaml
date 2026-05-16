@@ -3,6 +3,7 @@ name: Book Spread
 shortName: Book
 summary: Two 3-card pages and a spine — pick a page or play the spine.
 detail: Seven board cards form two facing pages bracketing a single spine card; you score with either page or use the spine across both.
+family: environment
 tags:
   - big-hands
   - multi-board
@@ -13,20 +14,46 @@ deal:
   boardLayout:
     kind: grid
     slots:
-      - { row: 0, col: 0, group: "left" }
-      - { row: 0, col: 1, group: "left" }
-      - { row: 0, col: 2, group: "left" }
-      - { row: 0, col: 3, group: "spine" }
-      - { row: 0, col: 4, group: "right" }
-      - { row: 0, col: 5, group: "right" }
-      - { row: 0, col: 6, group: "right" }
+      - row: 0
+        col: 0
+        group: left
+      - row: 0
+        col: 1
+        group: left
+      - row: 0
+        col: 2
+        group: left
+      - row: 0
+        col: 3
+        group: spine
+      - row: 0
+        col: 4
+        group: right
+      - row: 0
+        col: 5
+        group: right
+      - row: 0
+        col: 6
+        group: right
   boards:
     count: 3
     cardsPerBoard: 5
     cardIndexes:
-      - [0, 1, 2, 3, 4]
-      - [2, 3, 4, 5, 6]
-      - [0, 1, 3, 5, 6]
+      - - 0
+        - 1
+        - 2
+        - 3
+        - 4
+      - - 2
+        - 3
+        - 4
+        - 5
+        - 6
+      - - 0
+        - 1
+        - 3
+        - 5
+        - 6
     scoring: best
 infoFeatures:
   - book-spread

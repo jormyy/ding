@@ -3,6 +3,7 @@ name: Wild Connector
 shortName: Connect
 summary: Adjacent ranks can behave like a pair.
 detail: A connected rank pair creates a synthetic pair during showdown evaluation.
+family: hand
 tags:
   - wild
 tier: twist

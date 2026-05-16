@@ -152,12 +152,17 @@ export default function ModeBrowser({
           const hasAny = axes.some((axis) => axisFilters.has(axis));
           if (!hasAny) return false;
         }
-        if (activeTier === "select" && selectSubFilter && !mode.tags.includes(selectSubFilter)) {
+        if (selectSubFilter && !mode.tags.includes(selectSubFilter)) {
           return false;
         }
         return modeMatchesQuery(mode, query);
       }),
     [activeTier, axisFilters, modeOptions, query, searchActive, selectSubFilter],
+  );
+
+  const tierHasSelectionFamily = useMemo(
+    () => filteredTierModes.some((mode) => mode.family === "selection"),
+    [filteredTierModes],
   );
 
   const recentModes = useMemo(
@@ -419,13 +424,13 @@ export default function ModeBrowser({
                   ))}
                 </div>
 
-                {activeTier === "select" && !searchActive && (
+                {tierHasSelectionFamily && !searchActive && (
                   <div
                     className="flex flex-wrap gap-1 px-3 py-2"
                     style={{ borderBottom: `1px solid ${D.panelBorder}` }}
                   >
                     <span className="self-center text-[9px] font-black uppercase tracking-[0.25em] mr-1" style={{ color: D.muted }}>
-                      Mechanic
+                      Selection
                     </span>
                     {SELECT_SUB_TAGS.map((tag) => (
                       <button

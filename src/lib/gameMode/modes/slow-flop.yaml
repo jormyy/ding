@@ -3,6 +3,7 @@ name: Slow Flop
 shortName: Slow Flop
 summary: Flop reveals one card per ready cycle (3 cycles).
 detail: The flop's three cards arrive one at a time across separate ready-up cycles, stretching the early read into a slow drip.
+family: tempo
 tags:
   - phase-tempo
 tier: wild

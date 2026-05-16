@@ -3,8 +3,8 @@ name: Last Rites
 shortName: Last Rites
 summary: Reveal absorbs the last hand's cards into the community board.
 detail: At reveal the trailing seat's cards are added to the board, expanding what every other hand uses to score and gutting the last seat outright.
+family: identity
 tags:
-  - insanity
   - late-detonation
   - relational
 tier: insanity

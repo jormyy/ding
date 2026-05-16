@@ -3,6 +3,7 @@ name: Plague
 shortName: Plague
 summary: At the turn, every seven on the board is wiped away.
 detail: When the turn begins, sevens disappear from the community cards and are replaced by fresh draws so the rank is rarely available at reveal.
+family: environment
 tags:
   - weather
 tier: wild

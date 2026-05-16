@@ -3,6 +3,7 @@ name: Prophecy
 shortName: Prophecy
 summary: At preflop, the winning hand class is announced — and it holds.
 detail: The table is told the hand class that will win this round before any community card lands; the seeded outcome holds across the streets.
+family: info
 tags:
   - info-overlay
 tier: chaos

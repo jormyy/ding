@@ -3,6 +3,7 @@ name: Hostage
 shortName: Hostage
 summary: One designated hand's rank dictates the table's wild rank.
 detail: At river the hostage hand's first hole card becomes the wild rank for everyone else, so winning depends on negotiating around that seat.
+family: identity
 tags:
   - late-detonation
   - relational

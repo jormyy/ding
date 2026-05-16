@@ -3,6 +3,7 @@ name: Straight Only
 shortName: Straight Only
 summary: Straight scoring; board pairs are stripped at river.
 detail: Any rank duplicated on the board is removed at river, leaving a thinner board where straight runs are the only viable read.
+family: identity
 tags:
   - late-detonation
   - mission

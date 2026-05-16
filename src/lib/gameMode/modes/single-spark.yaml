@@ -3,6 +3,7 @@ name: Single Spark
 shortName: Spark
 summary: Each hand gets one private card instead of two.
 detail: Tiny private edges make public-board reading and player confidence matter more.
+family: hand
 tags:
   - big-hands
 tier: standard

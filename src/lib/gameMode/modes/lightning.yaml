@@ -3,6 +3,7 @@ name: Lightning
 shortName: Lightning
 summary: At the river, every hand's first hole card jumps up one rank.
 detail: When the river arrives, the first kept card in every hand climbs a single rank, sharpening late made-hand pressure without touching the board.
+family: environment
 tags:
   - late-detonation
   - weather

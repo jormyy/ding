@@ -3,6 +3,7 @@ name: Bookends
 shortName: Bookends
 summary: 7-slot linear; only the two end cards anchor the read.
 detail: The board is wide and the middle is decoration; both endcaps must contribute to the score, framing every hand around the extremes.
+family: hand
 tags:
   - big-hands
 tier: wild
@@ -13,7 +14,11 @@ deal:
     count: 1
     cardsPerBoard: 5
     cardIndexes:
-      - [0, 1, 5, 6, 3]
+      - - 0
+        - 1
+        - 5
+        - 6
+        - 3
     scoring: best
 infoFeatures:
   - bookends

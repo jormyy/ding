@@ -3,12 +3,11 @@ name: Mirror World
 shortName: M World
 summary: Two realities are visible before reveal picks a ranking.
 detail: Two five-card boards are shown, with hands scored against their better reality.
+family: environment
 tags:
-  - big-hands
-  - insanity
   - multi-board
   - phase-tempo
-  - visibility
+  - big-hands
 tier: insanity
 deal:
   extends: standard

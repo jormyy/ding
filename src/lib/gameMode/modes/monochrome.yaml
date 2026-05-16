@@ -3,6 +3,7 @@ name: Monochrome
 shortName: Monochrome
 summary: Every hand's holes are the same color.
 detail: Each seat is dealt two cards of matching color — every hand is either all-red or all-black before the board lands.
+family: environment
 tags:
   - constrained-deal
 tier: twist

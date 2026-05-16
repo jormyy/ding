@@ -3,9 +3,10 @@ name: Crawl
 shortName: Crawl
 summary: The board crawls out slowly before completing at river.
 detail: One card is visible preflop, then the board inches forward before the final two cards arrive at river.
+family: tempo
 tags:
   - phase-tempo
-  - visibility
+  - info-public
 tier: twist
 deal:
   extends: standard

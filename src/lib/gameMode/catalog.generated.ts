@@ -9,9 +9,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Classic",
     "summary": "The original cooperative hold'em ranking game.",
     "detail": "Two private cards, five shared board cards, strongest poker hand wins.",
-    "tags": [
-      "core"
-    ],
+    "family": "hand",
+    "tags": [],
     "tier": "standard",
     "deal": {
       "holeCards": 2,
@@ -25,10 +24,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Anti-Memory",
     "summary": "Seen cards fade while unseen cards surface.",
     "detail": "The board starts fully visible, then progressively hides through river before reveal restores truth.",
+    "family": "tempo",
     "tags": [
-      "insanity",
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "insanity",
     "deal": {
@@ -53,10 +52,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Avalanche",
     "summary": "The board buries the table in seven community cards by river.",
     "detail": "The flop shows three cards, the turn jumps to five, and the river piles on two more so reveal lands on a seven-card community board.",
+    "family": "tempo",
     "tags": [
       "big-hands",
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "wild",
     "deal": {
@@ -80,9 +80,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Behemoth",
     "summary": "Nine community cards are dealt; best five-card poker hand wins.",
     "detail": "The river dumps the rest of a huge board, creating a crowded final comparison across eleven available cards.",
+    "family": "hand",
     "tags": [
       "big-hands",
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -105,10 +106,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Big Sky",
     "summary": "A seven-card board gives every hand more ways to connect.",
     "detail": "The board grows to four on the flop, five on the turn, and seven on the river.",
+    "family": "tempo",
     "tags": [
       "big-hands",
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "standard",
     "deal": {
@@ -131,14 +133,13 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Sky+",
     "summary": "Peek 3 cards and sculpt your start for the seven-card Big Sky board.",
     "detail": "A select-stage Big Sky: each hand sees three private candidates and sculpts a two-card start before the board grows to four on flop, five on turn, and seven on river.",
+    "family": "selection",
     "tags": [
-      "big-hands",
       "peek-keep",
       "phase-tempo",
-      "select-stage",
-      "visibility"
+      "big-hands"
     ],
-    "tier": "select",
+    "tier": "chaos",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -164,9 +165,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Blackout",
     "summary": "No community cards are shown until the river.",
     "detail": "The first three streets are pure private-hand debate, then the board lands all at once.",
+    "family": "tempo",
     "tags": [
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -189,8 +191,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Brightest",
     "summary": "The highest hole card in every hand is public from the start.",
     "detail": "Each hand exposes its brightest private card, giving the table a high-card anchor while the lower card stays hidden until reveal.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -207,10 +210,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Decoy",
     "summary": "Six community cards are dealt; one is a decoy that does not score, but the chip does not say which.",
     "detail": "The felt grows to a six-card row across flop/turn/river and a chip warns that one community card does not score, but the decoy is not marked on the felt — players cannot identify it without inference.",
+    "family": "tempo",
     "tags": [
       "big-hands",
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "chaos",
     "deal": {
@@ -235,11 +239,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Memorial",
     "summary": "A memorial sixth board card appears at reveal as a tribute to discards.",
     "detail": "The board grows from three to six community cards across streets, and the extra card joins the felt at reveal as memorial information only.",
+    "family": "tempo",
     "tags": [
       "big-hands",
-      "insanity",
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "insanity",
     "deal": {
@@ -264,12 +268,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Multiverse",
     "summary": "Four parallel five-card boards play out as alternate universes.",
     "detail": "Twenty community cards form four separate five-card boards; each hand scores against its strongest universe at reveal.",
+    "family": "environment",
     "tags": [
-      "big-hands",
-      "insanity",
       "multi-board",
       "phase-tempo",
-      "visibility"
+      "big-hands"
     ],
     "tier": "insanity",
     "deal": {
@@ -477,11 +480,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Resurrect",
     "summary": "Discarded cards reappear as community cards.",
     "detail": "Each hand is dealt three, keeps two automatically, and the discarded cards join the board at reveal.",
+    "family": "tempo",
     "tags": [
       "big-hands",
-      "insanity",
       "late-detonation",
-      "visibility"
+      "info-public"
     ],
     "tier": "insanity",
     "deal": {
@@ -504,8 +507,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Cascade",
     "summary": "The oldest visible board cards fade face-down as streets advance.",
     "detail": "One more early community card becomes unknown at each board street, while reveal restores the true board.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -534,8 +538,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Colors",
     "summary": "Every hole-card color is public, but ranks and suits stay hidden.",
     "detail": "The table sees red/black texture from the deal while exact ranks and suits remain private until reveal.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "standard",
     "deal": {
@@ -558,8 +563,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Glance",
     "summary": "The table sees one random hole-card slot.",
     "detail": "One shared hole-card anchor per hand is public for the hand, preserving symmetric information.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "chaos",
     "deal": {
@@ -584,9 +590,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Crawl",
     "summary": "The board crawls out slowly before completing at river.",
     "detail": "One card is visible preflop, then the board inches forward before the final two cards arrive at river.",
+    "family": "tempo",
     "tags": [
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -609,8 +616,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Cross",
     "summary": "Five community cards form a cross; every hand scores on its better line.",
     "detail": "The center card belongs to both the row and the column, so hands can connect along either axis.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "chaos",
     "deal": {
@@ -674,9 +682,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Dark F",
     "summary": "The flop stays face-down until turn.",
     "detail": "No community cards are visible at flop; the board catches up at turn.",
+    "family": "tempo",
     "tags": [
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -699,8 +708,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Dark R",
     "summary": "The river card shows only its suit until reveal.",
     "detail": "The first four board cards are normal, but the final river card keeps its rank hidden until reveal.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -720,8 +730,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Darkest",
     "summary": "The lowest hole card in every hand is public from the start.",
     "detail": "Each hand exposes its darkest private card, giving the table a low-card anchor while the higher card stays hidden until reveal.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -738,9 +749,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "2 River",
     "summary": "The river reveals two final community cards.",
     "detail": "Six-card boards create dramatic final re-sorts without changing the core loop.",
+    "family": "hand",
     "tags": [
       "big-hands",
-      "visibility"
+      "info-public"
     ],
     "tier": "standard",
     "deal": {
@@ -764,8 +776,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Eclipse C",
     "summary": "Community cards show only red or black until reveal.",
     "detail": "The board exposes color pressure while hiding exact ranks and suits until the final reveal.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -786,8 +799,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Eclipse R",
     "summary": "Community cards show ranks only until reveal.",
     "detail": "The board's rank structure is visible, but suits stay hidden until the final reveal.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -808,8 +822,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Eclipse S",
     "summary": "Community cards show suits only until reveal.",
     "detail": "The board's suit texture is visible, but ranks stay hidden until the final reveal.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -830,9 +845,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Flash",
     "summary": "The flop is visible before anyone ranks a hand.",
     "detail": "Players start with real board context, so early rankings are less random.",
+    "family": "tempo",
     "tags": [
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -856,9 +872,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Flash R",
     "summary": "The full board is visible before anyone ranks a hand.",
     "detail": "All five community cards are public at preflop, turning the whole hand into immediate table-reading.",
+    "family": "tempo",
     "tags": [
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -882,9 +899,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Flopless",
     "summary": "No flop; turn deals 4 board cards at once.",
     "detail": "The flop street passes empty; turn slams down four community cards in a single beat, compressing decisions into the back half.",
+    "family": "tempo",
     "tags": [
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -909,8 +927,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Fog",
     "summary": "Community cards show only their color until reveal.",
     "detail": "From flop through river the board exposes color pressure only; reveal restores ranks and suits for scoring.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -933,8 +952,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Group",
     "summary": "Everyone sees one shared hole card from every hand.",
     "detail": "One public hole-card anchor per hand rotates as shared table knowledge across phases.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "chaos",
     "deal": {
@@ -977,12 +997,12 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Half X",
     "summary": "Pick which of your two hole cards rotates public each phase.",
     "detail": "A select-stage Half-Lit Holes: each hand picks one of two dealt cards to make public from the deal; the alternating-visibility rotation still shows one hole per street, but the owner controls which card anchored the table.",
+    "family": "selection",
     "tags": [
       "expose-choice",
-      "select-stage",
-      "visibility"
+      "info-public"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "publicCards": 1,
@@ -1025,8 +1045,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Half-Lit",
     "summary": "Each hand alternates which hole card is visible.",
     "detail": "One hole card is public at every street, alternating between first and second before both are revealed.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "chaos",
     "deal": {
@@ -1069,12 +1090,12 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Heat X",
     "summary": "Expose your committed hole card — signal heat or hide your intent.",
     "detail": "A select-stage Heat Map: each hand picks one of two dealt cards to make public to the table while the deck's high-vs-low heat refreshes every street through reveal.",
+    "family": "selection",
     "tags": [
       "expose-choice",
-      "select-stage",
-      "visibility"
+      "info-public"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "publicCards": 1,
@@ -1092,9 +1113,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Hidden T",
     "summary": "The turn card stays hidden until river.",
     "detail": "The flop is visible, but the fourth board card is withheld until the river reveal catches up.",
+    "family": "tempo",
     "tags": [
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -1117,9 +1139,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Instant",
     "summary": "All 5 community cards visible from preflop.",
     "detail": "The board lands instantly at preflop; the only secrecy left is hole cards, and every street is just a re-ranking pass.",
+    "family": "tempo",
     "tags": [
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -1144,10 +1167,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "L-Board",
     "summary": "Nine community cards form an L with five-card arms; every hand scores on its best five-card path.",
     "detail": "Both arms of the L run five cards long and share a corner, creating overlapping five-card paths that include the pure arm, the pure stem, and the bend between them.",
+    "family": "tempo",
     "tags": [
       "big-hands",
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "chaos",
     "deal": {
@@ -1235,9 +1259,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Late Flop",
     "summary": "Flop appears at turn; turn at river; river at reveal.",
     "detail": "Every revelation is shifted one street later, so the table makes its early calls on no information at all.",
+    "family": "tempo",
     "tags": [
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -1262,8 +1287,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Late Hand",
     "summary": "At the river, every hand turns face up before the final ranking.",
     "detail": "Hole cards stay private through preflop, flop, and turn, then flip publicly when the river arrives so the final read is fully open.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "chaos",
     "deal": {
@@ -1285,8 +1311,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Late",
     "summary": "Hole cards become public at the river.",
     "detail": "Hands stay private through turn, then every hole card is exposed at river before the final ranking.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "standard",
     "deal": {
@@ -1305,13 +1332,13 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Late I",
     "summary": "Keep one hole card and inherit your neighbor's discard — hole cards expose at river.",
     "detail": "A select-stage Late Light: each hand keeps one dealt card while the right neighbor's discard fills the second slot, then both hole cards flip public when the river arrives.",
+    "family": "selection",
     "tags": [
       "inheritance",
       "relational",
-      "select-stage",
-      "visibility"
+      "info-public"
     ],
-    "tier": "select",
+    "tier": "wild",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -1334,13 +1361,13 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Mark X",
     "summary": "Choose which hole card you publicly expose in a marked deck.",
     "detail": "A select-stage Marked Deck: each hand picks one of two dealt cards to make public, with the marked card visible to the whole table as it moves through hands and board.",
+    "family": "selection",
     "tags": [
       "expose-choice",
       "identity-token",
-      "select-stage",
-      "visibility"
+      "info-public"
     ],
-    "tier": "select",
+    "tier": "wild",
     "deal": {
       "holeCards": 2,
       "publicCards": 1,
@@ -1359,9 +1386,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Mem Hole",
     "summary": "At turn, one community card is forgotten.",
     "detail": "One visible community card is replaced at turn and then masked through river.",
+    "family": "environment",
     "tags": [
-      "insanity",
-      "visibility",
+      "info-public",
       "weather"
     ],
     "tier": "insanity",
@@ -1393,9 +1420,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Mini",
     "summary": "Four community cards are dealt.",
     "detail": "The board gets a normal flop and one turn card, then stays fixed through river.",
+    "family": "hand",
     "tags": [
       "big-hands",
-      "visibility"
+      "info-public"
     ],
     "tier": "standard",
     "deal": {
@@ -1418,12 +1446,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Mirror",
     "summary": "At the river, the board doubles into a primary row and a mirrored row.",
     "detail": "Ten community slots fan out on river street, but scoring still uses the five primary cards — the mirror row is read-only theatrics.",
+    "family": "environment",
     "tags": [
-      "late-detonation",
       "multi-board",
-      "phase-tempo",
-      "visibility",
-      "weather"
+      "weather",
+      "phase-tempo"
     ],
     "tier": "wild",
     "deal": {
@@ -1459,12 +1486,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "M World",
     "summary": "Two realities are visible before reveal picks a ranking.",
     "detail": "Two five-card boards are shown, with hands scored against their better reality.",
+    "family": "environment",
     "tags": [
-      "big-hands",
-      "insanity",
       "multi-board",
       "phase-tempo",
-      "visibility"
+      "big-hands"
     ],
     "tier": "insanity",
     "deal": {
@@ -1539,16 +1565,13 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "MV T",
     "summary": "Trade one card left before four parallel universes play out.",
     "detail": "A select-stage Card Multiverse: each hand passes one of two dealt cards to the left neighbor, then twenty community cards form four parallel five-card boards for showdown.",
+    "family": "selection",
     "tags": [
-      "big-hands",
-      "multi-board",
-      "phase-tempo",
-      "relational",
-      "select-stage",
       "trade-up",
-      "visibility"
+      "multi-board",
+      "phase-tempo"
     ],
-    "tier": "select",
+    "tier": "chaos",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -1760,8 +1783,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "One Up",
     "summary": "One card from every hand is public from the start.",
     "detail": "The exposed card gives the table shared anchors without revealing the full hand.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "standard",
     "deal": {
@@ -1777,12 +1801,12 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Pick Tell",
     "summary": "Each hand picks which hole card to expose to the table.",
     "detail": "After the deal, every hand chooses one of its two hole cards to make public; the other stays hidden.",
+    "family": "selection",
     "tags": [
       "expose-choice",
-      "select-stage",
-      "visibility"
+      "info-public"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "publicCards": 1,
@@ -1797,8 +1821,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Open",
     "summary": "Everyone's hole cards are public.",
     "detail": "A low-bluff, high-coordination mode where disagreements are about interpretation.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "standard",
     "deal": {
@@ -1814,12 +1839,12 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Book M",
     "summary": "Hole cards are public — keep the dealt pair or spend a one-time full redraw.",
     "detail": "A select-stage Open Book: each hand sees both hole cards as public to the table, then can lock the dealt pair or burn a one-time mulligan for a fresh pair before preflop.",
+    "family": "selection",
     "tags": [
       "mulligan",
-      "select-stage",
-      "visibility"
+      "info-public"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -1839,11 +1864,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Pair Summit",
     "summary": "Pairs scoring on a 7-card board — collisions everywhere.",
     "detail": "The board grows to seven cards and pair-only scoring rewards every coincidence; expect trips, two pair, and accidental boats stacking up.",
+    "family": "identity",
     "tags": [
-      "big-hands",
       "mission",
       "phase-tempo",
-      "visibility"
+      "big-hands"
     ],
     "tier": "twist",
     "deal": {
@@ -1868,8 +1893,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Scope",
     "summary": "At the river, each player privately sees one of a neighbor's hole cards.",
     "detail": "Only on the river street does each player receive a private peek at a single hole card belonging to another hand; the chip is invisible to everyone else.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "chaos",
     "deal": {
@@ -1891,11 +1917,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Phoenix",
     "summary": "Every discarded third hole card rises back into a reveal-only vault row.",
     "detail": "Each hand keeps two of three dealt cards through the streets; reveal opens a vault lane that shows every discard the table threw away.",
+    "family": "environment",
     "tags": [
-      "big-hands",
-      "late-detonation",
       "multi-board",
-      "visibility"
+      "late-detonation",
+      "big-hands"
     ],
     "tier": "twist",
     "deal": {
@@ -1926,10 +1952,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Photo Mem",
     "summary": "The flop disappears after you see it.",
     "detail": "Flop is visible, then the board goes dark at turn and only partial river information returns.",
+    "family": "tempo",
     "tags": [
-      "insanity",
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "insanity",
     "deal": {
@@ -1953,8 +1979,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Negative",
     "summary": "Card colors invert visually after turn.",
     "detail": "The board is color-only from turn through river, forcing players to reason through the negative display.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -1976,12 +2003,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Q Flop",
     "summary": "Three possible flops exist at once.",
     "detail": "Nine community cards form three flop boards; each hand scores against its best quantum board.",
+    "family": "environment",
     "tags": [
-      "big-hands",
-      "insanity",
       "multi-board",
       "phase-tempo",
-      "visibility"
+      "big-hands"
     ],
     "tier": "insanity",
     "deal": {
@@ -2060,8 +2086,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Ranks",
     "summary": "Every hole-card rank is public, but suits stay hidden.",
     "detail": "The table sees paired and high-card structure from the deal while exact suits remain private until reveal.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "standard",
     "deal": {
@@ -2084,12 +2111,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Recursive",
     "summary": "At turn, the board duplicates itself.",
     "detail": "The board recursively mirrors into ten displayed cards at turn.",
+    "family": "environment",
     "tags": [
-      "insanity",
       "multi-board",
-      "phase-tempo",
-      "visibility",
-      "weather"
+      "weather",
+      "phase-tempo"
     ],
     "tier": "insanity",
     "deal": {
@@ -2125,9 +2151,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Reverse",
     "summary": "River dealt first (preflop), turn second, flop last.",
     "detail": "Reveal order inverts — the river card is the very first community card on the felt, and the flop trio is the last to arrive.",
+    "family": "tempo",
     "tags": [
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "chaos",
     "deal": {
@@ -2169,9 +2196,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Runners",
     "summary": "Every hand shares the first board card before the flop.",
     "detail": "Each seat is handed a public card matching the first community slot, so everyone runs alongside the same shared card all hand.",
+    "family": "environment",
     "tags": [
       "constrained-deal",
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -2191,13 +2219,13 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Sch X",
     "summary": "Pick which superposed hole card you publicly resolve to the table.",
     "detail": "A select-stage Schrödinger's Hole: each hand's two cards carry multiple possible identities until reveal, but at the deal the owner picks one card to publicly collapse and expose; the other stays in superposition.",
+    "family": "selection",
     "tags": [
       "expose-choice",
       "identity-token",
-      "select-stage",
-      "visibility"
+      "info-public"
     ],
-    "tier": "select",
+    "tier": "wild",
     "deal": {
       "holeCards": 2,
       "publicCards": 1,
@@ -2217,9 +2245,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Slow",
     "summary": "The board arrives one card, then three, then five.",
     "detail": "A narrow flop makes early confidence brittle and keeps trades alive longer.",
+    "family": "tempo",
     "tags": [
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "standard",
     "deal": {
@@ -2242,14 +2271,13 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Slow I",
     "summary": "Inheritance chain into a one-card flop and a three-card turn.",
     "detail": "A select-stage Slow Burn: each hand keeps one dealt card while the right neighbor's discard fills the second slot, then the board arrives one card on flop, three on turn, and five on river.",
+    "family": "selection",
     "tags": [
       "inheritance",
       "phase-tempo",
-      "relational",
-      "select-stage",
-      "visibility"
+      "relational"
     ],
-    "tier": "select",
+    "tier": "chaos",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -2276,8 +2304,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Smoke",
     "summary": "Hole cards are suit-only until turn.",
     "detail": "Every hand exposes only suit hints through flop, then full visible hole cards from turn onward.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "chaos",
     "deal": {
@@ -2309,11 +2338,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Split",
     "summary": "Six community cards form two three-card halves; every hand scores on its better half.",
     "detail": "The whole split board lands together, but each hand only combines with one side at showdown.",
+    "family": "environment",
     "tags": [
-      "big-hands",
       "multi-board",
       "phase-tempo",
-      "visibility"
+      "big-hands"
     ],
     "tier": "chaos",
     "deal": {
@@ -2347,8 +2376,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Spotlight",
     "summary": "A rotating hand is fully face-up to the table each street.",
     "detail": "Every street, a different hand takes the spotlight and exposes both its hole cards while the other hands stay private until reveal.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "chaos",
     "deal": {
@@ -2373,9 +2403,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Staircase",
     "summary": "Diagonal 5-slot grid; reveals step-by-step.",
     "detail": "Cards land along a diagonal staircase; the visible community grows one step at a time, narrating ascent through the streets.",
+    "family": "tempo",
     "tags": [
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -2425,8 +2456,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Suits",
     "summary": "Every hole-card suit is public, but ranks stay hidden.",
     "detail": "The table sees suit texture from the deal while actual ranks remain private until reveal.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "standard",
     "deal": {
@@ -2449,13 +2481,13 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Suit I",
     "summary": "Inherit a card whose suit you saw at the deal — ranks stay hidden until reveal.",
     "detail": "A select-stage Suit Showing: each hand keeps one dealt card while the right neighbor's discard fills the second slot; both cards' suits are public throughout, but ranks stay hidden until reveal.",
+    "family": "selection",
     "tags": [
       "inheritance",
       "relational",
-      "select-stage",
-      "visibility"
+      "info-public"
     ],
-    "tier": "select",
+    "tier": "wild",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -2482,8 +2514,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Synesthesia",
     "summary": "Each street shows the community cards through a different sensory filter.",
     "detail": "Flop shows ranks only, turn shows suits only, and river shows colors only; the full board lands at reveal for scoring.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "chaos",
     "deal": {
@@ -2506,8 +2539,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Tag",
     "summary": "Each player privately sees a neighbor's full two-card hand.",
     "detail": "Every player is tagged with another hand's complete hole cards as a private hint that persists from preflop through reveal.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "chaos",
     "deal": {
@@ -2532,9 +2566,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Tiny",
     "summary": "Only three community cards are dealt.",
     "detail": "The flop is the whole board, so private cards matter longer and there is no late board rescue.",
+    "family": "hand",
     "tags": [
       "big-hands",
-      "visibility"
+      "info-public"
     ],
     "tier": "standard",
     "deal": {
@@ -2557,9 +2592,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Tower",
     "summary": "A five-card stack shows only its top three cards until river.",
     "detail": "The table reads a stable three-card board through turn, then the hidden bottom of the stack appears at river.",
+    "family": "tempo",
     "tags": [
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "chaos",
     "deal": {
@@ -2582,9 +2618,10 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Turnpike",
     "summary": "Four community cards hit on the flop, then the game pauses before the river.",
     "detail": "Most of the board appears early, making the final card a sharper negotiation point.",
+    "family": "tempo",
     "tags": [
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "standard",
     "deal": {
@@ -2607,12 +2644,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Twin U",
     "summary": "Two board universes play out side-by-side.",
     "detail": "Ten community cards form two five-card boards; each hand scores against its better universe.",
+    "family": "environment",
     "tags": [
-      "big-hands",
-      "insanity",
       "multi-board",
       "phase-tempo",
-      "visibility"
+      "big-hands"
     ],
     "tier": "insanity",
     "deal": {
@@ -2687,11 +2723,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "2 Boards",
     "summary": "Two parallel boards are dealt; every hand scores against its better board.",
     "detail": "Each street reveals cards on both boards, and showdown evaluates every hand on both boards before keeping its strongest result.",
+    "family": "environment",
     "tags": [
-      "big-hands",
       "multi-board",
       "phase-tempo",
-      "visibility"
+      "big-hands"
     ],
     "tier": "chaos",
     "deal": {
@@ -2763,15 +2799,13 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "2B M",
     "summary": "Mulligan against two parallel boards — redraw if your pair fits neither.",
     "detail": "A select-stage Two Boards: each hand can lock its dealt pair or spend a one-time mulligan after seeing how poorly it lines up against both parallel five-card boards.",
+    "family": "selection",
     "tags": [
-      "big-hands",
       "mulligan",
       "multi-board",
-      "phase-tempo",
-      "select-stage",
-      "visibility"
+      "phase-tempo"
     ],
-    "tier": "select",
+    "tier": "chaos",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -2847,10 +2881,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "2-Step",
     "summary": "The river has two final cards; one waits until reveal.",
     "detail": "A sixth board card is dealt, but only one of the two final river cards is visible before reveal.",
+    "family": "tempo",
     "tags": [
       "big-hands",
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "twist",
     "deal": {
@@ -2873,11 +2908,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Vault",
     "summary": "A sixth community card waits in a vault lane until reveal opens it.",
     "detail": "The main board fills normally through river while a separate vault slot stays empty; reveal exposes its hidden card alongside the five primary board cards.",
+    "family": "environment",
     "tags": [
-      "big-hands",
       "multi-board",
       "phase-tempo",
-      "visibility"
+      "big-hands"
     ],
     "tier": "twist",
     "deal": {
@@ -2906,10 +2941,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Wheel",
     "summary": "6-slot ring with a hidden hub that joins every score at reveal.",
     "detail": "Six cards form a ring around a hidden hub; the hub lights up at reveal and joins every scoring read on the table.",
+    "family": "tempo",
     "tags": [
       "big-hands",
       "phase-tempo",
-      "visibility"
+      "info-public"
     ],
     "tier": "chaos",
     "deal": {
@@ -2992,8 +3028,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Whisper",
     "summary": "Each player gets a private hint about one neighbor's hand.",
     "detail": "Every player sees one secret tip naming a neighbor and a fact about that neighbor's hole cards; the hint stays private to its recipient.",
+    "family": "info",
     "tags": [
-      "visibility"
+      "info-public"
     ],
     "tier": "chaos",
     "deal": {
@@ -3018,6 +3055,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Anti",
     "summary": "One announced rank is banned from scoring.",
     "detail": "Sevens are ignored by the showdown evaluator, shrinking hands and boards before hand comparison.",
+    "family": "environment",
     "tags": [
       "deck-swap"
     ],
@@ -3037,6 +3075,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Bottom",
     "summary": "Only ranks two through nine are in the deck.",
     "detail": "The deck removes broadway texture and makes low-rank board reading much sharper.",
+    "family": "environment",
     "tags": [
       "deck-swap"
     ],
@@ -3054,6 +3093,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Doppel",
     "summary": "Every card has a hidden twin somewhere else.",
     "detail": "The deck is doubled so duplicate identities can appear across hands and board.",
+    "family": "environment",
     "tags": [
       "deck-swap"
     ],
@@ -3074,6 +3114,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Double",
     "summary": "Two full decks are merged before the deal.",
     "detail": "Duplicate identities can appear, increasing rank collisions and strange shared-outs.",
+    "family": "environment",
     "tags": [
       "deck-swap"
     ],
@@ -3091,6 +3132,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Half",
     "summary": "A random twenty-six-card deck is used for the whole hand.",
     "detail": "Half the deck is removed before dealing, creating a tight and unpredictable card pool.",
+    "family": "environment",
     "tags": [
       "deck-swap"
     ],
@@ -3108,6 +3150,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Ice",
     "summary": "Even ranks are frozen out of scoring.",
     "detail": "Even-ranked cards are skipped by the reveal evaluator.",
+    "family": "environment",
     "tags": [
       "deck-swap"
     ],
@@ -3135,6 +3178,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Pinochle",
     "summary": "Ranks nine through ace appear twice in each suit.",
     "detail": "A duplicated high-card deck creates compact, collision-heavy boards and hands.",
+    "family": "environment",
     "tags": [
       "deck-swap"
     ],
@@ -3152,6 +3196,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Short",
     "summary": "Cards two through five are removed before the deal.",
     "detail": "Compressed ranks make strong hands common and hand reading more volatile.",
+    "family": "environment",
     "tags": [
       "deck-swap"
     ],
@@ -3169,6 +3214,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Stripped",
     "summary": "Only ranks 8 through ace are in the deck.",
     "detail": "The deck compresses to twenty-eight high cards, making premium holdings and collisions common.",
+    "family": "environment",
     "tags": [
       "deck-swap"
     ],
@@ -3186,6 +3232,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Heavy",
     "summary": "Hearts are doubled in the deck, making heart flushes far more common.",
     "detail": "The heart suit appears twice as often, biasing every street toward red flush draws while ranks stay normal.",
+    "family": "environment",
     "tags": [
       "deck-swap"
     ],
@@ -3203,6 +3250,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Light",
     "summary": "Hearts are trimmed to six cards in the deck, making heart flushes scarce.",
     "detail": "Most hearts are removed before the deal so red flush draws rarely materialize while the other suits stay intact.",
+    "family": "environment",
     "tags": [
       "deck-swap"
     ],
@@ -3220,6 +3268,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Triple",
     "summary": "Three full decks are merged before the deal.",
     "detail": "The enlarged deck makes exact duplicate cards possible while preserving cooperative ranking.",
+    "family": "environment",
     "tags": [
       "deck-swap"
     ],
@@ -3237,6 +3286,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Blessed",
     "summary": "One blessed card is shuffled in; whichever hand holds it finishes first.",
     "detail": "The blessed marker overrides poker strength at reveal, lifting the blessed hand above every unblessed hand regardless of made-hand quality.",
+    "family": "identity",
     "tags": [
       "identity-token"
     ],
@@ -3260,6 +3310,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Bless Abs",
     "summary": "One absolute-blessed card is shuffled in; whichever hand holds it finishes first.",
     "detail": "The blessing overrides poker strength at reveal, lifting its hand above every other hand regardless of made-hand quality.",
+    "family": "identity",
     "tags": [
       "identity-token"
     ],
@@ -3284,6 +3335,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Chosen",
     "summary": "First joker dealt becomes the round's wild — all wilds copy its suit.",
     "detail": "At flop the first joker fixes the round's wild suit; every other wild card collapses to that suit at reveal.",
+    "family": "identity",
     "tags": [
       "identity-token"
     ],
@@ -3310,6 +3362,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Clergy",
     "summary": "Forced first hole per hand is blessed; second hole is normal.",
     "detail": "Every seat's first hole card is guaranteed blessed; the second arrives standard. Each hand carries an absolute scoring anchor.",
+    "family": "identity",
     "tags": [
       "identity-token"
     ],
@@ -3334,6 +3387,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Counter",
     "summary": "Counterfeit card flips its scoring at reveal — high becomes low.",
     "detail": "One hole card per hand is counterfeit; at reveal its rank inverts on the inverted-rank ladder, swapping high for low and vice versa.",
+    "family": "identity",
     "tags": [
       "identity-token",
       "late-detonation"
@@ -3360,6 +3414,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Counter",
     "summary": "One face-down hole card per hand is value zero.",
     "detail": "The first kept hole card in every hand is marked counterfeit and ignored by showdown scoring.",
+    "family": "identity",
     "tags": [
       "identity-token"
     ],
@@ -3380,6 +3435,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Cursed",
     "summary": "One cursed card is shuffled in; whichever hand holds it finishes last.",
     "detail": "The cursed marker overrides poker strength at reveal, dropping the cursed hand below every uncursed hand regardless of made-hand quality.",
+    "family": "identity",
     "tags": [
       "identity-token"
     ],
@@ -3403,6 +3459,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Decoys",
     "summary": "Every hand has one counterfeit hole the player believes is real.",
     "detail": "One hole per hand is silently a decoy — looks normal in display, contributes nothing to the score at reveal.",
+    "family": "identity",
     "tags": [
       "identity-token"
     ],
@@ -3423,9 +3480,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Drunken",
     "summary": "Cards wobble between possible ranks until reveal sobers them up.",
     "detail": "Hands and board carry alternate rank identities through preflop, flop, turn, and river; reveal collapses every card to whichever rank scores best.",
+    "family": "identity",
     "tags": [
-      "identity-token",
-      "insanity"
+      "identity-token"
     ],
     "tier": "insanity",
     "deal": {
@@ -3445,6 +3502,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Effigy",
     "summary": "Marked card and its rank-twin are bound — both score wild at reveal.",
     "detail": "A marked card and any other card sharing its rank are bound; at reveal the bound pair both play as wild.",
+    "family": "identity",
     "tags": [
       "identity-token",
       "late-detonation",
@@ -3474,6 +3532,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Glitch",
     "summary": "One glitched card hides its identity, then resolves wild at reveal.",
     "detail": "The glitched card's true rank and suit stay unknown until reveal, where it plays as a wild card for whichever hand holds it.",
+    "family": "identity",
     "tags": [
       "identity-token"
     ],
@@ -3499,6 +3558,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Hex",
     "summary": "One hex card is shuffled in; whichever hand holds it finishes last.",
     "detail": "The hex marker overrides poker strength at reveal, dropping the hexed hand below every non-hexed hand regardless of made-hand quality.",
+    "family": "identity",
     "tags": [
       "identity-token"
     ],
@@ -3523,9 +3583,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Holo",
     "summary": "Every community card carries multiple possible identities until reveal.",
     "detail": "Each board card displays as uncertain through flop, turn, and river; reveal collapses every slot to whichever identity makes the strongest hand.",
+    "family": "identity",
     "tags": [
-      "identity-token",
-      "insanity"
+      "identity-token"
     ],
     "tier": "insanity",
     "deal": {
@@ -3545,6 +3605,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Jokers",
     "summary": "Two jokers are added to the deck as wild cards.",
     "detail": "Each joker can become the best possible card identity for the hand holding it at showdown.",
+    "family": "identity",
     "tags": [
       "identity-token"
     ],
@@ -3570,6 +3631,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Judgment",
     "summary": "Blessed cards override at reveal; if none exist, cursed do.",
     "detail": "At reveal the table searches for blessed metas to dictate the winner; absent any, cursed cards take over the hierarchy.",
+    "family": "identity",
     "tags": [
       "identity-token",
       "late-detonation",
@@ -3598,6 +3660,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Keystone",
     "summary": "One marked board card is the only scoring rank-class.",
     "detail": "At flop, one community card is marked as the keystone; only its rank-class scores at reveal — every other rank is decoration.",
+    "family": "tempo",
     "tags": [
       "identity-token",
       "phase-tempo"
@@ -3625,6 +3688,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Marked",
     "summary": "One card carries a public marker the whole table can see.",
     "detail": "The marked card is visible as it moves through hands and board; the marker is cosmetic and does not affect reveal scoring.",
+    "family": "identity",
     "tags": [
       "identity-token"
     ],
@@ -3645,9 +3709,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "M Hand",
     "summary": "Every hand has a shadow inversion.",
     "detail": "Hole cards carry alternate identities so each hand can resolve through its mirrored possibility.",
+    "family": "identity",
     "tags": [
-      "identity-token",
-      "insanity"
+      "identity-token"
     ],
     "tier": "insanity",
     "deal": {
@@ -3667,6 +3731,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Mirror M",
     "summary": "A glitched card copies its board neighbor's identity at turn.",
     "detail": "The glitch on the board mimics the card sitting next to it when turn lands; effectively the board duplicates one of its own.",
+    "family": "identity",
     "tags": [
       "identity-token"
     ],
@@ -3693,6 +3758,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Omen",
     "summary": "A cursed hole card demotes the hand by one tier.",
     "detail": "A cursed card in your hand drops your hand class one step at reveal — the omen weighs you down regardless of strength.",
+    "family": "identity",
     "tags": [
       "identity-token",
       "late-detonation"
@@ -3720,10 +3786,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Pandemonium",
     "summary": "A different chaos effect fires every street, with cards in superposition all the way through.",
     "detail": "Flop bumps every rank up, turn rotates hole-card ranks across the table, and river inverts ranks; reveal collapses every superposed card to whichever identity scores best.",
+    "family": "identity",
     "tags": [
       "identity-token",
-      "insanity",
-      "late-detonation",
       "positional",
       "weather"
     ],
@@ -3756,6 +3821,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Pickpocket",
     "summary": "A trickster card swaps with the right neighbor's leftmost hole at river.",
     "detail": "At river the trickster jumps seats — its holder gives it up to the next seat and inherits that seat's leftmost hole in exchange.",
+    "family": "identity",
     "tags": [
       "identity-token",
       "late-detonation",
@@ -3784,9 +3850,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Cloud",
     "summary": "Community cards carry unresolved alternate ranks.",
     "detail": "Board cards have alternate identities before reveal; scoring resolves to the strongest possible version.",
+    "family": "identity",
     "tags": [
-      "identity-token",
-      "insanity"
+      "identity-token"
     ],
     "tier": "insanity",
     "deal": {
@@ -3806,6 +3872,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Prophets",
     "summary": "Forced last hole per hand is a tarot card.",
     "detail": "Every seat's final hole card arrives as a tarot, biasing each hand's late-deal read toward whatever the tarot deck implies.",
+    "family": "identity",
     "tags": [
       "identity-token"
     ],
@@ -3830,9 +3897,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Tear",
     "summary": "One reality-torn card has multiple possible identities.",
     "detail": "Cards can carry alternate identities and reveal scoring resolves the strongest possible version.",
+    "family": "identity",
     "tags": [
-      "identity-token",
-      "insanity"
+      "identity-token"
     ],
     "tier": "insanity",
     "deal": {
@@ -3852,6 +3919,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Relic",
     "summary": "A blessed hole card auto-elevates the hand by one tier.",
     "detail": "Holding a blessed card upgrades the hand's class one step at reveal — the relic carries weight beyond its raw rank.",
+    "family": "identity",
     "tags": [
       "identity-token",
       "late-detonation"
@@ -3879,9 +3947,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "S Board",
     "summary": "The board exists in two possible versions.",
     "detail": "Every community card carries a second possible identity; reveal scoring picks the strongest coherent version per hand.",
+    "family": "identity",
     "tags": [
-      "identity-token",
-      "insanity"
+      "identity-token"
     ],
     "tier": "insanity",
     "deal": {
@@ -3901,9 +3969,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Schrodinger",
     "summary": "Hole cards stay in superposition until reveal collapses them.",
     "detail": "Every hand's private cards carry multiple possible identities through preflop, flop, turn, and river; reveal resolves each card to the strongest version for scoring.",
+    "family": "identity",
     "tags": [
-      "identity-token",
-      "insanity"
+      "identity-token"
     ],
     "tier": "insanity",
     "deal": {
@@ -3923,6 +3991,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Tarot",
     "summary": "Two arcana cards are shuffled into the deck and play as wild cards.",
     "detail": "Whichever hand or board picks up an arcana card can read it as the strongest identity available at reveal.",
+    "family": "identity",
     "tags": [
       "identity-token"
     ],
@@ -3948,9 +4017,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Tarot Twr",
     "summary": "A tarot card on the board shifts every rank +1 each phase.",
     "detail": "Each street, the tarot tower advances every rank in play by one — a slow climb that detonates by reveal into wholly different reads.",
+    "family": "identity",
     "tags": [
       "identity-token",
-      "insanity",
       "late-detonation"
     ],
     "tier": "insanity",
@@ -3982,6 +4051,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Trick",
     "summary": "One trickster card is shuffled in; whichever hand holds it finishes last.",
     "detail": "The trickster marker overrides poker strength at reveal, dropping its hand below every non-trickster hand regardless of made-hand quality.",
+    "family": "identity",
     "tags": [
       "identity-token"
     ],
@@ -4005,6 +4075,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Two-Faced",
     "summary": "A two-suited card scores under whichever suit benefits the hand.",
     "detail": "At reveal, two-suited cards collapse to whichever suit improves their hand's read — flushes everywhere become possible.",
+    "family": "identity",
     "tags": [
       "identity-token"
     ],
@@ -4027,6 +4098,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "2-Suit",
     "summary": "One card carries two suits at once for flush purposes.",
     "detail": "The marked card counts as whichever of its two suits makes the better flush at reveal, while its rank stays fixed.",
+    "family": "identity",
     "tags": [
       "identity-token"
     ],
@@ -4052,8 +4124,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Constellation",
     "summary": "Sevens form a constellation across the table and play as wild cards.",
     "detail": "Every seven, in hands or on the board, can substitute for whichever rank or suit completes the strongest reveal hand.",
+    "family": "hand",
     "tags": [
-      "insanity",
       "wild"
     ],
     "tier": "insanity",
@@ -4077,8 +4149,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Halo",
     "summary": "Neighboring ranks gain a pair aura.",
     "detail": "Adjacent ranks can create a synthetic pair during showdown.",
+    "family": "hand",
     "tags": [
-      "insanity",
       "wild"
     ],
     "tier": "insanity",
@@ -4098,8 +4170,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Lunar",
     "summary": "Hearts wax full and play as wild cards at showdown.",
     "detail": "Every heart in a hand or on the board can stand in for whichever rank or suit completes the strongest reveal hand.",
+    "family": "hand",
     "tags": [
-      "insanity",
       "wild"
     ],
     "tier": "insanity",
@@ -4123,6 +4195,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Marriage",
     "summary": "Cards are bonded into pairs that move and score together.",
     "detail": "A public marker announces which cards are wedded; bonded cards travel as a unit and contribute to the same made-hand reads at reveal.",
+    "family": "hand",
     "tags": [
       "wild"
     ],
@@ -4143,6 +4216,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Pendulum",
     "summary": "Every seven plays as a wild card at showdown.",
     "detail": "The pendulum locks sevens as the wild rank for the hand, letting every seven substitute for whichever rank or suit improves the made hand at reveal.",
+    "family": "hand",
     "tags": [
       "wild"
     ],
@@ -4167,6 +4241,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Flood",
     "summary": "Every two, three, four, and five plays as a wild card at showdown.",
     "detail": "The four lowest ranks all substitute into stronger identities at reveal, turning otherwise dead low cards into the building blocks of big made hands.",
+    "family": "hand",
     "tags": [
       "wild"
     ],
@@ -4194,12 +4269,12 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Flood+",
     "summary": "Peek 3 cards and sculpt your start, knowing low cards will play wild.",
     "detail": "A select-stage Flood: each hand sees three private candidates and sculpts a two-card start, knowing every two, three, four, and five substitutes into stronger identities at reveal.",
+    "family": "selection",
     "tags": [
       "peek-keep",
-      "select-stage",
       "wild"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -4228,6 +4303,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Twins",
     "summary": "Hearts/diamonds and clubs/spades merge for flushes.",
     "detail": "Red suits evaluate as one suit and black suits evaluate as one suit for showdown.",
+    "family": "hand",
     "tags": [
       "wild"
     ],
@@ -4245,6 +4321,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Wild A",
     "summary": "Aces are wild for showdown.",
     "detail": "Every ace can substitute into the strongest available identity at reveal.",
+    "family": "hand",
     "tags": [
       "wild"
     ],
@@ -4266,6 +4343,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Connect",
     "summary": "Adjacent ranks can behave like a pair.",
     "detail": "A connected rank pair creates a synthetic pair during showdown evaluation.",
+    "family": "hand",
     "tags": [
       "wild"
     ],
@@ -4283,6 +4361,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Edge",
     "summary": "Twos and aces are wild.",
     "detail": "Both deck edges can substitute into the strongest available reveal identity.",
+    "family": "hand",
     "tags": [
       "wild"
     ],
@@ -4305,6 +4384,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Faces",
     "summary": "Jacks, queens, and kings are wild.",
     "detail": "Face cards can substitute into stronger identities at reveal, creating volatile high-card and made-hand swings.",
+    "family": "hand",
     "tags": [
       "wild"
     ],
@@ -4328,12 +4408,12 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Faces M",
     "summary": "Mulligan in a wild-faces world — redraw if face density doesn't match your plan.",
     "detail": "A select-stage Wild Faces: each hand can lock its dealt pair or burn a one-time mulligan, knowing jacks, queens, and kings all substitute into stronger identities at reveal.",
+    "family": "selection",
     "tags": [
       "mulligan",
-      "select-stage",
       "wild"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -4359,6 +4439,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Wild R",
     "summary": "Every seven plays as a wild card at showdown.",
     "detail": "Any seven in a hand or on the board can stand in for whichever rank or suit makes the strongest reveal hand.",
+    "family": "hand",
     "tags": [
       "wild"
     ],
@@ -4380,6 +4461,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Roulette",
     "summary": "A new rank becomes wild each street; whichever is wild at reveal counts for showdown.",
     "detail": "Fives, sixes, sevens, and eights take turns as the wild rank across flop, turn, river, and reveal; only the reveal-phase rank substitutes for scoring.",
+    "family": "hand",
     "tags": [
       "wild"
     ],
@@ -4421,12 +4503,12 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Roul+",
     "summary": "Peek 3 cards before the rotating wild rank locks in for showdown.",
     "detail": "A select-stage Wild Rank Roulette: each hand sees three private candidates and sculpts a two-card start knowing fives, sixes, sevens, and eights rotate as the wild rank through the streets.",
+    "family": "selection",
     "tags": [
       "peek-keep",
-      "select-stage",
       "wild"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -4469,6 +4551,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Spread",
     "summary": "Far-apart ranks can behave like a pair.",
     "detail": "A wide rank spread creates a synthetic pair during showdown evaluation.",
+    "family": "hand",
     "tags": [
       "wild"
     ],
@@ -4486,6 +4569,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Wild S",
     "summary": "Every heart plays as a wild card at showdown.",
     "detail": "Any heart in a hand or on the board can stand in for whichever rank or suit makes the strongest reveal hand.",
+    "family": "hand",
     "tags": [
       "wild"
     ],
@@ -4507,6 +4591,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Chromatic",
     "summary": "Every hand's holes are one red plus one black.",
     "detail": "Every seat starts with exactly one red and one black hole, killing color-heavy reads on hole cards alone.",
+    "family": "environment",
     "tags": [
       "constrained-deal"
     ],
@@ -4527,6 +4612,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Connected",
     "summary": "Hole cards in every hand are guaranteed adjacent ranks.",
     "detail": "Every hand starts with neighboring ranks, creating visible straight paths while keeping classic high-hand scoring.",
+    "family": "environment",
     "tags": [
       "constrained-deal"
     ],
@@ -4544,6 +4630,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Echo",
     "summary": "Both hole cards in every hand share a rank.",
     "detail": "Every hand starts as a pocket pair, creating dense rank collisions and sharper kicker races through the board.",
+    "family": "environment",
     "tags": [
       "constrained-deal"
     ],
@@ -4561,6 +4648,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Gap Club",
     "summary": "Every hand's holes are exactly 5 ranks apart.",
     "detail": "A fixed-gap deal — every seat opens with two holes precisely five ranks apart, framing every read around mid-range straights.",
+    "family": "environment",
     "tags": [
       "constrained-deal"
     ],
@@ -4581,6 +4669,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Gapped",
     "summary": "Hole cards in every hand are guaranteed two ranks apart.",
     "detail": "Every hand starts with a one-rank gap between its cards, creating less direct straight texture than Connected Hole.",
+    "family": "environment",
     "tags": [
       "constrained-deal"
     ],
@@ -4598,6 +4687,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Mirror",
     "summary": "Every hand shares the same first hole card.",
     "detail": "A single mirrored anchor card appears in every hand, so the second hole card and board texture decide the spread.",
+    "family": "environment",
     "tags": [
       "constrained-deal"
     ],
@@ -4615,6 +4705,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Monochrome",
     "summary": "Every hand's holes are the same color.",
     "detail": "Each seat is dealt two cards of matching color — every hand is either all-red or all-black before the board lands.",
+    "family": "environment",
     "tags": [
       "constrained-deal"
     ],
@@ -4635,6 +4726,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Peasant",
     "summary": "Every hand starts with two pip cards (2–9).",
     "detail": "Hole-card distribution forces both cards into the low pip range, suppressing pair-of-aces openers and rewarding board-built hands.",
+    "family": "environment",
     "tags": [
       "constrained-deal"
     ],
@@ -4655,6 +4747,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Polar",
     "summary": "Every hand starts with one high card and one low card.",
     "detail": "Each two-card hand is split between the 8-A high band and the 2-7 low band, creating visible kicker asymmetry.",
+    "family": "environment",
     "tags": [
       "constrained-deal"
     ],
@@ -4672,6 +4765,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Rainbow",
     "summary": "Hole cards in every hand are guaranteed different suits.",
     "detail": "Every hand starts with two suits represented, reducing suited-hole certainty while keeping classic high-hand scoring.",
+    "family": "environment",
     "tags": [
       "constrained-deal"
     ],
@@ -4689,6 +4783,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Royal",
     "summary": "Every hand starts with at least one face card.",
     "detail": "Hole-card distribution is constrained so every seat enters preflop holding at least one face card; the early read is a paint-heavy table.",
+    "family": "environment",
     "tags": [
       "constrained-deal"
     ],
@@ -4709,6 +4804,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Royal",
     "summary": "Both hole cards in every hand come from the high ranks.",
     "detail": "Every hand starts with two cards from 8 through Ace, making preflop strength dense and board kickers sharper.",
+    "family": "environment",
     "tags": [
       "constrained-deal"
     ],
@@ -4726,6 +4822,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Same Rank",
     "summary": "Every hand is a forced pocket pair, but pairs don't score.",
     "detail": "Each hand is dealt a pocket pair, then the pair tier is excluded from scoring — the table fights for trips, two pair, or flushes built around the pair.",
+    "family": "identity",
     "tags": [
       "constrained-deal",
       "late-detonation",
@@ -4753,6 +4850,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Suited",
     "summary": "Hole cards in every hand are guaranteed the same suit.",
     "detail": "Every hand starts suited, making flush paths more visible without changing classic high-hand scoring.",
+    "family": "environment",
     "tags": [
       "constrained-deal"
     ],
@@ -4770,6 +4868,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Twin",
     "summary": "Both hole cards in every hand come from the low ranks.",
     "detail": "Every hand starts with two cards from 2 through 7, compressing early strength and making board improvement matter more.",
+    "family": "environment",
     "tags": [
       "constrained-deal"
     ],
@@ -4787,10 +4886,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Auction",
     "summary": "Five face-up cards auctioned by ready-order; pick one then draft another.",
     "detail": "At deal, five public candidates wait in an auction row; players claim one each in ready-up order, then a second pass fills the second hole.",
-    "tags": [
-      "select-stage"
-    ],
-    "tier": "select",
+    "family": "selection",
+    "tags": [],
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -4812,12 +4910,12 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Back Rm",
     "summary": "Peek 5 keep 2; the 3 discards become public face-up cards.",
     "detail": "Each player sees five candidates and keeps two; the three discards from each hand are pushed face-up into a public side board readable by every player.",
+    "family": "selection",
     "tags": [
       "late-detonation",
-      "peek-keep",
-      "select-stage"
+      "peek-keep"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -4839,12 +4937,12 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Inherit",
     "summary": "Keep one hole card; the other is inherited from your right neighbor's discard.",
     "detail": "Every owner picks one of two dealt cards to keep. The other is discarded left, so each final hand pairs one kept card with the right neighbor's discard while a public inheritance hint tracks the rule.",
+    "family": "selection",
     "tags": [
       "inheritance",
-      "relational",
-      "select-stage"
+      "relational"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -4866,11 +4964,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Crowd",
     "summary": "Other players pick which 2 of your 4 holes you keep.",
     "detail": "Each seat is dealt four candidates face-up; the rest of the table votes on which two stay, removing personal agency from hand construction.",
+    "family": "selection",
     "tags": [
-      "relational",
-      "select-stage"
+      "relational"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -4892,11 +4990,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Dbl Down",
     "summary": "Opt for 3 holes instead of 2 — accept a +1 tier penalty.",
     "detail": "At deal each player can take a third hole card; their final ranking is bumped down one tier as the cost of the extra information.",
+    "family": "selection",
     "tags": [
-      "late-detonation",
-      "select-stage"
+      "late-detonation"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -4923,12 +5021,12 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Quake+",
     "summary": "Peek 3 cards and sculpt your start before the turn-shuffle scrambles the board.",
     "detail": "A select-stage Earthquake: each hand sees three private candidates and sculpts a two-card start, knowing the community cards will shake into a new order when the turn arrives.",
+    "family": "selection",
     "tags": [
       "peek-keep",
-      "select-stage",
       "weather"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -4954,12 +5052,12 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Inherit",
     "summary": "Keep one hole card; your second card comes from the right neighbor's discard.",
     "detail": "Every owner chooses one card to keep. The other card is discarded left, so each final hand combines one kept card with the right neighbor's discarded card.",
+    "family": "selection",
     "tags": [
       "inheritance",
-      "relational",
-      "select-stage"
+      "relational"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -4978,12 +5076,12 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Low+",
     "summary": "Peek three deal cards and keep any two; worst poker hand wins.",
     "detail": "A select-stage Lowball: each hand sculpts a two-card start from three candidates, then ranks for the weakest hand.",
+    "family": "selection",
     "tags": [
       "mission",
-      "peek-keep",
-      "select-stage"
+      "peek-keep"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5001,13 +5099,13 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "MU M",
     "summary": "Mulligan against the river-rank flip — redraw if you mispredict the inversion.",
     "detail": "A select-stage Mirror Universe: each hand can lock its dealt pair or burn a one-time mulligan, then river inverts every rank so aces become twos and kings become threes before reveal.",
+    "family": "selection",
     "tags": [
       "late-detonation",
       "mulligan",
-      "select-stage",
       "weather"
     ],
-    "tier": "select",
+    "tier": "wild",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5034,11 +5132,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Mulligan",
     "summary": "Every hand may refuse its first two cards once and redraw before ranking starts.",
     "detail": "A deal-choice phase lets each hand either lock its original two-card start or spend a one-time full redraw.",
+    "family": "selection",
     "tags": [
-      "mulligan",
-      "select-stage"
+      "mulligan"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5057,11 +5155,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Omaha+",
     "summary": "Peek five deal cards and keep any four before ranking starts.",
     "detail": "A select-stage Omaha Luxe: each hand sees five private candidates and sculpts a four-card start.",
+    "family": "selection",
     "tags": [
-      "peek-keep",
-      "select-stage"
+      "peek-keep"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5079,10 +5177,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Oracle",
     "summary": "Peek 1 community card before locking your hand.",
     "detail": "At deal, each player sees one upcoming community slot in private, then locks their two hole cards with that information in mind.",
-    "tags": [
-      "select-stage"
-    ],
-    "tier": "select",
+    "family": "selection",
+    "tags": [],
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5104,11 +5201,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Pent+",
     "summary": "Peek six deal cards and keep any five before ranking starts.",
     "detail": "A select-stage Pent: each hand sees six private candidates and sculpts a five-card start.",
+    "family": "selection",
     "tags": [
-      "peek-keep",
-      "select-stage"
+      "peek-keep"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5126,11 +5223,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Pick 2",
     "summary": "Every hand is dealt five cards; the owner keeps any two before ranking starts.",
     "detail": "A deeper deal-choice phase gives each player five private candidates and asks them to sculpt a two-card start.",
+    "family": "selection",
     "tags": [
-      "peek-keep",
-      "select-stage"
+      "peek-keep"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5148,11 +5245,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Pick 3",
     "summary": "Every hand is dealt seven cards; the owner keeps any three before ranking starts.",
     "detail": "A heavy deal-choice phase gives each player seven private candidates and asks them to sculpt a three-card start.",
+    "family": "selection",
     "tags": [
-      "peek-keep",
-      "select-stage"
+      "peek-keep"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5170,11 +5267,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Choice",
     "summary": "Every hand is dealt three cards; the owner keeps any two before ranking starts.",
     "detail": "A deal-choice phase lets each player sculpt their starting hands, then the game continues as classic Ding.",
+    "family": "selection",
     "tags": [
-      "peek-keep",
-      "select-stage"
+      "peek-keep"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5192,11 +5289,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Recruit",
     "summary": "Steal one card from the next player's discard pile at deal.",
     "detail": "After deal-choice, each player can grab a card their right-neighbor just discarded, inverting the inheritance flow.",
+    "family": "selection",
     "tags": [
-      "relational",
-      "select-stage"
+      "relational"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5218,10 +5315,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Sacrifice",
     "summary": "Discard 1 hole at deal to peek the flop one phase early.",
     "detail": "Players may give up one of their two starting cards to peek a flop card during preflop, trading raw strength for early information.",
-    "tags": [
-      "select-stage"
-    ],
-    "tier": "select",
+    "family": "selection",
+    "tags": [],
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5243,10 +5339,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Sec Trade",
     "summary": "Each player drops one hole into a face-down pool and draws one back blind.",
     "detail": "At deal, every player commits one hole into the center face-down; the pool is shuffled and each player redraws one card without knowing whose it was.",
-    "tags": [
-      "select-stage"
-    ],
-    "tier": "select",
+    "family": "selection",
+    "tags": [],
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5268,11 +5363,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Spark+",
     "summary": "Peek three deal cards and keep just one before ranking starts.",
     "detail": "A select-stage Single Spark: each hand sees three private candidates and picks the single card to carry into preflop.",
+    "family": "selection",
     "tags": [
-      "peek-keep",
-      "select-stage"
+      "peek-keep"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5290,13 +5385,13 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Flare T",
     "summary": "Pass one card left before the turn reassigns every suit on the table.",
     "detail": "A select-stage Solar Flare: each hand passes one of two dealt cards to the left neighbor, then the turn reshuffles suits across hands and board on a fixed cycle.",
+    "family": "selection",
     "tags": [
       "relational",
-      "select-stage",
       "trade-up",
       "weather"
     ],
-    "tier": "select",
+    "tier": "wild",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5323,11 +5418,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Sol+",
     "summary": "Peek eight deal cards and keep any seven before ranking starts.",
     "detail": "A select-stage Solitaire Suite: each hand sees eight private candidates and sculpts a seven-card start.",
+    "family": "selection",
     "tags": [
-      "peek-keep",
-      "select-stage"
+      "peek-keep"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5345,11 +5440,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Solomon",
     "summary": "Split 4 cards into two pairs; another player picks which pair you keep.",
     "detail": "Each player splits four dealt cards into two pairs of two; the seat to their left chooses which pair becomes the kept hand.",
+    "family": "selection",
     "tags": [
-      "relational",
-      "select-stage"
+      "relational"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5371,13 +5466,13 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Tornado T",
     "summary": "Pass one card left before the turn-rotation hits the table.",
     "detail": "A select-stage Tornado: each hand chooses one of two dealt cards to pass left before preflop, then the turn rotates everyone's hand clockwise as usual.",
+    "family": "selection",
     "tags": [
       "positional",
       "relational",
-      "select-stage",
       "trade-up"
     ],
-    "tier": "select",
+    "tier": "wild",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5404,12 +5499,12 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Trade-Up",
     "summary": "At the deal, each hand passes one selected card to the left neighbor.",
     "detail": "Every owner chooses one hole card to trade away. Cards move simultaneously around the table before preflop ranking starts.",
+    "family": "selection",
     "tags": [
       "relational",
-      "select-stage",
       "trade-up"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5428,11 +5523,11 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Triad+",
     "summary": "Peek four deal cards and keep any three before ranking starts.",
     "detail": "A select-stage Triad: each hand sees four private candidates and sculpts a three-card start.",
+    "family": "selection",
     "tags": [
-      "peek-keep",
-      "select-stage"
+      "peek-keep"
     ],
-    "tier": "select",
+    "tier": "twist",
     "deal": {
       "holeCards": 2,
       "dealChoice": {
@@ -5450,6 +5545,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Book",
     "summary": "Two 3-card pages and a spine — pick a page or play the spine.",
     "detail": "Seven board cards form two facing pages bracketing a single spine card; you score with either page or use the spine across both.",
+    "family": "environment",
     "tags": [
       "big-hands",
       "multi-board"
@@ -5538,6 +5634,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Bookends",
     "summary": "7-slot linear; only the two end cards anchor the read.",
     "detail": "The board is wide and the middle is decoration; both endcaps must contribute to the score, framing every hand around the extremes.",
+    "family": "hand",
     "tags": [
       "big-hands"
     ],
@@ -5571,6 +5668,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Bridge",
     "summary": "Two boards share a single bridging card that votes a side at reveal.",
     "detail": "Nine community cards form two boards joined by one shared bridge; at reveal the bridge picks the side it'll score for and gives that board the win.",
+    "family": "environment",
     "tags": [
       "big-hands",
       "late-detonation",
@@ -5624,6 +5722,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Chess",
     "summary": "8-slot grid; only diagonals score.",
     "detail": "The community arrives in a 4x2 grid; the two diagonals are the only scoring runs, forcing a sliced read of the board.",
+    "family": "environment",
     "tags": [
       "big-hands",
       "multi-board"
@@ -5708,6 +5807,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Compass",
     "summary": "Four quadrants; best quadrant scores.",
     "detail": "Eight cards arrange into N/E/S/W quadrants of two; each quadrant gives a tiny scoring micro-board and the strongest takes the round.",
+    "family": "environment",
     "tags": [
       "big-hands",
       "multi-board"
@@ -5796,6 +5896,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Islands",
     "summary": "Three 3-card islands; score across two adjacent islands.",
     "detail": "Nine community cards split into three islands; each scoring read must draw from two adjacent islands, never all three.",
+    "family": "environment",
     "tags": [
       "big-hands",
       "multi-board"
@@ -5880,6 +5981,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Omaha",
     "summary": "Four private cards per hand, best five-card poker hand wins.",
     "detail": "More private information creates bigger late-street reversals and tougher negotiation.",
+    "family": "hand",
     "tags": [
       "big-hands"
     ],
@@ -5896,6 +5998,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Pent",
     "summary": "Five private cards per hand make every hand information-dense.",
     "detail": "Each hand starts with five hole cards, then still uses the shared board to find its best five-card poker hand.",
+    "family": "hand",
     "tags": [
       "big-hands"
     ],
@@ -5912,6 +6015,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Pyramid",
     "summary": "9-slot triangle; one card per row required.",
     "detail": "A pyramid of 9 cards stacks 1/2/3/3 across rows; each scoring read must take a card from each row, forcing a vertical pull.",
+    "family": "identity",
     "tags": [
       "big-hands",
       "late-detonation",
@@ -5979,6 +6083,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Spark",
     "summary": "Each hand gets one private card instead of two.",
     "detail": "Tiny private edges make public-board reading and player confidence matter more.",
+    "family": "hand",
     "tags": [
       "big-hands"
     ],
@@ -5995,6 +6100,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Solitaire",
     "summary": "Seven private cards per hand; the board is mostly a side dish.",
     "detail": "Every hand gets seven hole cards and scores the best five-card poker hand available with the board.",
+    "family": "hand",
     "tags": [
       "big-hands"
     ],
@@ -6011,6 +6117,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Triad",
     "summary": "Three private cards per hand, best five-card poker hand wins.",
     "detail": "A lighter multi-card mode with enough extra texture to make rankings less obvious.",
+    "family": "hand",
     "tags": [
       "big-hands"
     ],
@@ -6027,6 +6134,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Commit",
     "summary": "Top half of the ranking locks at flop; bottom half re-ranks freely.",
     "detail": "Whatever you commit at flop for the top of the ranking is final; only the lower half can be reshuffled across the remaining streets.",
+    "family": "tempo",
     "tags": [
       "phase-tempo"
     ],
@@ -6051,6 +6159,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Dbl Flop",
     "summary": "Two flops in sequence; rerolls at turn before river resolves.",
     "detail": "Flop deals three; turn discards them and rerolls three new flop cards, asking the table to re-rank twice on freshly-revealed boards.",
+    "family": "tempo",
     "tags": [
       "phase-tempo"
     ],
@@ -6075,6 +6184,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Flop Loop",
     "summary": "After turn, the visible board reverts to flop briefly before river.",
     "detail": "Turn arrives, then the board temporarily drops back to its flop visibility for one re-rank, then river restores everything.",
+    "family": "tempo",
     "tags": [
       "phase-tempo"
     ],
@@ -6099,6 +6209,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Pause",
     "summary": "The flop phase happens twice — re-rank, no new cards between.",
     "detail": "The flop street duplicates; the table re-ranks once, then re-ranks again on the same flop before turn arrives.",
+    "family": "tempo",
     "tags": [
       "phase-tempo"
     ],
@@ -6123,8 +6234,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Reverse U",
     "summary": "At river, table order and board order reverse.",
     "detail": "The board and player order reverse when river begins while hand identities remain rankable.",
+    "family": "tempo",
     "tags": [
-      "insanity",
       "late-detonation",
       "phase-tempo"
     ],
@@ -6149,6 +6260,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Slow Flop",
     "summary": "Flop reveals one card per ready cycle (3 cycles).",
     "detail": "The flop's three cards arrive one at a time across separate ready-up cycles, stretching the early read into a slow drip.",
+    "family": "tempo",
     "tags": [
       "phase-tempo"
     ],
@@ -6173,8 +6285,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Echo",
     "summary": "At river, the board returns to the flop.",
     "detail": "The river phase truncates the board back to its first three community cards.",
+    "family": "tempo",
     "tags": [
-      "insanity",
       "late-detonation",
       "phase-tempo"
     ],
@@ -6199,8 +6311,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Time Loop",
     "summary": "After reveal, rewind to turn and re-rank with reveal info known.",
     "detail": "Reveal happens, then the table is sent back to turn for one final ranking pass with everything they just learned; the average of both rankings scores.",
+    "family": "tempo",
     "tags": [
-      "insanity",
       "late-detonation",
       "phase-tempo"
     ],
@@ -6225,8 +6337,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Diaspora",
     "summary": "At turn, every hand gives one card away.",
     "detail": "The first hole card in each hand rotates to the next hand when turn begins.",
+    "family": "identity",
     "tags": [
-      "insanity",
       "positional"
     ],
     "tier": "insanity",
@@ -6250,8 +6362,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Madness",
     "summary": "At turn, every card swaps places.",
     "detail": "All hole and community cards rotate one position through a single shared stream.",
+    "family": "identity",
     "tags": [
-      "insanity",
       "positional"
     ],
     "tier": "insanity",
@@ -6275,8 +6387,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Rebellion",
     "summary": "At the turn, every hand rotates one seat clockwise around the table.",
     "detail": "When turn begins, each player passes their two-card hand to the next seat and inherits the previous seat's hand for the rest of the showdown.",
+    "family": "identity",
     "tags": [
-      "insanity",
       "positional"
     ],
     "tier": "insanity",
@@ -6300,8 +6412,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Vortex",
     "summary": "At turn, ranks rotate around the table.",
     "detail": "Hole-card ranks rotate across table order while suits stay in their slots.",
+    "family": "identity",
     "tags": [
-      "insanity",
       "positional"
     ],
     "tier": "insanity",
@@ -6325,8 +6437,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Encore",
     "summary": "After reveal, hands shuffle to neighbors for a bonus ranking pass.",
     "detail": "Reveal gives the table one extra shot — every hand passes one seat over and a second ranking decides the round.",
+    "family": "identity",
     "tags": [
-      "insanity",
       "late-detonation",
       "positional"
     ],
@@ -6351,8 +6463,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Relay",
     "summary": "At reveal each hand passes its best card clockwise.",
     "detail": "Reveal triggers a clockwise relay — every hand sends its best card to the next seat and scores using whatever arrives in its place.",
+    "family": "identity",
     "tags": [
-      "insanity",
       "late-detonation",
       "positional"
     ],
@@ -6377,8 +6489,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Tomorrow",
     "summary": "Reveal swaps each hand's first card with the next hand's last card.",
     "detail": "At reveal a clockwise cross-swap fires — the cards you ranked with don't end up scoring against you the way you expected.",
+    "family": "identity",
     "tags": [
-      "insanity",
       "late-detonation",
       "positional"
     ],
@@ -6403,6 +6515,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Tornado",
     "summary": "At the turn, every hand's hole cards rotate clockwise around the table.",
     "detail": "When turn begins, each player loses their two cards to the next seat and inherits the previous seat's hand for the rest of the showdown.",
+    "family": "identity",
     "tags": [
       "positional"
     ],
@@ -6427,6 +6540,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Wormhole",
     "summary": "At the river, the first two hands swap one hole card.",
     "detail": "When river begins, the first hole card of seat one trades places with the first hole card of seat two, leaving the rest of the table untouched.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "positional"
@@ -6452,8 +6566,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Division",
     "summary": "At reveal, every hand splits in two.",
     "detail": "Each two-card hand divides into two one-card hands at reveal, and the ranking expands to include the split hands.",
+    "family": "identity",
     "tags": [
-      "insanity",
       "late-detonation",
       "relational"
     ],
@@ -6478,6 +6592,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Civil War",
     "summary": "Reds vs blacks; first hole picks a team.",
     "detail": "At preflop each hand joins a color team based on its first hole card; teams compete in aggregate at reveal.",
+    "family": "identity",
     "tags": [
       "relational"
     ],
@@ -6502,6 +6617,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Crab Bucket",
     "summary": "Top hand drops a tier for every neighbor within a tier of it.",
     "detail": "At reveal the highest hand pays a crowdedness penalty — every hand near it in tier pulls it down one rank-tier.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "relational"
@@ -6527,6 +6643,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Hostage",
     "summary": "One designated hand's rank dictates the table's wild rank.",
     "detail": "At river the hostage hand's first hole card becomes the wild rank for everyone else, so winning depends on negotiating around that seat.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "relational"
@@ -6552,8 +6669,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Last Rites",
     "summary": "Reveal absorbs the last hand's cards into the community board.",
     "detail": "At reveal the trailing seat's cards are added to the board, expanding what every other hand uses to score and gutting the last seat outright.",
+    "family": "identity",
     "tags": [
-      "insanity",
       "late-detonation",
       "relational"
     ],
@@ -6578,6 +6695,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Match Game",
     "summary": "Two hands sharing a rank swap strength — weaker inherits stronger.",
     "detail": "At reveal any pair of hands sharing a rank exchange strengths so the weaker becomes the stronger; the stronger drops to the weaker's class.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "relational"
@@ -6603,6 +6721,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Mirror Jr",
     "summary": "Two adjacent hands always tie; rank everyone else around them.",
     "detail": "A pair of adjacent seats are forced into a tie, so the table's job is to slot the remaining hands above or below the locked pair.",
+    "family": "identity",
     "tags": [
       "relational"
     ],
@@ -6627,6 +6746,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "M Pocket",
     "summary": "Win only if rank-1 hand's strength is entirely pocket-sourced.",
     "detail": "The leading hand's scoring read must come purely from its hole cards — no top-five contribution from the board.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "mission",
@@ -6653,6 +6773,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Neighbor",
     "summary": "Hands jump a tier when their first hole shares rank with a neighbor's.",
     "detail": "Adjacent seats with matching first hole-card ranks both bump up one tier at reveal — sit next to someone strong and you climb with them.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "relational"
@@ -6678,6 +6799,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Pact",
     "summary": "First and last hand merge their best 5 cards at reveal.",
     "detail": "At reveal the table's bookends pool resources — first and last seat combine their strongest five cards into a single joint hand.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "relational"
@@ -6703,8 +6825,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Rock Paper",
     "summary": "Pairs beat trips beat quads beat pairs (cyclic dominance).",
     "detail": "At reveal the pair-trip-quad hierarchy becomes a cycle, and standing tall depends on whether the table also went tall.",
+    "family": "identity",
     "tags": [
-      "insanity",
       "late-detonation",
       "relational"
     ],
@@ -6729,6 +6851,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Solo Act",
     "summary": "A hand only scores if no other hand shares its rank class.",
     "detail": "Two hands holding pairs cancel each other; trips alongside other trips cancel; only unique hand classes survive to score.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "relational"
@@ -6754,6 +6877,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Black",
     "summary": "Black cards are the primary scoring resource.",
     "detail": "More clubs and spades rank higher; poker strength breaks close black counts.",
+    "family": "identity",
     "tags": [
       "mission"
     ],
@@ -6770,6 +6894,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Flush",
     "summary": "Hands rank by the largest same-suit cluster first.",
     "detail": "Poker strength breaks ties, but suit density is the primary objective.",
+    "family": "identity",
     "tags": [
       "mission"
     ],
@@ -6786,6 +6911,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Low Noon",
     "summary": "Lowball, but ranks 6 and above are scoring-invisible.",
     "detail": "At river the high cards are stripped from play and only ranks 2–5 remain, condensing the lowball race into a four-rank brawl.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "mission",
@@ -6812,6 +6938,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Lowball",
     "summary": "The worst poker hand wins the top slot.",
     "detail": "Ranking instincts invert: weak high-card hands become the hands to protect.",
+    "family": "identity",
     "tags": [
       "mission"
     ],
@@ -6828,6 +6955,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "M Flush",
     "summary": "Win only if the rank-1 hand is a flush.",
     "detail": "Standard ranking applies, but the round only counts if the strongest hand is a flush — otherwise the table voids regardless of order.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "mission"
@@ -6853,6 +6981,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "M Loud",
     "summary": "Win only if every hand contains a face card.",
     "detail": "A face-card distribution problem — every hand needs at least one J/Q/K from holes or board to qualify the round.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "mission"
@@ -6878,6 +7007,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "M Tight",
     "summary": "Win only if best and worst hands are within 2 rank-tiers.",
     "detail": "A tightness mission — the table's best hand can sit at most two tiers above the weakest, otherwise the round voids.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "mission"
@@ -6903,6 +7033,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "M Pair",
     "summary": "Win only if every hand contains at least one pair.",
     "detail": "A table-wide qualifier — even one pair-less hand voids the round, so the table coordinates around delivering a pair to every seat.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "mission"
@@ -6928,6 +7059,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "M Quiet",
     "summary": "Win only if the rank-1 hand has no face cards.",
     "detail": "The strongest hand must be made entirely of pip cards; faces in the leader hand void the round.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "mission"
@@ -6953,6 +7085,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "M Rainbow",
     "summary": "Win only if every suit appears in the rank-1 hand's read.",
     "detail": "The leading hand's five-card read must include all four suits — flush draws don't count, painted hands do.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "mission"
@@ -6978,6 +7111,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "M Red Riv",
     "summary": "Win only if all river-revealed community cards are red.",
     "detail": "Every community card revealed at river must be red — a single black card down the river kills the round.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "mission"
@@ -7003,6 +7137,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "M Twins",
     "summary": "Win only if two adjacent hands tie at reveal.",
     "detail": "At least one adjacent pair of hands must end up tied — the table coordinates to deliver a tie somewhere among the seats.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "mission"
@@ -7028,6 +7163,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "M Wide",
     "summary": "Win only if the spread is at least 4 rank-tiers.",
     "detail": "An inverse of Mission Tight — best and worst must sit at least four tiers apart, so the table needs both a champion and a doormat.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "mission"
@@ -7053,6 +7189,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Pairs",
     "summary": "Pairs, trips, and quads are the main scoring target.",
     "detail": "The best multiplicity profile wins, with normal poker strength as the tiebreaker.",
+    "family": "identity",
     "tags": [
       "mission"
     ],
@@ -7069,6 +7206,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Red",
     "summary": "Red cards are the primary scoring resource.",
     "detail": "More hearts and diamonds rank higher; poker strength breaks close red counts.",
+    "family": "identity",
     "tags": [
       "mission"
     ],
@@ -7085,6 +7223,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Straight",
     "summary": "Hands rank by their longest rank run first.",
     "detail": "Poker strength breaks ties, but connected cards define the table order.",
+    "family": "identity",
     "tags": [
       "mission"
     ],
@@ -7101,6 +7240,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Straight Only",
     "summary": "Straight scoring; board pairs are stripped at river.",
     "detail": "Any rank duplicated on the board is removed at river, leaving a thinner board where straight runs are the only viable read.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "mission",
@@ -7127,6 +7267,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Suit Court",
     "summary": "Flush scoring, but only the board's majority color counts.",
     "detail": "At river, every card whose color does not match the board's majority is stripped from play, leaving flush draws to fight over a single chromatic court.",
+    "family": "identity",
     "tags": [
       "late-detonation",
       "mission",
@@ -7153,8 +7294,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Worst Of All",
     "summary": "Pure lowball, but only after a pair-qualification check.",
     "detail": "The lowest hand wins, but the round only resolves if at least one paired hand exists at reveal — otherwise the round voids.",
+    "family": "identity",
     "tags": [
-      "insanity",
       "late-detonation",
       "mission"
     ],
@@ -7179,6 +7320,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Black Tide",
     "summary": "Plays as high; switches to black-card scoring at reveal.",
     "detail": "A mirror of Red Tide. Players rank assuming high-card scoring, then the rule pivots at reveal to count only black cards.",
+    "family": "tempo",
     "tags": [
       "late-detonation",
       "score-pivot"
@@ -7204,6 +7346,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Final Coin",
     "summary": "Coin flip at reveal decides high vs lowball.",
     "detail": "Players rank with high in mind through the river; reveal flips a public coin to choose between high and lowball as the live scoring rule.",
+    "family": "tempo",
     "tags": [
       "late-detonation",
       "score-pivot"
@@ -7229,6 +7372,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Inv Tide",
     "summary": "All ranks invert at river — Aces become weakest.",
     "detail": "Players rank toward the river expecting high to win, but the rank order flips when the river lands and the reveal scores against the inverted order.",
+    "family": "tempo",
     "tags": [
       "late-detonation",
       "score-pivot"
@@ -7255,6 +7399,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Invert",
     "summary": "Aces are low and twos rank above kings.",
     "detail": "Showdown maps rank strength through an inverted order before comparing poker hands.",
+    "family": "hand",
     "tags": [
       "score-pivot"
     ],
@@ -7272,8 +7417,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Pulled Rug",
     "summary": "A named rank inverts at reveal — announced at river.",
     "detail": "River names the rank; reveal flips that rank's strength so anyone leaning on it for ranking suddenly sees their hand collapse.",
+    "family": "tempo",
     "tags": [
-      "insanity",
       "late-detonation",
       "score-pivot"
     ],
@@ -7301,6 +7446,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Red Tide",
     "summary": "Plays as high; switches to red-card scoring at reveal.",
     "detail": "Players rank as if scoring high cards all hand, but the rule pivots at reveal — only red cards count toward the final winner.",
+    "family": "tempo",
     "tags": [
       "late-detonation",
       "score-pivot"
@@ -7326,6 +7472,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Aurora",
     "summary": "At river, suits swap within color pairs.",
     "detail": "When river begins, suits reassign across hands and board on a fixed cycle, scrambling flush draws while ranks stay intact.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -7351,6 +7498,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Black Hole",
     "summary": "At the river, the most recent community card disappears into the void.",
     "detail": "When river begins, the last card placed on the board vanishes and is not replaced, so the table ends the hand on a four-card community board.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -7376,8 +7524,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Cipher",
     "summary": "At river, values are encoded through the river card.",
     "detail": "Every rank shifts by the river card's rank index when river begins.",
+    "family": "environment",
     "tags": [
-      "insanity",
       "late-detonation",
       "weather"
     ],
@@ -7402,8 +7550,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Converge",
     "summary": "At river, one rank converges into aces.",
     "detail": "When river begins, every seven in hands and on the board converges into an ace before reveal scoring.",
+    "family": "environment",
     "tags": [
-      "insanity",
       "late-detonation",
       "weather"
     ],
@@ -7428,8 +7576,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Drift",
     "summary": "Every street, private cards drift upward.",
     "detail": "Hole-card ranks shift +1 at flop, turn, and river.",
+    "family": "environment",
     "tags": [
-      "insanity",
       "late-detonation",
       "weather"
     ],
@@ -7460,8 +7608,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Eclipse T",
     "summary": "At river, the highest rank in play vanishes.",
     "detail": "Every card of the current highest rank is removed from hands and board at river.",
+    "family": "environment",
     "tags": [
-      "insanity",
       "late-detonation",
       "weather"
     ],
@@ -7486,6 +7634,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Festival",
     "summary": "At the river, one community card boosts all the way up to an ace.",
     "detail": "When river begins, the first board card becomes an ace, often shifting straight, set, and high-card reads going into reveal.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -7511,8 +7660,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Pinball",
     "summary": "A community card bounces into a hole slot.",
     "detail": "The first community card swaps with the first hole card at flop, turn, and river.",
+    "family": "environment",
     "tags": [
-      "insanity",
       "late-detonation",
       "weather"
     ],
@@ -7543,8 +7692,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Spread",
     "summary": "A plague rank infects more cards each phase.",
     "detail": "One additional card converts to seven at flop, turn, and river.",
+    "family": "environment",
     "tags": [
-      "insanity",
       "late-detonation",
       "weather"
     ],
@@ -7575,8 +7724,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Schism",
     "summary": "At the turn, the remaining deck splits and only the high half stays in play.",
     "detail": "When turn begins, every later draw — for board replacements or other effects — comes only from the deck's high ranks.",
+    "family": "environment",
     "tags": [
-      "insanity",
       "weather"
     ],
     "tier": "insanity",
@@ -7600,8 +7749,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Singularity",
     "summary": "At turn, each hand's cards collapse together.",
     "detail": "The first two hole cards in each hand merge into one averaged-rank card when turn begins.",
+    "family": "environment",
     "tags": [
-      "insanity",
       "weather"
     ],
     "tier": "insanity",
@@ -7625,8 +7774,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Soup",
     "summary": "At turn, holes and burn pile mix together.",
     "detail": "When turn begins, every hand's hole cards mix with the burn pile and are dealt back out across the table.",
+    "family": "environment",
     "tags": [
-      "insanity",
       "weather"
     ],
     "tier": "insanity",
@@ -7650,8 +7799,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "C Static",
     "summary": "Cards flicker into new ranks as the hand progresses.",
     "detail": "The first hole card and first board card shift upward each street.",
+    "family": "environment",
     "tags": [
-      "insanity",
       "late-detonation",
       "weather"
     ],
@@ -7682,8 +7831,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Tide",
     "summary": "Every street, all ranks drift upward.",
     "detail": "All ranks shift +1 at flop, turn, and river.",
+    "family": "environment",
     "tags": [
-      "insanity",
       "late-detonation",
       "weather"
     ],
@@ -7714,6 +7863,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Cold",
     "summary": "At turn, all face cards become twos.",
     "detail": "Jacks, queens, and kings in hands and board convert to twos when turn begins.",
+    "family": "environment",
     "tags": [
       "weather"
     ],
@@ -7738,6 +7888,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Color Lock",
     "summary": "At reveal only majority-color cards score.",
     "detail": "When the board is fully revealed, the minority color is stripped and only the majority's cards count toward final ranking.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -7763,6 +7914,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Doomsday",
     "summary": "At the river, the doomsday card flips every rank in play upside down.",
     "detail": "When river begins, all ranks across hands and board invert so aces become twos, kings become threes, and so on before reveal.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -7788,6 +7940,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Drought",
     "summary": "At the turn, every face card on the board is wiped away.",
     "detail": "When the turn begins, jacks, queens, and kings disappear from the community cards and are replaced by fresh deck draws.",
+    "family": "environment",
     "tags": [
       "weather"
     ],
@@ -7812,6 +7965,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Quake",
     "summary": "At the turn, the community cards shake into a new order.",
     "detail": "The board scrambles in place when the turn begins, keeping the same five cards but resetting any positional reads the table had built.",
+    "family": "environment",
     "tags": [
       "weather"
     ],
@@ -7836,8 +7990,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Glitch Wars",
     "summary": "At turn, board cards fight over suit identity.",
     "detail": "The first community card absorbs the second community card's suit when turn begins.",
+    "family": "environment",
     "tags": [
-      "insanity",
       "weather"
     ],
     "tier": "insanity",
@@ -7861,6 +8015,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Gravity",
     "summary": "At the river, every hand's highest hole card climbs one rank.",
     "detail": "When river begins, each hand's top card is pulled up a single rank, sharpening high-card and made-hand pressure across the final showdown.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -7886,6 +8041,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Heat W",
     "summary": "At turn, all face cards become aces.",
     "detail": "Jacks, queens, and kings in hands and board convert to aces when turn begins.",
+    "family": "environment",
     "tags": [
       "weather"
     ],
@@ -7910,6 +8066,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Hurricane",
     "summary": "At river, every player loses one hole card.",
     "detail": "Each hand loses its final hole card when river begins.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -7935,8 +8092,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Crisis",
     "summary": "At turn, a hole card and board card swap identities.",
     "detail": "The first hand's first hole card swaps with the first community card when turn begins.",
+    "family": "environment",
     "tags": [
-      "insanity",
       "weather"
     ],
     "tier": "insanity",
@@ -7960,6 +8117,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Last Word",
     "summary": "River overwrites every same-suit board card.",
     "detail": "At reveal, the river card's identity rewrites every board card sharing its suit, collapsing flush draws into a single rank.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -7985,6 +8143,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Lightning",
     "summary": "At the river, every hand's first hole card jumps up one rank.",
     "detail": "When the river arrives, the first kept card in every hand climbs a single rank, sharpening late made-hand pressure without touching the board.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -8010,6 +8169,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Meteor",
     "summary": "At the turn, one visible community card is struck out and replaced.",
     "detail": "When the turn begins, a single board card is swapped for a fresh draw from the deck, breaking one read while leaving the rest of the felt intact.",
+    "family": "environment",
     "tags": [
       "weather"
     ],
@@ -8034,6 +8194,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Mirror U",
     "summary": "At the river, every rank flips across the deck's spine.",
     "detail": "When river begins, every rank inverts so aces become twos, kings become threes, and so on across hands and board before reveal.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -8059,6 +8220,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Mute",
     "summary": "Suits strip from the board at reveal — ranks-only scoring.",
     "detail": "At reveal the board's suits are erased; flushes evaporate and only rank-based hands resolve.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -8084,6 +8246,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Plague",
     "summary": "At the turn, every seven on the board is wiped away.",
     "detail": "When the turn begins, sevens disappear from the community cards and are replaced by fresh draws so the rank is rarely available at reveal.",
+    "family": "environment",
     "tags": [
       "weather"
     ],
@@ -8108,8 +8271,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Quantum",
     "summary": "At turn, all hole cards are redistributed.",
     "detail": "Hole cards are gathered, rotated, and redealt across the table when turn begins.",
+    "family": "environment",
     "tags": [
-      "insanity",
       "weather"
     ],
     "tier": "insanity",
@@ -8133,6 +8296,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Rain",
     "summary": "Every phase, one community card is replaced.",
     "detail": "A fresh deck card replaces one visible community card at flop, turn, and river.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -8164,6 +8328,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Replace",
     "summary": "At turn, one visible board card is swapped for a fresh card.",
     "detail": "The board mutates as the turn begins, forcing the table to re-evaluate earlier placements.",
+    "family": "environment",
     "tags": [
       "weather"
     ],
@@ -8185,6 +8350,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Reverse",
     "summary": "At river, the board reverses in place.",
     "detail": "The same five community cards remain in play, but their displayed order flips when the river phase begins.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -8207,8 +8373,8 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Shifter",
     "summary": "One community card changes identity each street.",
     "detail": "The first community card upgrades one rank at flop, turn, and river.",
+    "family": "environment",
     "tags": [
-      "insanity",
       "late-detonation",
       "weather"
     ],
@@ -8239,6 +8405,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Flare",
     "summary": "At the turn, every card on the table swaps to a new suit.",
     "detail": "When the turn begins, suits reassign across hands and board on a fixed cycle, scrambling flush draws while ranks stay intact.",
+    "family": "environment",
     "tags": [
       "weather"
     ],
@@ -8263,6 +8430,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Static",
     "summary": "Each street, the community-card suits scramble while ranks stay fixed.",
     "detail": "The board ranks lock in once dealt, but every new street reshuffles which suit each board card carries, breaking flush reads as the hand progresses.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -8294,6 +8462,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Surge",
     "summary": "Each street, the oldest community card is swept off the board.",
     "detail": "Flop drops the first board card, turn drops the next, and river drops another, so the board keeps shifting forward instead of accumulating.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -8325,6 +8494,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Glare",
     "summary": "One revealed board card retro-marks as wild at reveal.",
     "detail": "At reveal a single previously-shown board card flips to wild, retroactively scrambling the reads players already locked in.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -8350,6 +8520,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Volcano",
     "summary": "At river, one face-up card from each hand is destroyed.",
     "detail": "The first hole card in each hand is destroyed when river begins.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -8375,6 +8546,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Wildfire",
     "summary": "When the river hits, the two ranks adjacent to it are wiped from the table.",
     "detail": "On river street, both neighbor ranks of the river card burn out of every hand and the board, so each made hand has to rebuild around the gap.",
+    "family": "environment",
     "tags": [
       "late-detonation",
       "weather"
@@ -8400,6 +8572,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Plus",
     "summary": "5-slot cross — center card forced into every read.",
     "detail": "The board is a cross; the center sits in every scoring path so its identity dominates flush and straight reads alike.",
+    "family": "environment",
     "tags": [
       "multi-board"
     ],
@@ -8462,6 +8635,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Audit",
     "summary": "Every ranking change is logged with a public attribution chip.",
     "detail": "Each rank movement on the table is publicly logged with the player who made it, encouraging explicit reasoning and post-hoc reads.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8481,6 +8655,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Bipolar",
     "summary": "Two scoring rules run in parallel; the live one rotates each phase.",
     "detail": "An info chip names which scoring rule is in force this street; players must rank with the active rule while preparing for the swap to bite at reveal.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8500,6 +8675,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Burn",
     "summary": "The three burned cards are exposed to the whole table.",
     "detail": "A public chip names the cards burned before the flop, turn, and river so the table knows what is not coming back; scoring is unchanged.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8519,6 +8695,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Conscience",
     "summary": "The deck announces a rank that has gone unused.",
     "detail": "A public chip names the first rank that no one is holding and no community card shows, refreshing as the streets unfold.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8538,6 +8715,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Counters",
     "summary": "A public chip counts the cards still left in the deck.",
     "detail": "The chip updates each street so the table can track how many cards remain undealt; scoring still uses the standard five-card board.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8557,6 +8735,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Karma",
     "summary": "A card from the previous hand echoes into this one as a karmic memory.",
     "detail": "Between hands, a public karma notice carries forward one card from the prior reveal so the new hand starts with shared memory of what came before.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8576,6 +8755,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Theatre",
     "summary": "Each street, a rotating hand is described in words instead of shown as cards.",
     "detail": "A public clue narrates one hand's contents every phase, giving the table a flavorful read while the actual cards stay hidden until reveal.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8595,6 +8775,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Whisper",
     "summary": "At the river, a public whisper names one community card's true identity.",
     "detail": "The chip stays silent through preflop, flop, and turn, then reveals one board slot's rank and suit on river street as a late-stage anchor.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8614,6 +8795,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Network",
     "summary": "A public chip names one community card's true identity from the start.",
     "detail": "From preflop onward, a network whisper exposes one community-card slot's rank and suit, giving every seat the same guaranteed anchor.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8633,6 +8815,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Clock",
     "summary": "Each phase shows a countdown of one named rank's remaining cards.",
     "detail": "The chip names a rank and tracks how many of it remain in the deal deck across each street, biasing reads toward when the rank lands.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8652,6 +8835,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Confess",
     "summary": "One hand per phase must publicly confess one true fact about its cards.",
     "detail": "Each street the server picks a hand to disclose one true fact about its holes — partial information, freely chosen scope.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8671,6 +8855,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Decoy",
     "summary": "A public chip warns that one community card is a decoy without saying which.",
     "detail": "Players know exactly one board card is non-scoring but never see which slot; reads must rely on inference and table talk.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8690,6 +8875,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Dossier",
     "summary": "Each hand gets a one-line personality blurb hinting at its strength.",
     "detail": "The info chip writes a short character sketch for each hand — sometimes flattering, sometimes flat — letting the table guess strength from voice.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8709,6 +8895,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Flop Draft",
     "summary": "Flop arrives as 6 cards; each player drafts 1 into private hand; 3 stay public.",
     "detail": "Six flop cards land face-up; players take one each into their private hand and the remaining three become the actual community flop.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8733,6 +8920,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Heat",
     "summary": "The table is told whether the deck skews high or low.",
     "detail": "A public chip compares how many high cards and low cards remain in the deck, refreshing every street.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8752,6 +8940,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Hint",
     "summary": "At the turn, a public chip names one off-board card from the deck.",
     "detail": "The hint appears only on the turn and previews a single card sitting in the deck, then vanishes for river and reveal scoring.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8771,6 +8960,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Mirror",
     "summary": "At the flop, a public chip shows a fake three-card flop next to the real one.",
     "detail": "Only the flop street displays the decoy three cards; turn, river, and reveal score against the genuine board with no chip in sight.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8790,6 +8980,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Mirror H",
     "summary": "Each player privately sees one hole card from a neighbor's hand.",
     "detail": "Every player receives a secret reflection of a single card belonging to another hand; the mirror stays private through reveal.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8809,6 +9000,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Oracle",
     "summary": "Once per round the table can ask one yes/no question of the oracle.",
     "detail": "A deterministic oracle answers a single yes/no query the table coordinates on; the answer is durable across the rest of the round.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8828,6 +9020,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Trace",
     "summary": "A public chip echoes a fact about the previous hand into this one.",
     "detail": "Between hands, a trace carries forward a single piece of public information from the prior reveal so the table starts each new hand with some memory.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8847,6 +9040,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Phantom",
     "summary": "A public chip names a rank that at least one hand is missing.",
     "detail": "The phantom announces a single rank that is absent from at least one hand at the table, leaving the table to infer which hand it points at.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8866,6 +9060,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Prophecy",
     "summary": "At preflop, the winning hand class is announced — and it holds.",
     "detail": "The table is told the hand class that will win this round before any community card lands; the seeded outcome holds across the streets.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8885,6 +9080,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Rank C",
     "summary": "A public chip breaks down how many cards of each rank remain in the deck.",
     "detail": "The rank counts refresh every street so the table can see which ranks are depleted; scoring still uses the standard five-card board.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8904,6 +9100,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "R-Whisper",
     "summary": "A public chip names one hand and a rank that hand does not hold.",
     "detail": "The whisper narrows reads on a single hand by telling the table one rank it is missing, without ever exposing which cards it actually has.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8923,6 +9120,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Red Herr",
     "summary": "At flop the table is told a confidently-wrong fact about the board.",
     "detail": "A loud and certain statement about the flop arrives in the info chip — and it's a lie. Players must catch the deception or rank by it.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8942,6 +9140,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Rumor",
     "summary": "Each phase tells the table a rumor — sometimes true, sometimes false.",
     "detail": "Every street the info chip whispers a fact about a hand; some are true, some are not, and the table can't tell which is which.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8961,6 +9160,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Sample",
     "summary": "At the river, three cards from the leftover deck are exposed as a public sample.",
     "detail": "The sample appears only on river street and previews three cards that never reach the board; scoring uses the normal five-card board.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8980,6 +9180,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Seismo",
     "summary": "Info chip rates how much rank-1 might shift on the next phase.",
     "detail": "Each street the chip estimates the volatility of the leader hand; high readings mean ranking the top is dangerous to commit to.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -8999,6 +9200,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Suit C",
     "summary": "A public chip breaks down how many cards of each suit remain in the deck.",
     "detail": "The suit counts refresh every street so the table can read suit pressure; scoring still uses the standard five-card board.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -9018,6 +9220,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Suit Heat",
     "summary": "The table is told which suit is over-represented.",
     "detail": "A public chip names whichever suit has the most remaining cards in the deck, refreshing every street.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -9037,6 +9240,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "S-Whisper",
     "summary": "A public chip names one hand and a suit that hand does not hold.",
     "detail": "The whisper narrows reads on a single hand by telling the table one suit it is missing, without ever exposing which cards it actually has.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -9056,6 +9260,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Telepathy",
     "summary": "At the river, the table picks up a vague hint about a neighboring hand.",
     "detail": "On river street, a public broadcast carries a fuzzy clue about a nearby hand's cards while the underlying scoring stays unchanged.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -9075,6 +9280,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Tell",
     "summary": "A public chip reveals one community card's true identity from the start.",
     "detail": "From preflop onward, the chip names one community-card slot and its rank and suit, giving the table a guaranteed anchor.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -9094,6 +9300,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Weather",
     "summary": "A forecast at preflop predicts which phase will deal the highest card.",
     "detail": "At preflop the chip predicts which street will land the round's highest card, biasing how the table values future visibility.",
+    "family": "info",
     "tags": [
       "info-overlay"
     ],
@@ -9113,8 +9320,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "Skip",
     "summary": "At the turn, the table glimpses a future street and snaps back unchanged.",
     "detail": "A public skip notice fires at turn, previewing a possible future without altering the actual hands or board; everything resumes as if nothing happened.",
+    "family": "info",
     "tags": [
-      "insanity"
+      "info-overlay"
     ],
     "tier": "insanity",
     "deal": {
@@ -9132,8 +9340,9 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "shortName": "2nd Place",
     "summary": "The rank-2 hand wins; rank-1 is out.",
     "detail": "Hands rank normally for high, but the runner-up actually takes the round and the strongest hand drops out of contention entirely.",
+    "family": "hand",
     "tags": [
-      "insanity"
+      "score-pivot"
     ],
     "tier": "insanity",
     "deal": {

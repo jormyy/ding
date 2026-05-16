@@ -3,9 +3,9 @@ name: Holographic Card
 shortName: Holo
 summary: Every community card carries multiple possible identities until reveal.
 detail: Each board card displays as uncertain through flop, turn, and river; reveal collapses every slot to whichever identity makes the strongest hand.
+family: identity
 tags:
   - identity-token
-  - insanity
 tier: insanity
 deal:
   extends: standard

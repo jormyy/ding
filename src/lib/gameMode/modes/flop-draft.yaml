@@ -3,6 +3,7 @@ name: Flop Draft
 shortName: Flop Draft
 summary: Flop arrives as 6 cards; each player drafts 1 into private hand; 3 stay public.
 detail: Six flop cards land face-up; players take one each into their private hand and the remaining three become the actual community flop.
+family: info
 tags:
   - info-overlay
 tier: chaos

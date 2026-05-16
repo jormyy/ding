@@ -3,10 +3,11 @@ name: Avalanche
 shortName: Avalanche
 summary: The board buries the table in seven community cards by river.
 detail: The flop shows three cards, the turn jumps to five, and the river piles on two more so reveal lands on a seven-card community board.
+family: tempo
 tags:
   - big-hands
   - phase-tempo
-  - visibility
+  - info-public
 tier: wild
 deal:
   extends: standard

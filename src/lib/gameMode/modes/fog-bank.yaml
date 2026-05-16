@@ -3,8 +3,9 @@ name: Fog Bank
 shortName: Fog
 summary: Community cards show only their color until reveal.
 detail: From flop through river the board exposes color pressure only; reveal restores ranks and suits for scoring.
+family: info
 tags:
-  - visibility
+  - info-public
 tier: twist
 deal:
   extends: standard

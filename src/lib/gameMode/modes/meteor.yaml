@@ -3,6 +3,7 @@ name: Meteor
 shortName: Meteor
 summary: At the turn, one visible community card is struck out and replaced.
 detail: When the turn begins, a single board card is swapped for a fresh draw from the deck, breaking one read while leaving the rest of the felt intact.
+family: environment
 tags:
   - weather
 tier: wild

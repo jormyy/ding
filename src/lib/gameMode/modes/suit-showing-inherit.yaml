@@ -3,12 +3,12 @@ name: Suit Showing Inherit
 shortName: Suit I
 summary: Inherit a card whose suit you saw at the deal — ranks stay hidden until reveal.
 detail: "A select-stage Suit Showing: each hand keeps one dealt card while the right neighbor's discard fills the second slot; both cards' suits are public throughout, but ranks stay hidden until reveal."
+family: selection
 tags:
   - inheritance
   - relational
-  - select-stage
-  - visibility
-tier: select
+  - info-public
+tier: wild
 deal:
   extends: standard
   dealChoice:

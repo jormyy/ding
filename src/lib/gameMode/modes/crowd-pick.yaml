@@ -3,10 +3,10 @@ name: Crowd Pick
 shortName: Crowd
 summary: Other players pick which 2 of your 4 holes you keep.
 detail: Each seat is dealt four candidates face-up; the rest of the table votes on which two stay, removing personal agency from hand construction.
+family: selection
 tags:
   - relational
-  - select-stage
-tier: select
+tier: twist
 deal:
   extends: standard
   dealChoice:

@@ -3,8 +3,9 @@ name: Communal Glance
 shortName: Glance
 summary: The table sees one random hole-card slot.
 detail: One shared hole-card anchor per hand is public for the hand, preserving symmetric information.
+family: info
 tags:
-  - visibility
+  - info-public
 tier: chaos
 deal:
   extends: standard

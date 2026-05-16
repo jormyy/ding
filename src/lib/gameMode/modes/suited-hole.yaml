@@ -3,6 +3,7 @@ name: Suited Hole
 shortName: Suited
 summary: Hole cards in every hand are guaranteed the same suit.
 detail: Every hand starts suited, making flush paths more visible without changing classic high-hand scoring.
+family: environment
 tags:
   - constrained-deal
 tier: twist

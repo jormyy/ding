@@ -3,11 +3,11 @@ name: Heat Map Expose
 shortName: Heat X
 summary: Expose your committed hole card — signal heat or hide your intent.
 detail: "A select-stage Heat Map: each hand picks one of two dealt cards to make public to the table while the deck's high-vs-low heat refreshes every street through reveal."
+family: selection
 tags:
   - expose-choice
-  - select-stage
-  - visibility
-tier: select
+  - info-public
+tier: twist
 deal:
   extends: standard
   publicCards: 1

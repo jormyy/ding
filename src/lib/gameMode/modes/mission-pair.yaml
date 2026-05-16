@@ -3,6 +3,7 @@ name: Mission Pair
 shortName: M Pair
 summary: Win only if every hand contains at least one pair.
 detail: A table-wide qualifier — even one pair-less hand voids the round, so the table coordinates around delivering a pair to every seat.
+family: identity
 tags:
   - late-detonation
   - mission

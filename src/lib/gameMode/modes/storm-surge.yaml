@@ -3,6 +3,7 @@ name: Storm Surge
 shortName: Surge
 summary: Each street, the oldest community card is swept off the board.
 detail: Flop drops the first board card, turn drops the next, and river drops another, so the board keeps shifting forward instead of accumulating.
+family: environment
 tags:
   - late-detonation
   - weather

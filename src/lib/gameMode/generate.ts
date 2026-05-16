@@ -29,6 +29,7 @@ const TOP_KEY_ORDER: (keyof DingGameModeDefinition)[] = [
   "shortName",
   "summary",
   "detail",
+  "family",
   "tags",
   "tier",
   "deal",

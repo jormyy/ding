@@ -3,8 +3,8 @@ name: Card Tide
 shortName: Tide
 summary: Every street, all ranks drift upward.
 detail: All ranks shift +1 at flop, turn, and river.
+family: environment
 tags:
-  - insanity
   - late-detonation
   - weather
 tier: insanity

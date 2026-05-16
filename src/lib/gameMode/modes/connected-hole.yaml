@@ -3,6 +3,7 @@ name: Connected Hole
 shortName: Connected
 summary: Hole cards in every hand are guaranteed adjacent ranks.
 detail: Every hand starts with neighboring ranks, creating visible straight paths while keeping classic high-hand scoring.
+family: environment
 tags:
   - constrained-deal
 tier: twist

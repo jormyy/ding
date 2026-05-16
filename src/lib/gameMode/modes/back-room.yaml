@@ -3,11 +3,11 @@ name: Back Room
 shortName: Back Rm
 summary: Peek 5 keep 2; the 3 discards become public face-up cards.
 detail: Each player sees five candidates and keeps two; the three discards from each hand are pushed face-up into a public side board readable by every player.
+family: selection
 tags:
   - late-detonation
   - peek-keep
-  - select-stage
-tier: select
+tier: twist
 deal:
   extends: standard
   dealChoice:

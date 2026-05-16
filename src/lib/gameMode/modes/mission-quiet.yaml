@@ -3,6 +3,7 @@ name: Mission Quiet
 shortName: M Quiet
 summary: Win only if the rank-1 hand has no face cards.
 detail: The strongest hand must be made entirely of pip cards; faces in the leader hand void the round.
+family: identity
 tags:
   - late-detonation
   - mission

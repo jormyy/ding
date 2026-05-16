@@ -3,8 +3,9 @@ name: Tag Team
 shortName: Tag
 summary: Each player privately sees a neighbor's full two-card hand.
 detail: Every player is tagged with another hand's complete hole cards as a private hint that persists from preflop through reveal.
+family: info
 tags:
-  - visibility
+  - info-public
 tier: chaos
 deal:
   extends: standard

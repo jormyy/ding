@@ -3,6 +3,7 @@ name: Wild Edge
 shortName: Edge
 summary: Twos and aces are wild.
 detail: Both deck edges can substitute into the strongest available reveal identity.
+family: hand
 tags:
   - wild
 tier: twist

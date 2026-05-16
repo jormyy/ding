@@ -3,8 +3,9 @@ name: Color Showing
 shortName: Colors
 summary: Every hole-card color is public, but ranks and suits stay hidden.
 detail: The table sees red/black texture from the deal while exact ranks and suits remain private until reveal.
+family: info
 tags:
-  - visibility
+  - info-public
 tier: standard
 deal:
   extends: standard

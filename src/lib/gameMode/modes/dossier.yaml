@@ -3,6 +3,7 @@ name: Dossier
 shortName: Dossier
 summary: Each hand gets a one-line personality blurb hinting at its strength.
 detail: The info chip writes a short character sketch for each hand — sometimes flattering, sometimes flat — letting the table guess strength from voice.
+family: info
 tags:
   - info-overlay
 tier: twist

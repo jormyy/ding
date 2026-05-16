@@ -3,12 +3,12 @@ name: Marked Deck Expose
 shortName: Mark X
 summary: Choose which hole card you publicly expose in a marked deck.
 detail: "A select-stage Marked Deck: each hand picks one of two dealt cards to make public, with the marked card visible to the whole table as it moves through hands and board."
+family: selection
 tags:
   - expose-choice
   - identity-token
-  - select-stage
-  - visibility
-tier: select
+  - info-public
+tier: wild
 deal:
   extends: standard
   publicCards: 1

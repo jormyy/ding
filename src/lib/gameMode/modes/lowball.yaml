@@ -3,6 +3,7 @@ name: Lowball Ding
 shortName: Lowball
 summary: The worst poker hand wins the top slot.
 detail: "Ranking instincts invert: weak high-card hands become the hands to protect."
+family: identity
 tags:
   - mission
 tier: standard

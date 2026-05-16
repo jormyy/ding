@@ -3,6 +3,7 @@ name: Heat Map
 shortName: Heat
 summary: The table is told whether the deck skews high or low.
 detail: A public chip compares how many high cards and low cards remain in the deck, refreshing every street.
+family: info
 tags:
   - info-overlay
 tier: chaos
