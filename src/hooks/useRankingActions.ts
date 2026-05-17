@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { ClientMessage, GameState } from "@/lib/types";
 import { TOAST_DURATION_MS } from "@/lib/constants";
+import { findHandById } from "@/lib/utils";
 
 export interface RankingActions {
   localRanking: (string | null)[];
@@ -54,7 +55,7 @@ export function useRankingActions(
   const handleSlotClick = useCallback((slotIndex: number) => {
     if (selectedHandId !== null) {
       const occupantId = localRanking[slotIndex];
-      const selectedHand = gameState.hands.find((h) => h.id === selectedHandId);
+      const selectedHand = findHandById(gameState.hands, selectedHandId);
       if (!selectedHand) {
         setSelectedHandId(null);
         setSelectedSlot(null);
@@ -71,7 +72,7 @@ export function useRankingActions(
       } else if (occupantId === selectedHandId) {
         // No-op
       } else {
-        const occupantHand = gameState.hands.find((h) => h.id === occupantId);
+        const occupantHand = findHandById(gameState.hands, occupantId);
         if (occupantHand?.playerId === myId) {
           const newRanking = [...localRanking];
           const currentIdx = newRanking.indexOf(selectedHandId);
@@ -125,7 +126,7 @@ export function useRankingActions(
   }, [handleSlotClick, localRanking]);
 
   const handleHandClick = useCallback((handId: string) => {
-    const hand = gameState.hands.find((h) => h.id === handId);
+    const hand = findHandById(gameState.hands, handId);
     const currentSlotIdx = localRanking.indexOf(handId);
 
     if (selectedSlot !== null) {

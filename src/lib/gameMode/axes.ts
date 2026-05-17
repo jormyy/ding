@@ -3,8 +3,8 @@
  * itself only knows mechanical fields; these derive lobby-friendly axes,
  * chaos rating, and search/filter behavior from those fields.
  */
-import { TIERS } from "./tagVocabulary";
-import type { DingGameModeDefinition, ModeTier } from "./types";
+import { TIERS, type ModeTier } from "./tagVocabulary";
+import type { DingGameModeDefinition } from "./types";
 
 export type ModeAxis =
   | "Deal"

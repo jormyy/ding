@@ -4,6 +4,7 @@
  * shifts one card sideways.
  */
 import { handIndexFromId } from "../../handId";
+import { leftNeighbor } from "../../utils";
 import { registerDealChoiceVariant } from "./registry";
 import { fallbackTradeUpIndexes, publicCardCount, refreshHandVisibility } from "./shared";
 import type { Card } from "../../types";
@@ -33,7 +34,7 @@ function applyTradeUp(state: ServerGameState): void {
 
   for (let playerIndex = 0; playerIndex < playerIds.length; playerIndex++) {
     const sourcePlayerId = playerIds[playerIndex];
-    const leftPlayerId = playerIds[(playerIndex + 1) % playerIds.length];
+    const leftPlayerId = leftNeighbor(playerIds, playerIndex);
     for (let handIndex = 0; handIndex < state.handsPerPlayer; handIndex++) {
       const source = selectedByOwnerAndIndex.get(`${sourcePlayerId}:${handIndex}`);
       const target = selectedByOwnerAndIndex.get(`${leftPlayerId}:${handIndex}`);

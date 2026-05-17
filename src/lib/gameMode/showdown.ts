@@ -5,7 +5,7 @@ import { getGameModeDefinition } from "./registry";
 import type { HierarchyId, QualifierId, ScoreRule, SolvedHand } from "./types";
 import { dingEvaluator } from "../../modes/ding/evaluator";
 import { Hand as PokerHand } from "pokersolver";
-import { cardToPokersolverStr, normalizeSolverStrings } from "../utils";
+import { cardToPokersolverStr, incrementMapCount, normalizeSolverStrings } from "../utils";
 import { QUALIFIERS, type QualifierResult } from "./qualifiers";
 import { HIERARCHIES } from "./hierarchies";
 
@@ -28,7 +28,7 @@ const INVERTED_RANK: Record<Rank, Rank> = {
 };
 type RawPokerSolved = ReturnType<typeof PokerHand.solve>;
 
-export interface ModeShowdown {
+interface ModeShowdown {
   trueRanking: string[];
   trueRanks: Record<string, number>;
   madeHandNames: Record<string, string>;
@@ -49,7 +49,7 @@ interface RuleScore {
  * captured before showdown runs. Every field is optional so non-effect modes
  * stay on their existing happy paths.
  */
-export interface ShowdownContext {
+interface ShowdownContext {
   scoreRuleOverride?: ScoreRule;
   pendingQualifier?: QualifierId;
   handHierarchyId?: HierarchyId;
@@ -750,10 +750,7 @@ function straightScore(cards: readonly Card[]): RuleScore {
 
 function pairScore(cards: readonly Card[]): RuleScore {
   const counts = new Map<number, number>();
-  for (const card of cards) {
-    const rank = RANK_VALUE[card.rank];
-    counts.set(rank, (counts.get(rank) ?? 0) + 1);
-  }
+  for (const card of cards) incrementMapCount(counts, RANK_VALUE[card.rank]);
   const groups = Array.from(counts.entries()).sort((a, b) => {
     const countDelta = b[1] - a[1];
     return countDelta !== 0 ? countDelta : b[0] - a[0];
@@ -785,24 +782,14 @@ function sum(values: readonly number[]): number {
   return values.reduce((total, value) => total + value, 0);
 }
 
+const SUIT_NAMES: Record<Suit, string> = { H: "heart", D: "diamond", C: "club", S: "spade" };
+
 function suitName(suit: Suit): string {
-  switch (suit) {
-    case "H":
-      return "heart";
-    case "D":
-      return "diamond";
-    case "C":
-      return "club";
-    case "S":
-      return "spade";
-  }
+  return SUIT_NAMES[suit];
 }
 
+const RANK_NAMES: Record<number, string> = { 1: "A", 10: "T", 11: "J", 12: "Q", 13: "K", 14: "A" };
+
 function rankName(value: number): string {
-  if (value === 14 || value === 1) return "A";
-  if (value === 13) return "K";
-  if (value === 12) return "Q";
-  if (value === 11) return "J";
-  if (value === 10) return "T";
-  return String(value);
+  return RANK_NAMES[value] ?? String(value);
 }

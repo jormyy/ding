@@ -4,22 +4,22 @@ import { useState } from "react";
 import type { Card, Hand } from "@/lib/types";
 import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
-import { toggleInSet } from "@/lib/utils";
+import { filterHandsByPlayer, findPlayerById, leftNeighbor, rightNeighbor, toggleInSet } from "@/lib/utils";
 import { CardFace } from "../CardFace";
-import { VariantStatusBar } from "./SharedAffordances";
+import { DEAL_CHOICE_PANEL_STYLE, VariantStatusBar } from "./SharedAffordances";
 import type { DealChoiceBoardProps } from "./types";
 
 export default function SolomonBoard({ gameState, myId, onSend }: DealChoiceBoardProps) {
-  const myHands = gameState.hands.filter((h) => h.playerId === myId);
+  const myHands = filterHandsByPlayer(gameState.hands, myId);
   const choices = gameState.dealChoices ?? {};
   const playerIds = gameState.players.map((p) => p.id);
   const myIdx = playerIds.indexOf(myId);
-  const leftId = playerIds[(myIdx + 1) % playerIds.length];
+  const leftId = leftNeighbor(playerIds, myIdx);
 
   // Hands belonging to MY RIGHT NEIGHBOR — they wait on me as their LEFT
   // neighbor to choose a pair.
-  const rightId = playerIds[(myIdx + playerIds.length - 1) % playerIds.length];
-  const rightNeighborHands = gameState.hands.filter((h) => h.playerId === rightId);
+  const rightId = rightNeighbor(playerIds, myIdx);
+  const rightNeighborHands = filterHandsByPlayer(gameState.hands, rightId);
 
   return (
     <div className="grid gap-4">
@@ -38,13 +38,13 @@ export default function SolomonBoard({ gameState, myId, onSend }: DealChoiceBoar
               onSend({ type: "solomonSplit", handId: hand.id, pair1, pair2 })
             }
             leftId={leftId}
-            leftName={gameState.players.find((p) => p.id === leftId)?.name ?? "neighbor"}
+            leftName={findPlayerById(gameState.players, leftId)?.name ?? "neighbor"}
           />
         ))}
       </div>
       {rightNeighborHands.length > 0 && (
         <div className="grid gap-3">
-          <div className="text-[10px] font-black uppercase tracking-[0.25em]" style={{ color: "#f08a6c" }}>
+          <div className="text-[10px] font-black uppercase tracking-[0.25em]" style={{ color: D.warning }}>
             Right neighbor — pick which pair they keep
           </div>
           {rightNeighborHands.map((hand, idx) => (
@@ -97,7 +97,7 @@ function SolomonSplitRow({
   return (
     <div
       className="grid gap-3 rounded-lg p-3"
-      style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
+      style={DEAL_CHOICE_PANEL_STYLE}
     >
       <VariantStatusBar
         label={`Hand #${handNumber}`}
@@ -120,7 +120,7 @@ function SolomonSplitRow({
           disabled={!canSubmit}
           onClick={() => onSubmit(pair1Indexes, pair2Indexes)}
           className="h-10 px-3 rounded-md text-xs font-black uppercase tracking-wide transition-all active:scale-95 disabled:opacity-45 disabled:cursor-not-allowed self-end"
-          style={{ background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink }}
+          style={{ background: D.goldButton, color: D.ink }}
         >
           Submit split for {leftId === "" ? "neighbor" : leftName}
         </button>
@@ -193,7 +193,7 @@ function SolomonChooseRow({
   return (
     <div
       className="grid gap-3 rounded-lg p-3"
-      style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
+      style={DEAL_CHOICE_PANEL_STYLE}
     >
       <VariantStatusBar
         label={`Hand #${handNumber}`}
@@ -210,7 +210,7 @@ function SolomonChooseRow({
             type="button"
             onClick={() => onChoose(0)}
             className="flex-1 h-10 rounded-md text-xs font-black uppercase tracking-wide"
-            style={{ background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink }}
+            style={{ background: D.goldButton, color: D.ink }}
           >
             Give them Pair 1
           </button>
@@ -218,7 +218,7 @@ function SolomonChooseRow({
             type="button"
             onClick={() => onChoose(1)}
             className="flex-1 h-10 rounded-md text-xs font-black uppercase tracking-wide"
-            style={{ background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink }}
+            style={{ background: D.goldButton, color: D.ink }}
           >
             Give them Pair 2
           </button>

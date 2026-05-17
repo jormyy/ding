@@ -1,4 +1,5 @@
 import type { Player } from "../../src/lib/types";
+import { findHandById } from "../../src/lib/utils";
 import type { ServerGameState } from "../state";
 
 export function isValidCardIndex(
@@ -16,7 +17,7 @@ export function lookupOwnedHandChoice(
   hand: ServerGameState["hands"][number];
   choice: NonNullable<ServerGameState["dealChoices"][string]>;
 } | null {
-  const hand = state.hands.find((h) => h.id === handId);
+  const hand = findHandById(state.hands, handId);
   if (!hand || hand.playerId !== player.id) return null;
   const choice = state.dealChoices[handId];
   if (!choice || choice.submitted) return null;

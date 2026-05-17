@@ -18,7 +18,7 @@ import {
 } from "@/lib/gameMode";
 import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
-import { toggleInSet } from "@/lib/utils";
+import { idMap, toggleInSet } from "@/lib/utils";
 
 const MODE_RECENT_KEY = "ding.recentModes.v1";
 const MODE_FAVORITES_KEY = "ding.favoriteModes.v1";
@@ -129,10 +129,7 @@ export default function ModeBrowser({
     if (storage.lastTier) setActiveTier(storage.lastTier);
   }, [storage.lastTier]);
 
-  const modeById = useMemo(
-    () => new Map(modeOptions.map((mode) => [mode.id, mode])),
-    [modeOptions],
-  );
+  const modeById = useMemo(() => idMap(modeOptions), [modeOptions]);
   const focusedMode = modeById.get(focusedId) ?? selectedMode;
   const selectedIndex = modeOptions.findIndex((mode) => mode.id === selectedMode.id);
   const searchActive = query.trim().length > 0;
@@ -309,7 +306,7 @@ export default function ModeBrowser({
             disabled={disabled}
             className="h-8 rounded-md text-xs font-black transition-all active:scale-95 disabled:opacity-45 disabled:cursor-not-allowed"
             style={{
-              background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`,
+              background: D.goldButton,
               color: D.ink,
               border: "none",
             }}
@@ -332,7 +329,7 @@ export default function ModeBrowser({
           <div
             className="h-full max-w-[1180px] mx-auto rounded-lg overflow-hidden flex flex-col"
             style={{
-              background: "#0a1813",
+              background: D.cardBg,
               border: `1px solid ${D.panelBorder}`,
               boxShadow: "0 24px 80px rgba(0,0,0,0.55)",
             }}
@@ -351,7 +348,7 @@ export default function ModeBrowser({
                     className="h-8 px-3 rounded-md text-[11px] font-black uppercase tracking-wide whitespace-nowrap"
                     style={
                       activeTier === tier
-                        ? { background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink, border: "none" }
+                        ? { background: D.goldButton, color: D.ink, border: "none" }
                         : { background: surfaces.faintFill, color: D.sub, border: `1px solid ${surfaces.subtleBorder}` }
                     }
                   >
@@ -527,7 +524,7 @@ export default function ModeBrowser({
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search flush, hidden, wild..."
                 className="h-9 rounded-md px-3 text-sm font-bold outline-none"
-                style={{ background: "rgba(0,0,0,0.35)", color: D.goldBright, border: `1px solid ${surfaces.dividerLine}` }}
+                style={{ background: surfaces.darkIconBg, color: D.goldBright, border: `1px solid ${surfaces.dividerLine}` }}
                 aria-label="Search game modes"
               />
               <button
@@ -535,7 +532,7 @@ export default function ModeBrowser({
                 onClick={surpriseMe}
                 disabled={disabled}
                 className="h-9 px-4 rounded-md text-xs font-black uppercase tracking-wide disabled:opacity-45 disabled:cursor-not-allowed"
-                style={{ background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink, border: "none" }}
+                style={{ background: D.goldButton, color: D.ink, border: "none" }}
               >
                 Surprise me
               </button>
@@ -671,7 +668,7 @@ function ModeCard({
         onDoubleClick={onSelect}
         className="h-full w-full rounded-lg p-2 pr-7 text-left flex flex-col transition-all active:scale-[0.98]"
         style={{
-          background: selected ? surfaces.goldLight : focused ? "rgba(47,184,115,0.14)" : "rgba(10,30,18,0.76)",
+          background: selected ? surfaces.goldLight : focused ? surfaces.accentSoft : "rgba(10,30,18,0.76)",
           color: D.goldBright,
           border: selected
             ? `1px solid ${D.gold}`
@@ -813,7 +810,7 @@ function ModeDetail({
           onClick={onSelect}
           disabled={disabled || selected}
           className="h-9 rounded-md text-xs font-black disabled:opacity-45 disabled:cursor-not-allowed"
-          style={{ background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink, border: "none" }}
+          style={{ background: D.goldButton, color: D.ink, border: "none" }}
         >
           {selected ? "Selected" : "Try it"}
         </button>

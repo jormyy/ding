@@ -29,6 +29,18 @@ export function copyCard(card: Card): Card {
   return { ...card };
 }
 
+/** River card lookup with a graceful fallback to the last board card if the
+ *  classic index-4 position is empty (e.g. mid-turn during phase substeps). */
+export function getRiverCard(state: ServerGameState): Card | undefined {
+  return state.allCommunityCards[4] ?? state.allCommunityCards[state.allCommunityCards.length - 1];
+}
+
+/** Deep-copies every hole card across every hand into one flat array — used
+ *  by the rotate/shuffle/mix effects that redistribute hole cards en masse. */
+export function copyAllHoleCards(state: ServerGameState): Card[] {
+  return state.hands.flatMap((hand) => hand.cards.map(copyCard));
+}
+
 export function rotateCards<T>(items: readonly T[], offset: number): T[] {
   if (items.length === 0) return [];
   const normalized = offset % items.length;

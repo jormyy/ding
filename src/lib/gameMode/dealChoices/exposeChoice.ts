@@ -4,7 +4,7 @@
  */
 import { registerDealChoiceVariant } from "./registry";
 import { fallbackExposeIndexes } from "./shared";
-import type { Card } from "../../types";
+import { filterDefined } from "../../utils";
 import type { ServerGameState } from "../../../../party/state";
 
 function applyExposeChoice(state: ServerGameState): void {
@@ -12,9 +12,7 @@ function applyExposeChoice(state: ServerGameState): void {
     const choice = state.dealChoices[hand.id];
     if (!choice) continue;
     const selectedIndexes = choice.selectedIndexes ?? fallbackExposeIndexes(choice.keepCards);
-    hand.publicCards = selectedIndexes
-      .map((index) => hand.cards[index])
-      .filter((card): card is Card => card !== undefined);
+    hand.publicCards = filterDefined(selectedIndexes.map((index) => hand.cards[index]));
     hand.cardCount = hand.cards.length;
   }
 }

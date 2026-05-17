@@ -168,6 +168,8 @@ export function CardFace({ card, small = false, tiny = false, suitStripped = fal
   );
 }
 
+const CARD_BACK_STRIPE = "bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.05)_0px,rgba(255,255,255,0.05)_2px,transparent_2px,transparent_8px)]";
+
 export function CardBack({ small = false, tiny = false }: { small?: boolean; tiny?: boolean }) {
   if (tiny) {
     return (
@@ -175,7 +177,7 @@ export function CardBack({ small = false, tiny = false }: { small?: boolean; tin
         className="rounded-sm shadow-sm select-none overflow-hidden bg-blue-900 border border-blue-700"
         style={{ width: 26, height: 38 }}
       >
-        <div className="w-full h-full bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.05)_0px,rgba(255,255,255,0.05)_2px,transparent_2px,transparent_8px)]" />
+        <div className={`w-full h-full ${CARD_BACK_STRIPE}`} />
       </div>
     );
   }
@@ -186,7 +188,7 @@ export function CardBack({ small = false, tiny = false }: { small?: boolean; tin
         className="rounded-md shadow-sm select-none overflow-hidden bg-blue-900 border border-blue-700"
         style={{ width: 36, height: 52 }}
       >
-        <div className="w-full h-full bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.05)_0px,rgba(255,255,255,0.05)_2px,transparent_2px,transparent_8px)]" />
+        <div className={`w-full h-full ${CARD_BACK_STRIPE}`} />
       </div>
     );
   }
@@ -196,7 +198,7 @@ export function CardBack({ small = false, tiny = false }: { small?: boolean; tin
       className="rounded-lg shadow-md select-none overflow-hidden bg-blue-900 border border-blue-700"
       style={{ width: 56, height: 80 }}
     >
-      <div className="w-full h-full bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.05)_0px,rgba(255,255,255,0.05)_2px,transparent_2px,transparent_8px)] flex items-center justify-center">
+      <div className={`w-full h-full ${CARD_BACK_STRIPE} flex items-center justify-center`}>
         <div className="text-blue-300 text-opacity-30 text-xs font-bold tracking-widest rotate-90">
           DING
         </div>

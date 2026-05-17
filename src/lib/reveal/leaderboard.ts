@@ -1,4 +1,5 @@
 import type { GameState, Hand, Player } from "../types";
+import { findPlayerById, idMap } from "../utils";
 
 export interface RevealRow {
   handId: string;
@@ -34,12 +35,12 @@ interface DisplacementResult {
 export function computeRevealRows(gameState: GameState, myId: string): RevealRow[] {
   const trueRanks = gameState.trueRanks!;
   const trueRanking = gameState.trueRanking!;
-  const handMap = new Map<string, Hand>(gameState.hands.map((h) => [h.id, h]));
+  const handMap = idMap(gameState.hands);
   const total = gameState.hands.length;
 
   return trueRanking.map((handId) => {
     const hand = handMap.get(handId)!;
-    const player = gameState.players.find((p) => p.id === hand.playerId);
+    const player = findPlayerById(gameState.players, hand.playerId);
     const trueRank = trueRanks[handId];
     const guessedIdx = gameState.ranking.indexOf(handId);
     const guessedRank = guessedIdx === -1 ? null : guessedIdx + 1;
@@ -95,7 +96,7 @@ export function computeDisplacementLeaderboard(
 ): DisplacementResult {
   const trueRanks = gameState.trueRanks!;
   const trueRanking = gameState.trueRanking!;
-  const handMap = new Map<string, Hand>(gameState.hands.map((h) => [h.id, h]));
+  const handMap = idMap(gameState.hands);
 
   const displacementByPlayer = new Map<string, number>();
   gameState.ranking.forEach((handId, i) => {
@@ -115,7 +116,7 @@ export function computeDisplacementLeaderboard(
   const sorted = Array.from(displacementByPlayer.entries())
     .map(([playerId, off]) => ({
       playerId,
-      name: gameState.players.find((p) => p.id === playerId)?.name ?? "?",
+      name: findPlayerById(gameState.players, playerId)?.name ?? "?",
       off,
       mine: playerId === myId,
     }))
@@ -178,14 +179,9 @@ export function computeInversionsData(gameState: GameState, myId: string): Inver
   const invByPlayer: Record<string, number[]> = {};
   players.forEach((p) => { invByPlayer[p.id] = [0, 0, 0, 0, 0]; });
 
-  function tallyPhase(getRank: (h: (typeof hands)[0]) => number | null | undefined, slot: number) {
-    const claimed: { rank: number; playerId: string; trueRank: number }[] = [];
-    for (const hand of hands) {
-      const r = getRank(hand);
-      if (r != null) {
-        claimed.push({ rank: r, playerId: hand.playerId, trueRank: trueRanks![hand.id] ?? 0 });
-      }
-    }
+  type ClaimedRow = { rank: number; playerId: string; trueRank: number };
+
+  function tallyInversions(claimed: ClaimedRow[], slot: number) {
     claimed.sort((a, b) => a.rank - b.rank);
     for (let i = 0; i < claimed.length; i++) {
       for (let j = i + 1; j < claimed.length; j++) {
@@ -199,28 +195,24 @@ export function computeInversionsData(gameState: GameState, myId: string): Inver
     }
   }
 
-  for (let pi = 0; pi < 4; pi++) {
-    tallyPhase((h) => (rankHistory[h.id] ?? [])[pi], pi);
-  }
-
-  const finalClaimed = hands
-    .map((h) => {
-      const idx = ranking.indexOf(h.id);
-      return idx === -1 ? null : { rank: idx + 1, playerId: h.playerId, trueRank: trueRanks[h.id] ?? 0 };
-    })
-    .filter((x): x is NonNullable<typeof x> => x !== null)
-    .sort((a, b) => a.rank - b.rank);
-
-  for (let i = 0; i < finalClaimed.length; i++) {
-    for (let j = i + 1; j < finalClaimed.length; j++) {
-      if (finalClaimed[i].trueRank > finalClaimed[j].trueRank) {
-        const a = finalClaimed[i].playerId;
-        const b = finalClaimed[j].playerId;
-        if (invByPlayer[a]) invByPlayer[a][4]++;
-        if (invByPlayer[b] && b !== a) invByPlayer[b][4]++;
-      }
+  function rowsFromRank(getRank: (h: (typeof hands)[0]) => number | null | undefined): ClaimedRow[] {
+    const out: ClaimedRow[] = [];
+    for (const hand of hands) {
+      const r = getRank(hand);
+      if (r != null) out.push({ rank: r, playerId: hand.playerId, trueRank: trueRanks![hand.id] ?? 0 });
     }
+    return out;
   }
+
+  for (let pi = 0; pi < 4; pi++) {
+    tallyInversions(rowsFromRank((h) => (rankHistory[h.id] ?? [])[pi]), pi);
+  }
+
+  const finalClaimed = rowsFromRank((h) => {
+    const idx = ranking.indexOf(h.id);
+    return idx === -1 ? null : idx + 1;
+  });
+  tallyInversions(finalClaimed, 4);
 
   const teamInv = computeTeamInversionsByPhase(rankHistory, trueRanks, hands.length);
   const finalSorted = [...hands]

@@ -1,7 +1,8 @@
 import { registerPhaseEffect } from "./registry";
+import { getRiverCard } from "./shared";
 
 registerPhaseEffect("riverOverwritesSuit", (state) => {
-  const river = state.allCommunityCards[4] ?? state.allCommunityCards[state.allCommunityCards.length - 1];
+  const river = getRiverCard(state);
   if (!river) return;
   state.allCommunityCards = state.allCommunityCards.map((card) =>
     card.suit === river.suit ? { ...card, rank: river.rank } : card,

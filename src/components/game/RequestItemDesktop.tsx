@@ -2,6 +2,7 @@
 
 import type { AcquireRequest, GameState } from "@/lib/types";
 import { chipClassNames } from "@/lib/chipColors";
+import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
 import { buildRequestData } from "./requestLabel";
 
@@ -46,16 +47,16 @@ export default function RequestItemDesktop({ req, gameState, rankMap, totalHands
     >
       <div className="flex items-center gap-2">
         {badgeRank !== undefined && <div className={chipClasses}>{badgeRank}</div>}
-        <p className="text-sm leading-snug" style={{ color: isOutgoing ? "#9fc5a8" : "#f5e6b8" }}>{body}</p>
+        <p className="text-sm leading-snug" style={{ color: isOutgoing ? D.sub : D.goldBright }}>{body}</p>
       </div>
       {isOutgoing ? (
-        <button onClick={() => onCancel!(req.initiatorHandId, req.recipientHandId)} className="text-xs font-bold py-1.5 rounded-lg transition-colors" style={{ background: surfaces.neutralFaint, color: "#c9a54a" }}>
+        <button onClick={() => onCancel!(req.initiatorHandId, req.recipientHandId)} className="text-xs font-bold py-1.5 rounded-lg transition-colors" style={{ background: surfaces.neutralFaint, color: D.gold }}>
           Cancel
         </button>
       ) : (
         <div className="flex gap-2">
-          <button onClick={() => onAccept(req.initiatorHandId, req.recipientHandId)} className="flex-1 text-white text-xs font-bold py-1.5 rounded-lg transition-colors active:scale-95" style={{ background: "#2fb873" }}>Accept</button>
-          <button onClick={() => onReject!(req.initiatorHandId, req.recipientHandId)} className="flex-1 text-xs font-bold py-1.5 rounded-lg transition-colors" style={{ background: surfaces.neutralFaint, color: "#9fc5a8" }}>Reject</button>
+          <button onClick={() => onAccept(req.initiatorHandId, req.recipientHandId)} className="flex-1 text-white text-xs font-bold py-1.5 rounded-lg transition-colors active:scale-95" style={{ background: D.accent }}>Accept</button>
+          <button onClick={() => onReject!(req.initiatorHandId, req.recipientHandId)} className="flex-1 text-xs font-bold py-1.5 rounded-lg transition-colors" style={{ background: surfaces.neutralFaint, color: D.sub }}>Reject</button>
         </div>
       )}
     </div>

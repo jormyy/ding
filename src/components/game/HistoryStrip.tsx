@@ -1,6 +1,7 @@
 "use client";
 
 import { PHASES_META } from "@/lib/constants";
+import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
 
 const SHORT_LABELS = PHASES_META.filter((m) => m.short !== undefined).map((m) => m.short!);
@@ -20,7 +21,7 @@ export default function HistoryStrip({ ranks, total }: HistoryStripProps) {
         const bg = r === null
           ? surfaces.faintFill
           : isFirst
-          ? "#c9a54a"
+          ? D.gold
           : isLast
           ? "#6a1822"
           : surfaces.dividerLine;

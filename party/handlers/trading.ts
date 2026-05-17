@@ -3,6 +3,7 @@ import {
   applyChipMoveToRanking,
   clearRequestsForHands,
 } from "../../src/lib/chipMove";
+import { findHandById, findPlayerById } from "../../src/lib/utils";
 import type { Handler } from "./types";
 import { inGamePhase } from "./types";
 
@@ -10,8 +11,8 @@ export const proposeChipMove: Handler = (state, player, msg) => {
   if (msg.type !== "proposeChipMove") return { kind: "ignore" };
   if (!inGamePhase(state)) return { kind: "ignore" };
 
-  const initiatorHand = state.hands.find((h) => h.id === msg.initiatorHandId);
-  const recipientHand = state.hands.find((h) => h.id === msg.recipientHandId);
+  const initiatorHand = findHandById(state.hands, msg.initiatorHandId);
+  const recipientHand = findHandById(state.hands, msg.recipientHandId);
   if (!initiatorHand || !recipientHand) return { kind: "ignore" };
   if (initiatorHand.playerId !== player.id) return { kind: "ignore" };
   if (recipientHand.playerId === player.id) return { kind: "ignore" };
@@ -47,8 +48,8 @@ export const acceptChipMove: Handler = (state, player, msg) => {
   if (msg.type !== "acceptChipMove") return { kind: "ignore" };
   if (!inGamePhase(state)) return { kind: "ignore" };
 
-  const recipientHand = state.hands.find((h) => h.id === msg.recipientHandId);
-  const initiatorHand = state.hands.find((h) => h.id === msg.initiatorHandId);
+  const recipientHand = findHandById(state.hands, msg.recipientHandId);
+  const initiatorHand = findHandById(state.hands, msg.initiatorHandId);
   if (!recipientHand || !initiatorHand) return { kind: "ignore" };
   if (recipientHand.playerId !== player.id) return { kind: "ignore" };
 
@@ -80,7 +81,7 @@ export const acceptChipMove: Handler = (state, player, msg) => {
   );
 
   player.ready = false;
-  const initiatorPlayer = state.players.find((p) => p.id === proposal.initiatorId);
+  const initiatorPlayer = findPlayerById(state.players, proposal.initiatorId);
   if (initiatorPlayer) initiatorPlayer.ready = false;
 
   return { kind: "broadcast" };
@@ -89,7 +90,7 @@ export const acceptChipMove: Handler = (state, player, msg) => {
 export const rejectChipMove: Handler = (state, player, msg) => {
   if (msg.type !== "rejectChipMove") return { kind: "ignore" };
 
-  const recipientHand = state.hands.find((h) => h.id === msg.recipientHandId);
+  const recipientHand = findHandById(state.hands, msg.recipientHandId);
   if (!recipientHand) return { kind: "ignore" };
   if (recipientHand.playerId !== player.id) return { kind: "ignore" };
 

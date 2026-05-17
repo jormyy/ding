@@ -7,6 +7,7 @@
 
 import { memo } from "react";
 import type { AcquireRequest, GameState } from "@/lib/types";
+import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
 import RequestItem from "../RequestItem";
 import ChatPanel from "../../ChatPanel";
@@ -39,7 +40,7 @@ function RequestsSidebarImpl({
   return (
     <div
       className="hidden sm:flex flex-none w-64 flex-col overflow-hidden"
-      style={{ background: "#0a1813", borderLeft: `1px solid ${surfaces.goldLight}` }}
+      style={{ background: D.cardBg, borderLeft: `1px solid ${surfaces.goldLight}` }}
     >
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         <div
@@ -48,7 +49,7 @@ function RequestsSidebarImpl({
         >
           <span
             className="text-[10px] font-black uppercase tracking-[0.2em]"
-            style={{ color: "#c9a54a" }}
+            style={{ color: D.gold }}
           >
             Requests
           </span>

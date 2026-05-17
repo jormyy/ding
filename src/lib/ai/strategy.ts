@@ -11,6 +11,7 @@
 
 import type { AcquireRequest, ClientMessage, GameState } from "../types";
 import { GAME_PHASES } from "../phases";
+import { clamp01, filterHandsByPlayer, findHandById, findPlayerById, incrementMapCount, isHandRanked, isHandUnranked } from "../utils";
 import { classifyHand, type ClassifiedHand } from "./handClassifier";
 import type { Traits } from "./personality";
 import {
@@ -142,7 +143,7 @@ function deferralWeight(belief: BeliefState, handId: string): number {
       stable += Math.min(3, hb.slotStableFor) / 3;
     }
     const stability = placed === 0 ? 0.3 : stable / placed;
-    teammateConf = Math.max(0, Math.min(1, 0.2 + 0.6 * stability - 0.4 * tb.churnRate));
+    teammateConf = clamp01(0.2 + 0.6 * stability - 0.4 * tb.churnRate);
     break;
   }
   return Math.min(1, conf * 0.6 + teammateConf * 0.4);
@@ -186,7 +187,7 @@ export function decideAction(
     const currentRevealIdx = state.ranking.length - 1 - state.revealIndex;
     const handToFlipId = state.ranking[currentRevealIdx];
     if (!handToFlipId) {
-      const me = state.players.find((p) => p.id === myPlayerId);
+      const me = findPlayerById(state.players, myPlayerId);
       if (me?.connected) return { type: "flip", handId: "" };
       return null;
     }
@@ -207,9 +208,9 @@ export function decideAction(
 
   // Strategy guide: wait-and-watch at the start of each ranking phase so
   // teammate chip movement can reveal who improved on the new board.
-  const myHandsForDefer = state.hands.filter((h) => h.playerId === myPlayerId);
+  const myHandsForDefer = filterHandsByPlayer(state.hands, myPlayerId);
   const haveAnyPlaced = state.ranking.some((s) => s !== null);
-  const myAnyPlaced = myHandsForDefer.some((h) => state.ranking.indexOf(h.id) !== -1);
+  const myAnyPlaced = myHandsForDefer.some((h) => isHandRanked(state.ranking, h.id));
   if (!myAnyPlaced && !haveAnyPlaced && memo.phaseDeferTicks < 1) {
     memo.phaseDeferTicks++;
     return null;
@@ -224,9 +225,9 @@ export function decideAction(
 
   memo.ticksSinceProgress++;
 
-  const unrankedHandsAll = state.hands.filter((h) => state.ranking.indexOf(h.id) === -1);
+  const unrankedHandsAll = state.hands.filter((h) => isHandUnranked(state.ranking, h.id));
   const onlyOfflineUnrankedAll = unrankedHandsAll.every((h) => {
-    const owner = state.players.find((p) => p.id === h.playerId);
+    const owner = findPlayerById(state.players, h.playerId);
     return owner ? !owner.connected : true;
   });
   const effectiveAllRanked =
@@ -235,7 +236,7 @@ export function decideAction(
   const overDecisionCap = memo.decisionCount > 60;
   if (overDecisionCap) {
     if (effectiveAllRanked) {
-      const me = state.players.find((p) => p.id === myPlayerId);
+      const me = findPlayerById(state.players, myPlayerId);
       if (me && !me.ready) {
         memo.ticksSinceProgress = 0;
         const msg: ClientMessage = { type: "ready", ready: true };
@@ -244,7 +245,7 @@ export function decideAction(
     }
   }
 
-  const myHands = state.hands.filter((h) => h.playerId === myPlayerId);
+  const myHands = filterHandsByPlayer(state.hands, myPlayerId);
   if (myHands.length === 0) return null;
 
   const board = state.communityCards;
@@ -266,7 +267,7 @@ export function decideAction(
   memo.prevAcquireRequests = state.acquireRequests.map((r) => ({ ...r }));
   perceiveState(memo.belief, state, myPlayerId);
 
-  const me = state.players.find((p) => p.id === myPlayerId);
+  const me = findPlayerById(state.players, myPlayerId);
 
   // Resignation rises with rejected/vanished proposals and idle ticks.
   const resignationRaw =
@@ -274,9 +275,9 @@ export function decideAction(
     Math.min(8, memo.idleTicks) * 0.12 +
     Math.min(10, memo.decisionCount) * 0.05;
   const stubbornness = traits.stubbornness ?? 0.55;
-  const resignation = Math.max(0, Math.min(1,
+  const resignation = clamp01(
     resignationRaw * (1.2 - 0.4 * traits.conscientiousness - 0.3 * traits.neuroticism - 0.2 * stubbornness)
-  ));
+  );
 
   // Effective stubbornness modulated by hand types + cedesEasily quirk.
   const cedesEasily = traits.quirks?.cedesEasily ?? 0;
@@ -308,12 +309,12 @@ export function decideAction(
   const alreadyReady = !!me?.ready;
 
   const incomingProposal = state.acquireRequests.some((r) => {
-    const rh = state.hands.find((h) => h.id === r.recipientHandId);
+    const rh = findHandById(state.hands, r.recipientHandId);
     return rh && rh.playerId === myPlayerId;
   });
   const outgoingProposal = state.acquireRequests.some((r) => r.initiatorId === myPlayerId);
 
-  const myHandsPlaced = myHands.every((h) => state.ranking.indexOf(h.id) !== -1);
+  const myHandsPlaced = myHands.every((h) => isHandRanked(state.ranking, h.id));
   const othersAllReady = state.players
     .filter((p) => p.id !== myPlayerId && p.connected)
     .every((p) => p.ready);
@@ -357,7 +358,7 @@ export function decideAction(
   const candidates: Candidate[] = [];
 
   const proposalsToMe = state.acquireRequests.filter((r) => {
-    const rh = state.hands.find((h) => h.id === r.recipientHandId);
+    const rh = findHandById(state.hands, r.recipientHandId);
     return rh && rh.playerId === myPlayerId;
   });
 
@@ -370,7 +371,7 @@ export function decideAction(
     const proposerHand = state.hands.find((x) => x.id === p.initiatorHandId);
     const proposerBelief = proposerHand ? memo.belief.perTeammate.get(proposerHand.playerId) : undefined;
     const proposerSkill = proposerBelief?.skillPrior ?? 0.5;
-    const trust = Math.max(0, Math.min(1, baseTrust + proposerSkill * 0.25));
+    const trust = clamp01(baseTrust + proposerSkill * 0.25);
     const overrides = new Map<string, number>();
     if (initIdxAfter !== -1 && totalHands > 1) {
       const proposerImplied = 1 - initIdxAfter / (totalHands - 1);
@@ -456,7 +457,7 @@ export function decideAction(
       // Skeptic quirk: extra reject weight when proposal targets our top slot.
       let topSlotPenalty = 0;
       if (suspectsTop > 0) {
-        const recipientHand = state.hands.find((h) => h.id === p.recipientHandId);
+        const recipientHand = findHandById(state.hands, p.recipientHandId);
         if (recipientHand) {
           const recSlot = state.ranking.indexOf(p.recipientHandId);
           const initSlot = after.indexOf(p.initiatorHandId);
@@ -489,7 +490,7 @@ export function decideAction(
   for (const p of state.acquireRequests.filter((r) => r.initiatorId === myPlayerId)) {
     const k = reqKey(p.initiatorHandId, p.recipientHandId);
     myActivePropKeys.add(k);
-    memo.proposalAges.set(k, (memo.proposalAges.get(k) ?? 0) + 1);
+    incrementMapCount(memo.proposalAges, k);
 
     const after = rankingAfterChipMove(state.ranking, p.initiatorHandId, p.recipientHandId, p.kind);
     const score = scoreAction(state, after, myPlayerId, memo.belief, memo.estimates, undefined, tickCaches);
@@ -518,7 +519,7 @@ export function decideAction(
 
   const emptySlots: number[] = [];
   for (let i = 0; i < state.ranking.length; i++) if (state.ranking[i] === null) emptySlots.push(i);
-  const myUnranked = myHands.filter((h) => state.ranking.indexOf(h.id) === -1);
+  const myUnranked = myHands.filter((h) => isHandUnranked(state.ranking, h.id));
   const myUnrankedEsts = myUnranked.map((h) => memo.estimates.get(h.id) ?? 0.5);
   const minEst = myUnrankedEsts.length > 0 ? Math.min(...myUnrankedEsts) : 0.5;
   const maxEst = myUnrankedEsts.length > 0 ? Math.max(...myUnrankedEsts) : 0.5;
@@ -667,10 +668,10 @@ export function decideAction(
     }
   }
 
-  const myRankedHands = myHands.filter((h) => state.ranking.indexOf(h.id) !== -1);
+  const myRankedHands = myHands.filter((h) => isHandRanked(state.ranking, h.id));
   const unrankedOpponentHands = state.hands.filter((h) => {
     if (h.playerId === myPlayerId) return false;
-    return state.ranking.indexOf(h.id) === -1;
+    return isHandUnranked(state.ranking, h.id);
   });
   for (const myH of myRankedHands) {
     for (const theirH of unrankedOpponentHands) {
@@ -742,13 +743,13 @@ export function decideAction(
 
   candidates.sort((a, b) => b.utility - a.utility);
 
-  const haveUnranked = myHands.some((h) => state.ranking.indexOf(h.id) === -1);
+  const haveUnranked = myHands.some((h) => isHandUnranked(state.ranking, h.id));
   const haveEmpty = state.ranking.some((s) => s === null);
   const mustRespond = proposalsToMe.length > 0;
   let pool = candidates;
   const anchorMoves = !mustRespond ? candidates.filter(isAnchorMoveCandidate) : [];
   const stalePropToMe = mustRespond && memo.prevAcquireRequests.some((p) => {
-    const rh = state.hands.find((h) => h.id === p.recipientHandId);
+    const rh = findHandById(state.hands, p.recipientHandId);
     return rh && rh.playerId === myPlayerId && state.acquireRequests.some(
       (cur) => cur.initiatorHandId === p.initiatorHandId && cur.recipientHandId === p.recipientHandId
     );
@@ -764,7 +765,7 @@ export function decideAction(
     const placeOnly = candidates.filter((c) => {
       if (c.msg.type === "move") {
         const m = c.msg as { handId: string };
-        return myHands.some((h) => h.id === m.handId && state.ranking.indexOf(h.id) === -1);
+        return myHands.some((h) => h.id === m.handId && isHandUnranked(state.ranking, h.id));
       }
       return mustRespond && (c.msg.type === "acceptChipMove" || c.msg.type === "rejectChipMove");
     });

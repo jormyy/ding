@@ -4,13 +4,13 @@ import { useState } from "react";
 import type { Hand } from "@/lib/types";
 import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
-import { toggleInSet } from "@/lib/utils";
+import { filterHandsByPlayer, findPlayerById, incrementMapCount, toggleInSet } from "@/lib/utils";
 import { CardFace } from "../CardFace";
-import { NeighborView, VariantStatusBar } from "./SharedAffordances";
+import { DEAL_CHOICE_PANEL_STYLE, NeighborView, VariantStatusBar } from "./SharedAffordances";
 import type { DealChoiceBoardProps } from "./types";
 
 export default function TablePicksBoard({ gameState, myId, onSend }: DealChoiceBoardProps) {
-  const myHands = gameState.hands.filter((h) => h.playerId === myId);
+  const myHands = filterHandsByPlayer(gameState.hands, myId);
   const otherHands = gameState.hands.filter((h) => h.playerId !== myId);
   const choices = gameState.dealChoices ?? {};
   const keep = myHands[0] ? choices[myHands[0].id]?.keepCards ?? 2 : 2;
@@ -31,13 +31,13 @@ export default function TablePicksBoard({ gameState, myId, onSend }: DealChoiceB
           // Build tally bars per card index.
           const tally = new Map<number, number>();
           for (const ballot of Object.values(votes)) {
-            for (const i of ballot) tally.set(i, (tally.get(i) ?? 0) + 1);
+            for (const i of ballot) incrementMapCount(tally, i);
           }
           return (
             <div
               key={hand.id}
               className="grid gap-2 rounded-lg p-3"
-              style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
+              style={DEAL_CHOICE_PANEL_STYLE}
             >
               <VariantStatusBar
                 label={`Hand #${idx + 1}`}
@@ -58,7 +58,7 @@ export default function TablePicksBoard({ gameState, myId, onSend }: DealChoiceB
                       className="rounded-lg p-1"
                       style={{
                         background: isWinner ? surfaces.accentLight : surfaces.disabledBg,
-                        border: isWinner ? "2px solid rgba(47,184,115,0.6)" : `2px solid ${surfaces.subtleBorder}`,
+                        border: isWinner ? `2px solid ${surfaces.accentStrong}` : `2px solid ${surfaces.subtleBorder}`,
                       }}
                     >
                       <CardFace card={card} small />
@@ -76,7 +76,7 @@ export default function TablePicksBoard({ gameState, myId, onSend }: DealChoiceB
 
       {/* Other players' hands — vote on each */}
       <div className="grid gap-3">
-        <div className="text-[10px] font-black uppercase tracking-[0.25em]" style={{ color: "#f08a6c" }}>
+        <div className="text-[10px] font-black uppercase tracking-[0.25em]" style={{ color: D.warning }}>
           Vote on others' hands
         </div>
         {otherHands.map((hand) => (
@@ -84,7 +84,7 @@ export default function TablePicksBoard({ gameState, myId, onSend }: DealChoiceB
             key={hand.id}
             hand={hand}
             keep={keep}
-            playerName={gameState.players.find((p) => p.id === hand.playerId)?.name ?? "Player"}
+            playerName={findPlayerById(gameState.players, hand.playerId)?.name ?? "Player"}
             voted={Boolean(choices[hand.id]?.tablePicksVotes?.[myId])}
             submitted={choices[hand.id]?.submitted ?? false}
             onVote={(indexes) => onSend({ type: "tablePicksVote", targetHandId: hand.id, indexes })}
@@ -122,7 +122,7 @@ function TablePicksVoteRow({
   return (
     <div
       className="grid gap-2 rounded-lg p-3"
-      style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
+      style={DEAL_CHOICE_PANEL_STYLE}
     >
       <VariantStatusBar
         label={playerName}
@@ -142,7 +142,7 @@ function TablePicksVoteRow({
           disabled={!canSubmit}
           onClick={() => onVote([...selected].sort((a, b) => a - b))}
           className="h-10 rounded-md text-xs font-black uppercase tracking-wide transition-all active:scale-95 disabled:opacity-45 disabled:cursor-not-allowed self-end"
-          style={{ background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink }}
+          style={{ background: D.goldButton, color: D.ink }}
         >
           Submit vote
         </button>

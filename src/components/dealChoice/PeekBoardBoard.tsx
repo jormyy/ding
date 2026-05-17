@@ -4,13 +4,13 @@ import { useState } from "react";
 import type { Card, Hand } from "@/lib/types";
 import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
-import { toggleInSet } from "@/lib/utils";
+import { filterHandsByPlayer, toggleInSet } from "@/lib/utils";
 import { CardFace } from "../CardFace";
-import { CommunityPreviewStrip, VariantStatusBar } from "./SharedAffordances";
+import { CommunityPreviewStrip, DEAL_CHOICE_PANEL_STYLE, VariantStatusBar } from "./SharedAffordances";
 import type { DealChoiceBoardProps } from "./types";
 
 export default function PeekBoardBoard({ gameState, myId, onSend }: DealChoiceBoardProps) {
-  const myHands = gameState.hands.filter((h) => h.playerId === myId);
+  const myHands = filterHandsByPlayer(gameState.hands, myId);
   const choices = gameState.dealChoices ?? {};
 
   return (
@@ -56,7 +56,7 @@ function PeekHandRow({
   return (
     <div
       className="grid gap-3 rounded-lg p-3"
-      style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
+      style={DEAL_CHOICE_PANEL_STYLE}
     >
       <div className="flex items-center justify-between gap-3">
         <VariantStatusBar label={`Hand #${handNumber}`} value={`${selected.size}/${keepCards} kept`} tone="accent" />
@@ -95,7 +95,7 @@ function PeekHandRow({
           style={{
             background: submitted
               ? surfaces.accentLight
-              : `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`,
+              : D.goldButton,
             color: submitted ? D.accent : D.ink,
             border: submitted ? `1px solid ${surfaces.accentBorder}` : "none",
           }}

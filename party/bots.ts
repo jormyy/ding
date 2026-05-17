@@ -1,5 +1,6 @@
 import type { ClientMessage, GameState, Player } from "../src/lib/types";
 import { GAME_PHASES } from "../src/lib/phases";
+import { findHandById, isHandRanked } from "../src/lib/utils";
 import { decideAction, newBotMemo, type BotMemo } from "../src/lib/ai/strategy";
 import {
   pickBotName,
@@ -262,8 +263,8 @@ export class BotController {
         const a = state.hands.find((x) => x.id === msg.handIdA);
         const b = state.hands.find((x) => x.id === msg.handIdB);
         return !!(a && b && a.playerId === pid && b.playerId === pid &&
-          state.ranking.indexOf(msg.handIdA) !== -1 &&
-          state.ranking.indexOf(msg.handIdB) !== -1);
+          isHandRanked(state.ranking, msg.handIdA) &&
+          isHandRanked(state.ranking, msg.handIdB));
       }
       case "proposeChipMove":
       case "acceptChipMove":
@@ -358,7 +359,7 @@ export class BotController {
   // board is not a proposal, so unaffected.
   private hasActiveBotBotTradeFor(pid: string, state: GameState): boolean {
     for (const r of state.acquireRequests) {
-      const rh = state.hands.find((h) => h.id === r.recipientHandId);
+      const rh = findHandById(state.hands, r.recipientHandId);
       if (!rh) continue;
       const recipientPid = rh.playerId;
       const initBot = this.isBot(r.initiatorId);
@@ -377,8 +378,8 @@ export class BotController {
       msg.type !== "cancelChipMove"
     ) return false;
     const state = this.opts.getState();
-    const init = state.hands.find((h) => h.id === msg.initiatorHandId);
-    const rec = state.hands.find((h) => h.id === msg.recipientHandId);
+    const init = findHandById(state.hands, msg.initiatorHandId);
+    const rec = findHandById(state.hands, msg.recipientHandId);
     if (!init || !rec) return false;
     const initBot = this.isBot(init.playerId);
     const recBot = this.isBot(rec.playerId);

@@ -1,5 +1,5 @@
 import type { Card } from "../types";
-import { cardKey, cardToPokersolverStr, normalizeSolverStrings } from "../utils";
+import { cardKey, cardToPokersolverStr, incrementMapCount, normalizeSolverStrings } from "../utils";
 import { createDeck } from "../deckUtils";
 import { RANK_VALUE } from "../rankValue";
 
@@ -116,7 +116,7 @@ export function currentHandStrength(hole: Card[], board: Card[]): number {
     // Find the pair rank.
     const ranks = [...hole, ...board].map((c) => RANK_VALUE[c.rank]);
     const counts = new Map<number, number>();
-    for (const r of ranks) counts.set(r, (counts.get(r) ?? 0) + 1);
+    for (const r of ranks) incrementMapCount(counts, r);
     let pairRank = 0;
     for (const [r, n] of counts) {
       if (n >= 2 && r > pairRank) pairRank = r;

@@ -19,7 +19,7 @@ import { createDeck } from "../deckUtils";
 import { preflopTierStrength, currentHandStrength } from "./handStrength";
 
 /** String key for a 2-card combo, e.g. "AS-KH". Deterministic order. */
-export type ComboKey = string;
+type ComboKey = string;
 
 /** Weighted distribution over plausible hole-card combos for a single hand. */
 export type RangeBelief = {
@@ -38,28 +38,10 @@ export function newRangeBelief(): RangeBelief {
  * Deterministic combo key for two cards.
  * Sorts by cardKey so {AS, KH} and {KH, AS} collapse to the same identity.
  */
-export function makeComboKey(a: Card, b: Card): ComboKey {
+function makeComboKey(a: Card, b: Card): ComboKey {
   const ka = cardKey(a);
   const kb = cardKey(b);
   return ka < kb ? `${ka}-${kb}` : `${kb}-${ka}`;
-}
-
-/**
- * Initialize a range belief over all combos consistent with known exclusions.
- * Each valid combo starts with uniform weight 1.
- */
-export function initRange(
-  excluded: Set<string>,
-  deck: Card[]
-): RangeBelief {
-  const out = newRangeBelief();
-  const candidates = deck.filter((c) => !excluded.has(cardKey(c)));
-  for (let i = 0; i < candidates.length; i++) {
-    for (let j = i + 1; j < candidates.length; j++) {
-      out.weights.set(makeComboKey(candidates[i], candidates[j]), 1);
-    }
-  }
-  return out;
 }
 
 /**
@@ -160,7 +142,7 @@ export function applyPlacement(
  * Uses the same `currentHandStrength` scale as the bot's own hand estimates,
  * so range-derived beliefs are directly comparable to scalar beliefs.
  */
-export type AbsoluteStrengthMap = Map<ComboKey, number>;
+type AbsoluteStrengthMap = Map<ComboKey, number>;
 
 /**
  * Build an absolute strength map for all possible 2-card combos on the board.

@@ -26,7 +26,7 @@ export default function DraftFromFlopBoard({ gameState, myId, onSend }: DealChoi
           <div className="text-[10px] font-black uppercase tracking-[0.28em]" style={{ color: D.accent }}>
             Flop draft
           </div>
-          <h2 className="font-serif font-black text-lg" style={{ color: "#f5e6b8" }}>
+          <h2 className="font-serif font-black text-lg" style={{ color: D.goldBright }}>
             Pick one card for your hand
           </h2>
         </div>

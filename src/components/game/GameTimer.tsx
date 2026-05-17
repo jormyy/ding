@@ -84,8 +84,8 @@ export default function GameTimer({ gameState, onAutoReady }: GameTimerProps) {
         <div
           className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black tabular-nums transition-colors"
           style={{
-            background: roundUrgent ? "rgba(192,96,96,0.25)" : "rgba(10,30,18,0.8)",
-            border: `1px solid ${roundUrgent ? "rgba(192,96,96,0.5)" : D.panelBorder}`,
+            background: roundUrgent ? surfaces.dangerUrgentBg : "rgba(10,30,18,0.8)",
+            border: `1px solid ${roundUrgent ? surfaces.dangerUrgentBorder : D.panelBorder}`,
             color: roundUrgent ? "#e07070" : D.goldBright,
           }}
           title="Round timer"
@@ -98,8 +98,8 @@ export default function GameTimer({ gameState, onAutoReady }: GameTimerProps) {
         <div
           className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black tabular-nums transition-colors"
           style={{
-            background: gameUrgent ? "rgba(192,96,96,0.15)" : surfaces.panelOverlay,
-            border: `1px solid ${gameUrgent ? "rgba(192,96,96,0.35)" : surfaces.subtleBorder}`,
+            background: gameUrgent ? surfaces.dangerUrgentBgFaint : surfaces.panelOverlay,
+            border: `1px solid ${gameUrgent ? surfaces.dangerUrgentBorderFaint : surfaces.subtleBorder}`,
             color: gameUrgent ? "#e07070" : D.sub,
           }}
           title="Game timer"

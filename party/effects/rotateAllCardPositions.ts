@@ -1,11 +1,11 @@
 import { registerPhaseEffect } from "./registry";
-import { copyCard, rotateCards } from "./shared";
+import { copyAllHoleCards, copyCard, rotateCards } from "./shared";
 
 registerPhaseEffect("rotateAllCardPositions", (state) => {
   const handCounts = state.hands.map((hand) => hand.cards.length);
   const boardCount = state.allCommunityCards.length;
   const stream = rotateCards(
-    state.hands.flatMap((hand) => hand.cards.map(copyCard)).concat(state.allCommunityCards.map(copyCard)),
+    copyAllHoleCards(state).concat(state.allCommunityCards.map(copyCard)),
     1,
   );
   let cursor = 0;

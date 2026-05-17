@@ -1,10 +1,11 @@
 import type { Card, Hand, Rank } from "../types";
 import { createDeck, isFace, isRed, shuffleDeck } from "../deckUtils";
+import { incrementMapCount } from "../utils";
 import { RANK_VALUE } from "../rankValue";
 import { getGameModeDefinition } from "./registry";
 import type { PublicHoleCardSelection } from "./types";
 
-export interface ModeDealResult {
+interface ModeDealResult {
   hands: Hand[];
   communityCards: Card[];
   remainingDeck: Card[];
@@ -669,7 +670,7 @@ function scoreStartingCards(cards: readonly Card[]): number {
   if (cards.length === 0) return 0;
   const ranks = cards.map((card) => RANK_VALUE[card.rank]).sort((a, b) => b - a);
   const counts = new Map<number, number>();
-  for (const rank of ranks) counts.set(rank, (counts.get(rank) ?? 0) + 1);
+  for (const rank of ranks) incrementMapCount(counts, rank);
   const multiplicity = Math.max(...counts.values());
   const pairBoost = multiplicity > 1 ? 100 * multiplicity : 0;
   const suitedBoost = cards.length > 1 && cards.every((card) => card.suit === cards[0].suit) ? 4 : 0;

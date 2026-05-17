@@ -6,6 +6,7 @@
 
 import { memo } from "react";
 import type { Player } from "@/lib/types";
+import { D } from "@/lib/theme";
 import { shades, surfaces } from "@/lib/tokens";
 import ReadyButton from "../../ReadyButton";
 
@@ -45,14 +46,14 @@ function ReadyPillImpl({
               width: 8,
               height: 8,
               borderRadius: "50%",
-              background: p.ready ? "#2fb873" : surfaces.whiteBorder,
-              boxShadow: p.ready ? "0 0 6px rgba(47,184,115,0.5)" : "none",
+              background: p.ready ? D.accent : surfaces.whiteBorder,
+              boxShadow: p.ready ? `0 0 6px ${surfaces.accentGlow}` : "none",
             }}
             aria-label={`${p.name} ${p.ready ? "ready" : "not ready"}`}
           />
         ))}
       </div>
-      <div style={{ fontSize: 11, color: "#9fc5a8", fontWeight: 700 }}>
+      <div style={{ fontSize: 11, color: D.sub, fontWeight: 700 }}>
         {players.filter((p) => p.ready).length}/{players.length}
       </div>
       <ReadyButton

@@ -1,9 +1,9 @@
 import { registerPhaseEffect } from "./registry";
-import { RANKS, removeCardsWhere } from "./shared";
+import { RANKS, getRiverCard, removeCardsWhere } from "./shared";
 import type { Rank } from "../../src/lib/types";
 
 registerPhaseEffect("removeAdjacentToRiver", (state) => {
-  const river = state.allCommunityCards[4] ?? state.allCommunityCards[state.allCommunityCards.length - 1];
+  const river = getRiverCard(state);
   if (!river) return;
   const riverIndex = RANKS.indexOf(river.rank);
   const adjacent = new Set<Rank>();

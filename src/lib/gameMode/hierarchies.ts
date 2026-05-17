@@ -1,5 +1,6 @@
 import type { Card, CardMeta, Hand, Rank } from "../types";
 import { RANK_VALUE } from "../rankValue";
+import { idMap, incrementMapCount } from "../utils";
 import type { DingGameModeDefinition, HierarchyId } from "./types";
 
 /**
@@ -11,7 +12,7 @@ import type { DingGameModeDefinition, HierarchyId } from "./types";
  * hierarchy then takes over to apply effects like "blessed > unmarked > cursed"
  * or "rock > paper > scissors".
  */
-export interface HierarchyContext {
+interface HierarchyContext {
   ranking: readonly string[];
   hands: readonly Hand[];
   board: readonly Card[];
@@ -19,10 +20,6 @@ export interface HierarchyContext {
 }
 
 export type Hierarchy = (ctx: HierarchyContext) => string[];
-
-function handsById(hands: readonly Hand[]): Map<string, Hand> {
-  return new Map(hands.map((hand) => [hand.id, hand]));
-}
 
 function metaBucket(hand: Hand): "blessed" | "neutral" | "cursed" {
   const metas = new Set<CardMeta>(hand.cards.flatMap((card) => card.meta ? [card.meta] : []));
@@ -65,7 +62,7 @@ function cycleBeats(a: "rock" | "paper" | "scissors", b: "rock" | "paper" | "sci
 
 export const HIERARCHIES: Record<HierarchyId, Hierarchy> = {
   hierarchyByMeta: ({ ranking, hands }) => {
-    const byId = handsById(hands);
+    const byId = idMap(hands);
     return ranking.slice().sort((a, b) => {
       const aBucket = BUCKET_RANK[metaBucket(byId.get(a)!)];
       const bBucket = BUCKET_RANK[metaBucket(byId.get(b)!)];
@@ -75,7 +72,7 @@ export const HIERARCHIES: Record<HierarchyId, Hierarchy> = {
   },
 
   cyclicHandHierarchy: ({ ranking, hands }) => {
-    const byId = handsById(hands);
+    const byId = idMap(hands);
     // Three-way cycle: prefer the class that beats the largest number of opponents.
     return ranking.slice().sort((a, b) => {
       const aHand = byId.get(a);
@@ -107,7 +104,7 @@ export const HIERARCHIES: Record<HierarchyId, Hierarchy> = {
   colorTeamAssign: ({ ranking, hands }) => {
     // Sort red-team hands (predominantly H/D hole cards) ahead of black-team hands;
     // within each team, preserve the base ranking.
-    const byId = handsById(hands);
+    const byId = idMap(hands);
     const isRedTeam = (hand: Hand | undefined): boolean => {
       if (!hand || hand.cards.length === 0) return false;
       const red = hand.cards.filter((card) => card.suit === "H" || card.suit === "D").length;
@@ -124,7 +121,7 @@ export const HIERARCHIES: Record<HierarchyId, Hierarchy> = {
   adjacentRankBonus: ({ ranking, hands }) => {
     // Hands whose hole cards form an adjacent-rank pair across hands get a
     // small bonus that promotes them one slot.
-    const byId = handsById(hands);
+    const byId = idMap(hands);
     const bonus = (hand: Hand | undefined): number => {
       if (!hand || hand.cards.length < 2) return 0;
       const ranks = hand.cards.map((card) => RANK_VALUE[card.rank]).sort((a, b) => a - b);
@@ -143,7 +140,7 @@ export const HIERARCHIES: Record<HierarchyId, Hierarchy> = {
   matchRankInherit: ({ ranking, hands }) => {
     // Hands sharing a rank with a higher-ranked hand inherit that hand's
     // position, breaking ties by seat order.
-    const byId = handsById(hands);
+    const byId = idMap(hands);
     const handRanks = (id: string): Set<Rank> => {
       const hand = byId.get(id);
       return new Set(hand?.cards.map((c) => c.rank) ?? []);
@@ -189,11 +186,11 @@ export const HIERARCHIES: Record<HierarchyId, Hierarchy> = {
 
   crowdedRankPenalty: ({ ranking, hands }) => {
     // Hands whose top-rank appears in many other hands are demoted.
-    const byId = handsById(hands);
+    const byId = idMap(hands);
     const rankCount = new Map<Rank, number>();
     for (const hand of hands) {
       for (const card of hand.cards) {
-        rankCount.set(card.rank, (rankCount.get(card.rank) ?? 0) + 1);
+        incrementMapCount(rankCount, card.rank);
       }
     }
     const penalty = (handId: string): number => {
@@ -225,7 +222,7 @@ export const HIERARCHIES: Record<HierarchyId, Hierarchy> = {
     // card's suit ahead of those that don't.
     const bridge = board[board.length - 1];
     if (!bridge) return ranking.slice();
-    const byId = handsById(hands);
+    const byId = idMap(hands);
     return ranking.slice().sort((a, b) => {
       const aMatch = byId.get(a)?.cards.some((c) => c.suit === bridge.suit) ? 0 : 1;
       const bMatch = byId.get(b)?.cards.some((c) => c.suit === bridge.suit) ? 0 : 1;
@@ -237,14 +234,14 @@ export const HIERARCHIES: Record<HierarchyId, Hierarchy> = {
   uniqueHandClassRequired: ({ ranking, hands }) => {
     // Only hands with a unique top-rank class score; duplicates are pushed
     // to the bottom in seat order.
-    const byId = handsById(hands);
+    const byId = idMap(hands);
     const classOf = (id: string): string => {
       const hand = byId.get(id);
       if (!hand) return "";
       return handClass(hand);
     };
     const counts = new Map<string, number>();
-    for (const id of ranking) counts.set(classOf(id), (counts.get(classOf(id)) ?? 0) + 1);
+    for (const id of ranking) incrementMapCount(counts, classOf(id));
     return ranking.slice().sort((a, b) => {
       const aUnique = (counts.get(classOf(a)) ?? 0) === 1 ? 0 : 1;
       const bUnique = (counts.get(classOf(b)) ?? 0) === 1 ? 0 : 1;

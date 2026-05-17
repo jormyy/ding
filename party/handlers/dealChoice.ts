@@ -19,7 +19,7 @@ import {
 import "../../src/lib/gameMode/dealChoices"; // populate variant registry
 import { resolveDealChoiceVariant } from "../../src/lib/gameMode/dealChoiceVariant";
 import { handIndexFromId } from "../../src/lib/handId";
-import type { Card } from "../../src/lib/types";
+import { filterDefined, filterHandsByPlayer, findHandById, idMap, incrementMapCount, leftNeighbor, rightNeighbor } from "../../src/lib/utils";
 import type { ServerGameState } from "../state";
 import { isValidCardIndex, lookupOwnedHandChoice } from "./dealChoiceHelpers";
 import type { Handler } from "./types";
@@ -168,7 +168,7 @@ export const auctionClaim: Handler = (state, player, msg) => {
   if (!pool.remainingIndexes.includes(msg.poolCardIndex)) return { kind: "ignore" };
 
   const keep = mode.deal.dealChoice.keepCards;
-  const myHands = state.hands.filter((hand) => hand.playerId === player.id);
+  const myHands = filterHandsByPlayer(state.hands, player.id);
   const claimsSoFar = pool.claimsPerPlayer[player.id] ?? 0;
   const targetHandIndex = claimsSoFar % myHands.length;
   const targetHand = myHands[targetHandIndex];
@@ -187,7 +187,7 @@ export const auctionClaim: Handler = (state, player, msg) => {
     pool.claimQueue.push(player.id);
   }
 
-  const playersById = new Map(state.players.map((p) => [p.id, p]));
+  const playersById = idMap(state.players);
   while (pool.claimQueue.length > 0 && pool.remainingIndexes.length > 0) {
     const headId = pool.claimQueue[0];
     const owner = playersById.get(headId);
@@ -222,7 +222,7 @@ function autoClaimForPlayer(
   // can't deadlock on a malformed seat (e.g. zero hands).
   pool.claimQueue.shift();
 
-  const myHands = state.hands.filter((hand) => hand.playerId === playerId);
+  const myHands = filterHandsByPlayer(state.hands, playerId);
   if (myHands.length === 0) return;
 
   let bestPick = -1;
@@ -262,7 +262,7 @@ export const recruitFromNeighbor: Handler = (state, player, msg) => {
   const playerIds = state.players.map((p) => p.id);
   const ownerIndex = playerIds.indexOf(player.id);
   if (ownerIndex < 0) return { kind: "ignore" };
-  const rightId = playerIds[(ownerIndex + playerIds.length - 1) % playerIds.length];
+  const rightId = rightNeighbor(playerIds, ownerIndex);
   const handIndex = handIndexFromId(hand.id);
   const rightHand = state.hands.find(
     (h) => h.playerId === rightId && handIndexFromId(h.id) === handIndex,
@@ -320,7 +320,7 @@ export const solomonChoose: Handler = (state, player, msg) => {
   const mode = getGameModeDefinition(state.modeId);
   if (!mode.deal.dealChoice?.solomon) return { kind: "ignore" };
 
-  const targetHand = state.hands.find((h) => h.id === msg.targetHandId);
+  const targetHand = findHandById(state.hands, msg.targetHandId);
   if (!targetHand) return { kind: "ignore" };
   const targetChoice = state.dealChoices[msg.targetHandId];
   if (!targetChoice || targetChoice.submitted || !targetChoice.solomonSplit) {
@@ -330,7 +330,7 @@ export const solomonChoose: Handler = (state, player, msg) => {
   const playerIds = state.players.map((p) => p.id);
   const targetIndex = playerIds.indexOf(targetHand.playerId);
   if (targetIndex < 0) return { kind: "ignore" };
-  const leftId = playerIds[(targetIndex + 1) % playerIds.length];
+  const leftId = leftNeighbor(playerIds, targetIndex);
   if (player.id !== leftId) return { kind: "ignore" };
 
   if (msg.chosenPair !== 0 && msg.chosenPair !== 1) return { kind: "ignore" };
@@ -351,7 +351,7 @@ export const tablePicksVote: Handler = (state, player, msg) => {
   const mode = getGameModeDefinition(state.modeId);
   if (!mode.deal.dealChoice?.tablePicks) return { kind: "ignore" };
 
-  const target = state.hands.find((h) => h.id === msg.targetHandId);
+  const target = findHandById(state.hands, msg.targetHandId);
   if (!target) return { kind: "ignore" };
   if (target.playerId === player.id) return { kind: "ignore" };
   const choice = state.dealChoices[msg.targetHandId];
@@ -386,7 +386,7 @@ export const tablePicksVote: Handler = (state, player, msg) => {
     }
     const tally = new Map<number, number>();
     for (const ballot of Object.values(choice.tablePicksVotes ?? {})) {
-      for (const idx of ballot) tally.set(idx, (tally.get(idx) ?? 0) + 1);
+      for (const idx of ballot) incrementMapCount(tally, idx);
     }
     const winners = Array.from(tally.entries())
       .sort((a, b) => {
@@ -448,9 +448,7 @@ export const draftFlopCard: Handler = (state, player, msg) => {
 
   const allDrafted = state.players.every((p) => (pool.draftedBy[p.id]?.length ?? 0) >= 1);
   if (allDrafted) {
-    const finalFlop = pool.remainingIndexes
-      .map((i) => pool.cards[i])
-      .filter((card): card is Card => card !== undefined);
+    const finalFlop = filterDefined(pool.remainingIndexes.map((i) => pool.cards[i]));
     // 6-card pool → 3-card flop; preserve the unrevealed turn/river tail.
     const tail = state.allCommunityCards.slice(6);
     state.allCommunityCards = finalFlop.concat(tail);

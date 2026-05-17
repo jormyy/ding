@@ -9,6 +9,7 @@ import { memo } from "react";
 import type { GameState } from "@/lib/types";
 import { PHASES_META } from "@/lib/constants";
 import { getGameModeDefinition } from "@/lib/gameMode";
+import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
 import GameTimer from "../GameTimer";
 
@@ -38,20 +39,19 @@ function BoardHeaderImpl({
       className="flex-none flex items-center px-4 gap-3"
       style={{
         height: 54,
-        background:
-          "linear-gradient(180deg, rgba(20,60,36,0.95) 0%, rgba(10,40,22,0.98) 100%)",
+        background: D.panelBold,
         borderBottom: `1px solid ${surfaces.goldMid}`,
         flexShrink: 0,
       }}
     >
-      <span className="font-serif font-black" style={{ fontSize: 22, color: "#f5e6b8" }}>
+      <span className="font-serif font-black" style={{ fontSize: 22, color: D.goldBright }}>
         Ding
       </span>
       <div className="w-px h-5 bg-white/10" />
       {code && (
         <span
           className="text-[10px] font-black tracking-widest uppercase"
-          style={{ color: "#c9a54a" }}
+          style={{ color: D.gold }}
         >
           Room {code}
         </span>
@@ -59,7 +59,7 @@ function BoardHeaderImpl({
       <span
         className="hidden md:block max-w-28 truncate rounded-full px-2 py-0.5 text-[10px] font-black uppercase"
         style={{
-          color: "#f5e6b8",
+          color: D.goldBright,
           background: surfaces.neutralFaint,
           border: `1px solid ${surfaces.subtleBorder}`,
         }}
@@ -81,9 +81,9 @@ function BoardHeaderImpl({
                   className="w-2 h-2 rounded-full"
                   style={{
                     background: active
-                      ? "#c9a54a"
+                      ? D.gold
                       : done
-                      ? "#2fb873"
+                      ? D.accent
                       : surfaces.whiteBorder,
                     boxShadow: active ? "0 0 10px #c9a54a" : "none",
                   }}
@@ -91,7 +91,7 @@ function BoardHeaderImpl({
                 <span
                   className="text-[10px] font-black tracking-wider uppercase hidden sm:inline"
                   style={{
-                    color: active ? "#f5e6b8" : done ? "#2fb873" : "rgba(255,255,255,0.3)",
+                    color: active ? D.goldBright : done ? D.accent : "rgba(255,255,255,0.3)",
                   }}
                 >
                   {meta.step}
@@ -117,7 +117,7 @@ function BoardHeaderImpl({
             type="button"
             onClick={onEndGameClick}
             className="text-[11px] font-black px-3 py-1 rounded-full transition-all"
-            style={{ background: "#c06060", color: "#fff" }}
+            style={{ background: D.danger, color: "#fff" }}
           >
             sure?
           </button>
@@ -126,7 +126,7 @@ function BoardHeaderImpl({
             type="button"
             onClick={onEndGameClick}
             className="text-[11px] font-bold transition-colors"
-            style={{ color: "#c06060" }}
+            style={{ color: D.danger }}
             aria-label="End game"
           >
             End

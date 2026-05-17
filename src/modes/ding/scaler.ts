@@ -11,6 +11,7 @@
  */
 
 import type { Card } from "../../lib/types";
+import { cardKey } from "../../lib/utils";
 import {
   buildAbsoluteStrengthMap,
   buildPercentileMap,
@@ -22,7 +23,7 @@ import {
 import type { StrengthScaler } from "../../lib/gameMode/types";
 
 function boardSig(board: Card[]): string {
-  return board.map((c) => c.rank + c.suit).join("");
+  return board.map(cardKey).join("");
 }
 
 function excludedSig(excluded: Set<string>): string {

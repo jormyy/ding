@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import type { AcquireRequest, ClientMessage, GameState, Hand } from "@/lib/types";
 import { END_GAME_CONFIRM_MS } from "@/lib/constants";
+import { filterHandsByPlayer, findHandById, findPlayerById } from "@/lib/utils";
 import { useRankingActions } from "./useRankingActions";
 
 export interface UseBoardReturn {
@@ -78,7 +79,7 @@ export function useGameBoard(
     return () => { if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current); };
   }, []);
 
-  const myPlayer = gameState.players.find((p) => p.id === myId);
+  const myPlayer = findPlayerById(gameState.players, myId);
   const isCreator = myPlayer?.isCreator ?? false;
   const isReady = myPlayer?.ready ?? false;
 
@@ -121,8 +122,8 @@ export function useGameBoard(
       e.preventDefault();
       if (gameState.phase === "reveal" && gameState.score === null) {
         const nextHandId = gameState.ranking[gameState.ranking.length - 1 - gameState.revealIndex];
-        const hand = gameState.hands.find((candidate) => candidate.id === nextHandId);
-        const owner = gameState.players.find((player) => player.id === hand?.playerId);
+        const hand = findHandById(gameState.hands, nextHandId);
+        const owner = findPlayerById(gameState.players, hand?.playerId);
         if (hand && (hand.playerId === myId || !owner?.connected)) {
           onSend({ type: "flip", handId: hand.id });
         }
@@ -141,14 +142,14 @@ export function useGameBoard(
   localRanking.forEach((id, i) => { if (id !== null) rankMap.set(id, i + 1); });
 
   const incomingRequests = gameState.acquireRequests.filter((req) => {
-    const recipientHand = gameState.hands.find((h) => h.id === req.recipientHandId);
+    const recipientHand = findHandById(gameState.hands, req.recipientHandId);
     return recipientHand?.playerId === myId;
   });
   const outgoingRequests = gameState.acquireRequests.filter((req) => req.initiatorId === myId);
 
   const displayState: GameState = { ...gameState, ranking: localRanking };
   const totalHands = localRanking.length;
-  const myHands = gameState.hands.filter((h) => h.playerId === myId);
+  const myHands = filterHandsByPlayer(gameState.hands, myId);
 
   return {
     localRanking, selectedHandId, selectedSlot,

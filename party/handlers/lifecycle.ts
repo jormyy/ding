@@ -1,5 +1,6 @@
 import type { ChaosEvent, Phase } from "../../src/lib/types";
 import { ALL_PHASES as PHASE_ORDER } from "../../src/lib/phases";
+import { findHandById, findPlayerById } from "../../src/lib/utils";
 import {
   type ServerGameState,
   createInitialState,
@@ -141,7 +142,7 @@ export const ready: Handler = (state, player, msg) => {
   if (msg.ready) {
     const unrankedHands = state.hands.filter((h) => !state.ranking.includes(h.id));
     const onlyOfflineUnranked = unrankedHands.every((h) => {
-      const owner = state.players.find((p) => p.id === h.playerId);
+      const owner = findPlayerById(state.players, h.playerId);
       return owner ? !owner.connected : true;
     });
     if (!onlyOfflineUnranked) return { kind: "ignore" };
@@ -175,10 +176,10 @@ export const flip: Handler = (state, player, msg) => {
     return { kind: "broadcast" };
   }
 
-  const handToFlip = state.hands.find((h) => h.id === handToFlipId);
+  const handToFlip = findHandById(state.hands, handToFlipId);
   if (!handToFlip) return { kind: "ignore" };
 
-  const owner = state.players.find((p) => p.id === handToFlip.playerId);
+  const owner = findPlayerById(state.players, handToFlip.playerId);
   if (owner?.connected && handToFlip.playerId !== player.id) return { kind: "ignore" };
 
   handToFlip.flipped = true;
@@ -198,7 +199,7 @@ function buildCompletedHandSummary(state: ServerGameState): ServerGameState["las
     ranking: state.ranking.slice(),
     names: state.ranking.flatMap((handId) => {
       if (!handId) return [];
-      const hand = state.hands.find((candidate) => candidate.id === handId);
+      const hand = findHandById(state.hands, handId);
       return [hand?.madeHandName ?? handId];
     }),
   };

@@ -21,6 +21,7 @@ import {
 import { useRouter } from "next/navigation";
 import PartySocket from "partysocket";
 import type { ClientMessage, GameState, Phase, ServerMessage } from "@/lib/types";
+import { findPlayerById } from "@/lib/utils";
 import { NOTIFICATION_FADE_MS } from "@/lib/constants";
 import {
   playDingSound,
@@ -117,7 +118,7 @@ export function GameSessionProvider({
 
   useEffect(() => {
     if (gameState && myId) {
-      const me = gameState.players.find((p) => p.id === myId);
+      const me = findPlayerById(gameState.players, myId);
       myNameRef.current = me?.name ?? null;
     }
   }, [gameState, myId]);
@@ -240,7 +241,7 @@ export function GameSessionProvider({
     router.push("/");
   }, [send, router]);
 
-  const isCustom = gameState?.players.find((p) => p.id === myId)?.isCustom ?? false;
+  const isCustom = findPlayerById(gameState?.players ?? [], myId)?.isCustom ?? false;
 
   const value: GameSessionValue = {
     code,

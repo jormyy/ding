@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import type { Hand } from "@/lib/types";
 import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
-import { toggleInSet } from "@/lib/utils";
+import { filterHandsByPlayer, toggleInSet } from "@/lib/utils";
 import { CardFace } from "../CardFace";
-import { VariantStatusBar } from "./SharedAffordances";
+import { DEAL_CHOICE_PANEL_STYLE, VariantStatusBar } from "./SharedAffordances";
 import type { DealChoiceBoardProps } from "./types";
 
 export default function OptInHole3Board({ gameState, myId, onSend }: DealChoiceBoardProps) {
-  const myHands = gameState.hands.filter((h) => h.playerId === myId);
+  const myHands = filterHandsByPlayer(gameState.hands, myId);
   const choices = gameState.dealChoices ?? {};
   return (
     <div className="grid gap-3">
@@ -62,7 +62,7 @@ function OptInRow({
   return (
     <div
       className="grid gap-3 rounded-lg p-3"
-      style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
+      style={DEAL_CHOICE_PANEL_STYLE}
     >
       <div className="flex items-center justify-between gap-3">
         <VariantStatusBar
@@ -80,9 +80,9 @@ function OptInRow({
           onClick={() => onOptIn(!optedThirdHole)}
           className="h-8 px-3 rounded-md text-[11px] font-black uppercase tracking-wide transition-all disabled:opacity-45 disabled:cursor-not-allowed"
           style={{
-            background: optedThirdHole ? "rgba(240,138,108,0.22)" : surfaces.neutralFaint,
-            color: optedThirdHole ? "#f08a6c" : D.sub,
-            border: "1px solid rgba(240,138,108,0.32)",
+            background: optedThirdHole ? surfaces.warningBg : surfaces.neutralFaint,
+            color: optedThirdHole ? D.warning : D.sub,
+            border: `1px solid ${surfaces.warningBorder}`,
           }}
         >
           {optedThirdHole ? "Cancel opt-in" : "Take 3rd hole"}
@@ -118,7 +118,7 @@ function OptInRow({
           style={{
             background: submitted
               ? surfaces.accentLight
-              : `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`,
+              : D.goldButton,
             color: submitted ? D.accent : D.ink,
             border: submitted ? `1px solid ${surfaces.accentBorder}` : "none",
           }}

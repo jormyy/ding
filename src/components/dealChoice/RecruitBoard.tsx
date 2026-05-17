@@ -5,19 +5,19 @@ import type { GameState, Hand } from "@/lib/types";
 import { handIndexFromId } from "@/lib/handId";
 import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
-import { toggleInSet } from "@/lib/utils";
+import { filterHandsByPlayer, rightNeighbor, toggleInSet } from "@/lib/utils";
 import { CardFace } from "../CardFace";
-import { NeighborView, VariantStatusBar } from "./SharedAffordances";
+import { DEAL_CHOICE_PANEL_STYLE, NeighborView, VariantStatusBar } from "./SharedAffordances";
 import type { DealChoiceBoardProps } from "./types";
 
 export default function RecruitBoard({ gameState, myId, onSend }: DealChoiceBoardProps) {
-  const myHands = gameState.hands.filter((h) => h.playerId === myId);
+  const myHands = filterHandsByPlayer(gameState.hands, myId);
   const choices = gameState.dealChoices ?? {};
   // Right neighbor (recruit takes from THEIR discard) — same convention as inheritance:
   // right neighbor sits one seat counterclockwise of you.
   const playerIds = gameState.players.map((p) => p.id);
   const myIdx = playerIds.indexOf(myId);
-  const rightId = playerIds[(myIdx + playerIds.length - 1) % playerIds.length];
+  const rightId = rightNeighbor(playerIds, myIdx);
 
   return (
     <div className="grid gap-3">
@@ -93,7 +93,7 @@ function RecruitHandRow({
   return (
     <div
       className="grid gap-3 rounded-lg p-3"
-      style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
+      style={DEAL_CHOICE_PANEL_STYLE}
     >
       <VariantStatusBar
         label={`Hand #${handNumber}`}
@@ -138,7 +138,7 @@ function RecruitHandRow({
               onClick={() => onChoose([...selected].sort((a, b) => a - b))}
               className="h-10 px-3 rounded-md text-xs font-black uppercase tracking-wide transition-all active:scale-95 disabled:opacity-45 disabled:cursor-not-allowed"
               style={{
-                background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`,
+                background: D.goldButton,
                 color: D.ink,
               }}
             >

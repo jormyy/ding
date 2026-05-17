@@ -9,6 +9,7 @@
  */
 
 import type { GameState } from "../../../types";
+import { clamp } from "../../../utils";
 import type { Traits } from "../../personality";
 import type { ActionScore } from "../../ev";
 import type { Candidate } from "../../strategy";
@@ -50,8 +51,8 @@ export function anchorBonus(
   // Top anchor: strong hand relative to the board's average. Min floor of 0.65
   // so noise around boardPrior doesn't over-trigger; max cap of 0.85 for very
   // wet boards.
-  const topThresh = Math.max(0.65, Math.min(0.85, boardPrior + 0.25));
-  const bottomThresh = Math.min(0.30, Math.max(0.10, boardPrior - 0.25));
+  const topThresh = clamp(boardPrior + 0.25, 0.65, 0.85);
+  const bottomThresh = clamp(boardPrior - 0.25, 0.10, 0.30);
   if (ownStrength >= topThresh && targetSlot === 0) return 0.45 * lead;
   if (ownStrength >= topThresh && targetSlot === 1) return 0.38 * lead;
   if (ownStrength <= bottomThresh && targetSlot === totalSlots - 1) return 0.20 * lead;

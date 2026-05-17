@@ -1,4 +1,4 @@
-import type { Card, Rank, Suit } from "./types";
+import type { Card, Hand, Player, Rank, Suit } from "./types";
 import { ROOM_CODE_LENGTH } from "./constants";
 
 export function generateRoomCode(): string {
@@ -96,4 +96,59 @@ export function toggleInSet<T>(prev: ReadonlySet<T>, item: T, maxSize?: number):
     next.add(item);
   }
   return next;
+}
+
+export function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+export function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+export function incrementMapCount<K>(map: Map<K, number>, key: K, by = 1): void {
+  map.set(key, (map.get(key) ?? 0) + by);
+}
+
+export function idMap<T extends { id: string }>(items: readonly T[]): Map<string, T> {
+  return new Map(items.map((item) => [item.id, item]));
+}
+
+/** Drops null/undefined entries; preserves the narrowed element type. */
+export function filterDefined<T>(items: readonly (T | null | undefined)[]): T[] {
+  return items.filter((item): item is T => item !== undefined && item !== null);
+}
+
+/** True iff handId currently occupies a slot in the ranking array. */
+export function isHandRanked(ranking: readonly (string | null)[], handId: string): boolean {
+  return ranking.indexOf(handId) !== -1;
+}
+
+/** True iff handId is not present in any ranking slot. */
+export function isHandUnranked(ranking: readonly (string | null)[], handId: string): boolean {
+  return ranking.indexOf(handId) === -1;
+}
+
+/** Returns the element one step clockwise (next index) from myIndex, wrapping. */
+export function leftNeighbor<T>(items: readonly T[], myIndex: number): T {
+  return items[(myIndex + 1) % items.length];
+}
+
+/** Returns the element one step counter-clockwise (previous index) from myIndex, wrapping. */
+export function rightNeighbor<T>(items: readonly T[], myIndex: number): T {
+  return items[(myIndex + items.length - 1) % items.length];
+}
+
+export function findPlayerById(players: readonly Player[], id: string | undefined | null): Player | undefined {
+  if (!id) return undefined;
+  return players.find((p) => p.id === id);
+}
+
+export function findHandById(hands: readonly Hand[], id: string | undefined | null): Hand | undefined {
+  if (!id) return undefined;
+  return hands.find((h) => h.id === id);
+}
+
+export function filterHandsByPlayer(hands: readonly Hand[], playerId: string): Hand[] {
+  return hands.filter((h) => h.playerId === playerId);
 }

@@ -2,8 +2,9 @@
 
 import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
+import { filterHandsByPlayer, findPlayerById } from "@/lib/utils";
 import { CardFace } from "../CardFace";
-import { PoolStrip, VariantStatusBar } from "./SharedAffordances";
+import { DEAL_CHOICE_PANEL_STYLE, PoolStrip, VariantStatusBar } from "./SharedAffordances";
 import type { DealChoiceBoardProps } from "./types";
 
 export default function AuctionBoard({ gameState, myId, onSend }: DealChoiceBoardProps) {
@@ -13,10 +14,10 @@ export default function AuctionBoard({ gameState, myId, onSend }: DealChoiceBoar
       <div style={{ color: D.sub }}>Auction pool not initialized.</div>
     );
   }
-  const myHands = gameState.hands.filter((h) => h.playerId === myId);
+  const myHands = filterHandsByPlayer(gameState.hands, myId);
   const head = pool.claimQueue[0];
   const myTurn = head === myId;
-  const headPlayer = gameState.players.find((p) => p.id === head);
+  const headPlayer = findPlayerById(gameState.players, head);
   const headLabel = headPlayer ? (head === myId ? "Your turn" : `${headPlayer.name}'s turn`) : "Auction complete";
 
   return (
@@ -38,7 +39,7 @@ export default function AuctionBoard({ gameState, myId, onSend }: DealChoiceBoar
           <div
             key={hand.id}
             className="rounded-lg p-3"
-            style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
+            style={DEAL_CHOICE_PANEL_STYLE}
           >
             <VariantStatusBar
               label={`Hand #${idx + 1}`}

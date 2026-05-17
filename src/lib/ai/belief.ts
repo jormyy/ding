@@ -1,4 +1,14 @@
-import type { AcquireRequest, Card, GameState } from "../types";
+import type { AcquireRequest, Card, GameState, Phase } from "../types";
+import { cardKey, clamp01 } from "../utils";
+
+/** Per-phase blend weight applied to the range-derived hand strength estimate
+ *  when combining it with the scalar posterior. Preflop is omitted (=0) on
+ *  purpose — see perceiveState() above. */
+const PHASE_RANGE_WEIGHTS: Partial<Record<Phase, number>> = {
+  flop: 0.40,
+  turn: 0.55,
+  river: 0.65,
+};
 import {
   newRangeBelief,
   applyPlacement,
@@ -36,7 +46,7 @@ const buildAbsoluteStrengthMap = (excl: Set<string>, board: Card[]): Map<string,
  * Scalar belief for a single teammate hand.
  * Modeled as (mean, concentration) — a lightweight Beta proxy.
  */
-export type HandBelief = {
+type HandBelief = {
   /** Posterior mean strength in [0, 1]. */
   mean: number;
   /** Pseudo-observations; higher = tighter distribution. */
@@ -53,7 +63,7 @@ export type HandBelief = {
 };
 
 /** Belief state for a single teammate player. */
-export type TeammateBelief = {
+type TeammateBelief = {
   /** Per-hand scalar beliefs for this teammate. */
   hands: Map<string, HandBelief>;
   /** 0..1 — how often this teammate reorders hands recently. */
@@ -65,7 +75,7 @@ export type TeammateBelief = {
 };
 
 /** Learned behavioral patterns for a teammate, updated at each reveal. */
-export type TeammateHabits = {
+type TeammateHabits = {
   /** EMA of (impliedSlot - trueSlot); positive means they systematically overvalue hands. */
   overvaluationBias: number;
   /** Number of phases observed (denominator for EMAs). */
@@ -126,7 +136,7 @@ function getOrInitTeammate(b: BeliefState, pid: string, skillPrior = 0.7): Teamm
  * get low weight. By the river, teammates have full board info — their
  * placement is high-signal evidence.
  */
-export function phaseTrust(phase: string): number {
+function phaseTrust(phase: string): number {
   switch (phase) {
     case "preflop": return 0.25;
     case "flop":    return 0.6;
@@ -147,7 +157,7 @@ export function phaseTrust(phase: string): number {
  * - Cross-phase consistency (same slot in prior phases = stronger evidence)
  * - phaseTrustWeight (how informative this phase's placements are)
  */
-export function updateFromPlacement(
+function updateFromPlacement(
   b: BeliefState,
   teammateId: string,
   handId: string,
@@ -232,7 +242,7 @@ function findHandBelief(b: BeliefState, handId: string): HandBelief | null {
  * Decay confidence in a hand when its owner moves it to a different slot.
  * Called once per observed relocation during `perceiveState()`.
  */
-export function decayOnChurn(b: BeliefState, teammateId: string, handId: string, slotDelta?: number, totalHands?: number): void {
+function decayOnChurn(b: BeliefState, teammateId: string, handId: string, slotDelta?: number, totalHands?: number): void {
   const t = b.perTeammate.get(teammateId);
   if (!t) return;
   const hb = t.hands.get(handId);
@@ -281,7 +291,7 @@ export function updateSkillFromReveal(
       count++;
     }
     if (count === 0) continue;
-    const accuracy = Math.max(0, Math.min(1, 1 - totalErr / count));
+    const accuracy = clamp01(1 - totalErr / count);
     // EMA weight scales with sample size; cap at 0.5 so a single round can't
     // entirely overwrite years of reputation but a clearly-bad run moves it.
     const w = Math.min(0.5, 0.2 + 0.1 * count);
@@ -350,10 +360,10 @@ function buildExclusions(state: GameState, myPlayerId: string): Set<string> {
   const out = new Set<string>();
   for (const h of state.hands) {
     if (h.playerId === myPlayerId || h.flipped) {
-      for (const c of h.cards) out.add(c.rank + c.suit);
+      for (const c of h.cards) out.add(cardKey(c));
     }
   }
-  for (const c of state.communityCards) out.add(c.rank + c.suit);
+  for (const c of state.communityCards) out.add(cardKey(c));
   return out;
 }
 
@@ -470,11 +480,7 @@ export function perceiveState(
     // every teammate belief toward 0.5 with no signal. Skip the blend entirely
     // preflop and let scalar belief from observed placements dominate.
     if (rangeChanged) {
-      const phaseRangeWeight =
-        state.phase === "river" ? 0.65 :
-        state.phase === "turn" ? 0.55 :
-        state.phase === "flop" ? 0.40 :
-        0;
+      const phaseRangeWeight = PHASE_RANGE_WEIGHTS[state.phase] ?? 0;
       for (const [hid, r] of b.ranges) {
         const m = rangeMeanStrength(r, b.percentiles);
         const scalar = b.handStrength.get(hid) ?? 0.5;
@@ -494,7 +500,7 @@ function refreshRangePercentiles(
   state: GameState,
   myPlayerId: string
 ): void {
-  const sig = state.phase + "|" + state.communityCards.map((c) => c.rank + c.suit).join("");
+  const sig = state.phase + "|" + state.communityCards.map(cardKey).join("");
   if (b.percentiles && b.percentilesPhaseSig === sig) return;
   const excl = buildExclusions(state, myPlayerId);
   // Skip rebuild on lobby / phases without cards visible — leaves percentiles null.

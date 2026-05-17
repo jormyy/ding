@@ -1,4 +1,5 @@
 import type { Phase } from "../types";
+import { clamp } from "../utils";
 import { getGameModeDefinition } from "./registry";
 import {
   baseVisibleCommunity,
@@ -11,7 +12,7 @@ export function visibleCommunityCardCount(modeId: string | undefined, phase: Pha
   const maxVisible = maxVisibleCommunityCards(mode);
   const configuredIndexes = mode.deal.visibleCommunityIndexes?.[phase];
   if (configuredIndexes !== undefined) {
-    return Math.max(0, Math.min(maxVisible, configuredIndexes.length));
+    return clamp(configuredIndexes.length, 0, maxVisible);
   }
   if (phase === "reveal") {
     const configuredReveal = mode.deal.visibleCommunityCards?.reveal;
@@ -24,10 +25,10 @@ export function visibleCommunityCardCount(modeId: string | undefined, phase: Pha
   }
   const configured = mode.deal.visibleCommunityCards?.[phase];
   if (configured !== undefined) {
-    return Math.max(0, Math.min(maxVisible, configured));
+    return clamp(configured, 0, maxVisible);
   }
   const fallback = baseVisibleCommunity[phase] ?? 0;
-  return Math.max(0, Math.min(maxVisible, fallback));
+  return clamp(fallback, 0, maxVisible);
 }
 
 /**
@@ -65,7 +66,7 @@ export function visibleHoleCardCount(modeId: string | undefined, phase: Phase): 
   const mode = getGameModeDefinition(modeId);
   const configured = mode.deal.visibleHoleCards?.[phase];
   const count = configured ?? mode.deal.publicCards ?? 0;
-  return Math.max(0, Math.min(mode.deal.holeCards, count));
+  return clamp(count, 0, mode.deal.holeCards);
 }
 
 export function visibleHoleCardDetail(

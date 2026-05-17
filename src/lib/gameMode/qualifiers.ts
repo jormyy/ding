@@ -1,5 +1,6 @@
 import type { Card, Hand, Rank, Suit } from "../types";
 import { RANK_VALUE } from "../rankValue";
+import { incrementMapCount } from "../utils";
 import type { QualifierId } from "./types";
 
 /**
@@ -10,7 +11,7 @@ import type { QualifierId } from "./types";
  * sees the reason and the round can be replayed or excluded from scoring
  * downstream as the host wishes.
  */
-export interface QualifierContext {
+interface QualifierContext {
   ranking: readonly string[];
   hands: readonly Hand[];
   board: readonly Card[];
@@ -40,7 +41,7 @@ const ok: QualifierResult = { ok: true };
 /** True iff the 7-card pool contains 5 cards of the same suit. */
 function hasFlush(cards: readonly Card[]): boolean {
   const bySuit = new Map<Suit, number>();
-  for (const card of cards) bySuit.set(card.suit, (bySuit.get(card.suit) ?? 0) + 1);
+  for (const card of cards) incrementMapCount(bySuit, card.suit);
   for (const count of bySuit.values()) if (count >= 5) return true;
   return false;
 }
@@ -173,7 +174,7 @@ export const QUALIFIERS: Record<QualifierId, Qualifier> = {
     // Approximation: there must be EITHER two distinct paired ranks, OR a flush, OR a straight.
     const pool = hand.cards.concat(ctx.board);
     const counts = new Map<Rank, number>();
-    for (const card of pool) counts.set(card.rank, (counts.get(card.rank) ?? 0) + 1);
+    for (const card of pool) incrementMapCount(counts, card.rank);
     const pairs = [...counts.values()].filter((n) => n >= 2).length;
     if (pairs >= 2 || [...counts.values()].some((n) => n >= 3)) return ok;
     if (hasFlush(pool)) return ok;

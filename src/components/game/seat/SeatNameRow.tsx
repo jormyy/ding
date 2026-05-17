@@ -6,6 +6,7 @@
 
 import { memo } from "react";
 import type { Player } from "@/lib/types";
+import { D } from "@/lib/theme";
 
 export interface SeatNameRowProps {
   player: Player;
@@ -21,7 +22,7 @@ function SeatNameRowImpl({ player, isMe, isReveal, isMobile }: SeatNameRowProps)
       {player.ready && !isReveal && (
         <div
           className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-          style={{ background: "#2fb873" }}
+          style={{ background: D.accent }}
           aria-label="Ready"
         />
       )}
@@ -29,10 +30,10 @@ function SeatNameRowImpl({ player, isMe, isReveal, isMobile }: SeatNameRowProps)
         className={`text-[10px] font-black truncate uppercase tracking-wide ${nameMaxW}`}
         style={{
           color: isMe
-            ? "#f5e6b8"
+            ? D.goldBright
             : !player.connected
             ? "rgba(159,197,168,0.7)"
-            : "#9fc5a8",
+            : D.sub,
         }}
       >
         {player.name}
@@ -40,7 +41,7 @@ function SeatNameRowImpl({ player, isMe, isReveal, isMobile }: SeatNameRowProps)
       {!player.connected && (
         <span
           className="text-[8px] font-black uppercase tracking-widest flex-shrink-0"
-          style={{ color: "#c06060" }}
+          style={{ color: D.danger }}
           title="Disconnected"
         >
           offline

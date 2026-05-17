@@ -10,6 +10,7 @@ import {
 } from "@/lib/gameMode";
 import { D } from "@/lib/theme";
 import { shades, shadows, surfaces } from "@/lib/tokens";
+import { findPlayerById } from "@/lib/utils";
 import ModeBrowser from "./ModeBrowser";
 
 interface LobbyProps {
@@ -41,7 +42,7 @@ const ROUND_TIMER_OPTIONS = [
 export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyProps) {
   const [copied, setCopied] = useState(false);
 
-  const myPlayer = gameState.players.find((p) => p.id === myId);
+  const myPlayer = findPlayerById(gameState.players, myId);
   const isCreator = myPlayer?.isCreator ?? false;
   const canStart = gameState.players.length >= 2;
 
@@ -81,7 +82,7 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
   return (
     <div
       className="h-[100dvh] flex flex-col sm:flex-row overflow-hidden"
-      style={{ backgroundColor: "#0a1813" }}
+      style={{ backgroundColor: D.cardBg }}
     >
       {/* Left — felt showpiece (hidden on short viewports to keep right rail visible) */}
       <div
@@ -90,7 +91,7 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
           backgroundImage: "url('/felt.png')",
           backgroundRepeat: "repeat",
           backgroundSize: "256px 256px",
-          backgroundColor: "#0a3820",
+          backgroundColor: D.feltLight,
         }}
       >
         <div
@@ -151,7 +152,7 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
       {/* Right rail — fits a 720px viewport without scrolling */}
       <div
         className="flex-1 md:flex-none md:w-[380px] flex flex-col gap-3 p-4 min-h-0"
-        style={{ background: "#0a1813", borderLeft: `1px solid ${D.panelBorder}` }}
+        style={{ background: D.cardBg, borderLeft: `1px solid ${D.panelBorder}` }}
       >
         {/* Header: brand + room code (this is the only place these appear when felt is hidden) */}
         <div className="flex items-center justify-between gap-3 md:hidden">
@@ -208,7 +209,7 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
                   className="w-7 h-7 rounded-full flex items-center justify-center font-black text-xs flex-shrink-0"
                   style={
                     i === 0
-                      ? { background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`, color: D.ink }
+                      ? { background: D.goldButton, color: D.ink }
                       : { background: surfaces.dividerLine, color: D.sub }
                   }
                 >
@@ -342,7 +343,7 @@ export default function Lobby({ gameState, myId, code, onSend, onLeave }: LobbyP
               style={
                 canStart
                   ? {
-                      background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`,
+                      background: D.goldButton,
                       color: D.ink,
                       boxShadow: shadows.goldButton,
                     }
@@ -446,7 +447,7 @@ function PillToggle({
       style={
         active
           ? {
-              background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`,
+              background: D.goldButton,
               color: D.ink,
               border: "none",
             }

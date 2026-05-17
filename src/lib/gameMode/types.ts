@@ -551,7 +551,6 @@ export type InfoFeatureId =
   | "worst-of-all"
   | "meta-legend";
 
-export type { ModeFamily, ModeTier, SubTag } from "./tagVocabulary";
 import type { ModeFamily, ModeTier, SubTag } from "./tagVocabulary";
 
 export interface DingGameModeDefinition {
@@ -617,7 +616,7 @@ export const baseVisibleCommunity: Record<Phase, number> = {
  * Cross-cutting state every mode shares. Per-mode state extends this with
  * mode-specific fields (ranking, hands, community cards, etc.).
  */
-export interface BaseGameState {
+interface BaseGameState {
   /** Stable identifier for the active mode, e.g. "ding". */
   modeId: string;
   /** Mode-defined phase string. Engine treats this as opaque. */
@@ -633,12 +632,12 @@ export interface BaseGameState {
 }
 
 /** Shape of a player action. Discriminated by `type`. */
-export interface BaseAction {
+interface BaseAction {
   type: string;
 }
 
 /** Identifies the actor behind an incoming action. */
-export interface Actor {
+interface Actor {
   /** Player ID; matches `Player.id`. */
   id: string;
   /** False for bots and offline timer-driven actors. */
@@ -647,18 +646,18 @@ export interface Actor {
 
 // -------- Validate / Apply ----------------------------------------------
 
-export type ValidationResult =
+type ValidationResult =
   | { ok: true }
   | { ok: false; reason: string };
 
 /** Side channel passed to applyAction for mode-specific deltas. */
-export interface ApplyCtx {
+interface ApplyCtx {
   /** Engine-provided wall clock (ms) — supplied so tests can inject. */
   now: number;
 }
 
 /** Outcome of applying an action. */
-export interface ApplyResult<S> {
+interface ApplyResult<S> {
   /**
    * Slices that changed. The engine uses this to invalidate per-player mask
    * caches and to gate broadcast/alarm scheduling. Returning an empty set is
@@ -724,7 +723,7 @@ export interface InvariantViolation {
  * Example (Ding): "hide `Hand.cards` from non-owners unless phase=='reveal'
  * AND hand.flipped".
  */
-export interface MaskingRule<S extends BaseGameState = BaseGameState> {
+interface MaskingRule<S extends BaseGameState = BaseGameState> {
   /** Stable id for telemetry. */
   readonly id: string;
   /** Mutate `view` in place to mask fields the player must not see. */

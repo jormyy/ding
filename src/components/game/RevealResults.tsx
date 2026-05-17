@@ -5,6 +5,7 @@ import type { GameState } from "@/lib/types";
 import ChatPanel from "../ChatPanel";
 import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
+import { findPlayerById } from "@/lib/utils";
 import {
   computeRevealRows,
   computeDisplacementLeaderboard,
@@ -158,7 +159,7 @@ export default function RevealResults({
 }: RevealResultsProps) {
   const score = gameState.score ?? 0;
   const total = gameState.hands.length;
-  const isCreator = gameState.players.find((p) => p.id === myId)?.isCreator ?? false;
+  const isCreator = findPlayerById(gameState.players, myId)?.isCreator ?? false;
 
   const rows = computeRevealRows(gameState, myId);
   const { ranked, best, worst, maxOff, myEntry } = computeDisplacementLeaderboard(gameState, myId);
@@ -169,7 +170,7 @@ export default function RevealResults({
       className="h-[100dvh] flex flex-col overflow-hidden"
       style={{ background: D.cardBg, fontFamily: '"Inter", system-ui, sans-serif', color: D.text }}
     >
-      <div style={{ position: "absolute", inset: 0, background: "url('/felt.png') repeat, #0a3820", backgroundSize: "256px 256px", opacity: 0.18, pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ position: "absolute", inset: 0, background: `url('/felt.png') repeat, ${D.feltLight}`, backgroundSize: "256px 256px", opacity: 0.18, pointerEvents: "none", zIndex: 0 }} />
       <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at 50% 30%, ${surfaces.goldPanel} 0%, transparent 60%)`, pointerEvents: "none", zIndex: 0 }} />
 
       <RevealHeader

@@ -20,8 +20,9 @@ export const colors = {
 
   // Felt & ink (room background, dark text on gold)
   ink: "#2a1a08",
-  rail: "#78350f",
   cardBg: "#0a1813",
+  // Mid-tone felt under the felt.png texture overlay (play area background).
+  feltLight: "#0a3820",
 
   // Body/secondary text on dark felt
   text: "#f5e6b8",
@@ -31,19 +32,12 @@ export const colors = {
   // Status accents
   accent: "#2fb873",
   danger: "#c06060",
-  dangerLight: "#ffb0b4",
+  // Warning / secondary-emphasis (used by "opt-in penalty", "right neighbor",
+  // sacrificed/contributed card borders, table-picks vote header).
+  warning: "#f08a6c",
 
-  // Card surfaces
-  cardBack: "#1e293b",
-  cardFace: "#fafafa",
-
-  // Rank chip palette (top / middle / bottom)
-  rankTopBg: "#c9a54a",
-  rankTopBorder: "#f0d278",
-  rankTopText: "#2a1a08",
-  rankBottomBg: "#4a1014",
-  rankBottomBorder: "#a84040",
-  rankBottomText: "#ffb0b4",
+  // Rank chip palette — all ranks share the neutral "mid" styling. The
+  // top/bottom variants were retired when chipColors.ts unified the palette.
   rankMidBg: "#4a5568",
   rankMidBorder: "#8a9ab0",
   rankMidText: "#ffffff",
@@ -52,6 +46,11 @@ export const colors = {
 export const gradients = {
   panel:
     "linear-gradient(180deg, rgba(20,60,36,0.92) 0%, rgba(10,40,22,0.96) 100%)",
+  /** Slightly more saturated panel — used on the deal-choice + desktop board headers. */
+  panelBold:
+    "linear-gradient(180deg, rgba(20,60,36,0.95) 0%, rgba(10,40,22,0.98) 100%)",
+  /** Gold press-affordance fill for primary CTAs (Start, Ready, Play Again, browse-mode chips). */
+  goldButton: `linear-gradient(180deg, ${colors.goldTop}, ${colors.gold})`,
 } as const;
 
 /**
@@ -61,7 +60,7 @@ export const gradients = {
  * propagates everywhere.
  */
 export const shadows = {
-  goldButton: `0 3px 0 ${colors.rail}, 0 6px 16px rgba(0,0,0,0.35)`,
+  goldButton: `0 3px 0 #78350f, 0 6px 16px rgba(0,0,0,0.35)`,
 } as const;
 
 export const overlays = {
@@ -94,6 +93,26 @@ export const surfaces = {
   goldFaint: "rgba(201,165,74,0.15)",
   accentBorder: "rgba(47,184,115,0.35)",
   panelOverlay: "rgba(10,30,18,0.6)",
+  // Translucent dark background for icon-button overlays sitting on the felt.
+  darkIconBg: "rgba(0,0,0,0.35)",
+
+  // Accent (green) variants used for selected/correct/winner state. Note
+  // accentLight (0.18) and accentBorder (0.35) already cover the common range;
+  // these fill in the gaps below/above.
+  accentFaint: "rgba(47,184,115,0.10)",
+  accentSoft: "rgba(47,184,115,0.14)",
+  accentGlow: "rgba(47,184,115,0.5)",
+  accentStrong: "rgba(47,184,115,0.6)",
+
+  // Danger-urgent (red) palette for round/game timers approaching expiry.
+  dangerUrgentBg: "rgba(192,96,96,0.25)",
+  dangerUrgentBorder: "rgba(192,96,96,0.5)",
+  dangerUrgentBgFaint: "rgba(192,96,96,0.15)",
+  dangerUrgentBorderFaint: "rgba(192,96,96,0.35)",
+
+  // Warning (matches colors.warning #f08a6c) — opt-in penalty surface.
+  warningBg: "rgba(240,138,108,0.22)",
+  warningBorder: "rgba(240,138,108,0.32)",
 } as const;
 
 /** Shadow / scrim rgba fragments — composable inside boxShadow/textShadow
@@ -105,7 +124,6 @@ export const shades = {
 
 export const typography = {
   serif: "var(--font-playfair), Georgia, serif",
-  sans: "var(--font-inter), system-ui, sans-serif",
 } as const;
 
 /**
@@ -120,7 +138,6 @@ export const tailwindColors = {
     top: colors.goldTop,
   },
   ink: colors.ink,
-  rail: colors.rail,
   // Felt color scale comes from Tailwind's default green hues; we keep the
   // explicit numeric scale here so the config doesn't need to chase Tailwind
   // defaults.
@@ -137,13 +154,8 @@ export const tailwindColors = {
     900: "#14532d",
     950: "#052e16",
   },
-  card: {
-    back: colors.cardBack,
-    face: colors.cardFace,
-  },
   danger: {
     DEFAULT: colors.danger,
-    light: colors.dangerLight,
   },
   sub: colors.sub,
   muted: colors.muted,

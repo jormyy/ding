@@ -1,6 +1,7 @@
 import type * as Party from "partykit/server";
 import type { ClientMessage, Player, ServerMessage } from "../src/lib/types";
 import { MAX_PLAYERS } from "../src/lib/constants";
+import { findPlayerById } from "../src/lib/utils";
 import { BotController, type BotMeta } from "./bots";
 import {
   type ServerGameState,
@@ -120,7 +121,7 @@ export default class DingServer implements Party.Server {
       (h) => !this.state.ranking.includes(h.id)
     );
     const onlyOfflineUnranked = unrankedHands.every((h) => {
-      const owner = this.state.players.find((p) => p.id === h.playerId);
+      const owner = findPlayerById(this.state.players, h.playerId);
       return owner ? !owner.connected : true;
     });
     if (!onlyOfflineUnranked) return false;
@@ -201,7 +202,7 @@ export default class DingServer implements Party.Server {
   }
 
   private dispatchBotAction(playerId: string, msg: ClientMessage): void {
-    const player = this.state.players.find((p) => p.id === playerId);
+    const player = findPlayerById(this.state.players, playerId);
     if (!player) return;
     this.handlePlayerAction(player, msg, undefined, true);
   }
@@ -286,7 +287,7 @@ export default class DingServer implements Party.Server {
       sender.close();
       return;
     }
-    const existingPlayer = this.state.players.find((p) => p.id === msg.pid);
+    const existingPlayer = findPlayerById(this.state.players, msg.pid);
     if (existingPlayer) {
       existingPlayer.connId = sender.id;
       existingPlayer.connected = true;

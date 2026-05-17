@@ -2,7 +2,6 @@ import type { Phase } from "./types";
 
 // Player / room limits
 export const MAX_PLAYERS = 8;
-export const MAX_TOTAL_HANDS = 22;
 export const ROOM_CODE_LENGTH = 6;
 
 /**

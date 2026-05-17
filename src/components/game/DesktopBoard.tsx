@@ -10,6 +10,7 @@
  */
 
 import type { GameState } from "@/lib/types";
+import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
 import type { UseBoardReturn } from "@/hooks/useGameBoard";
 import PokerTable from "../PokerTable";
@@ -76,7 +77,7 @@ export default function DesktopBoard({
   } = board;
 
   return (
-    <div className="h-[100dvh] flex flex-col" style={{ background: "#0a1813" }}>
+    <div className="h-[100dvh] flex flex-col" style={{ background: D.cardBg }}>
       {toastEl}
 
       <BoardHeader
@@ -95,7 +96,7 @@ export default function DesktopBoard({
           <div
             className="relative w-full aspect-square sm:aspect-auto sm:h-full"
             style={{
-              background: "url('/felt.png') repeat, #0a3820",
+              background: `url('/felt.png') repeat, ${D.feltLight}`,
               backgroundSize: "256px 256px",
             }}
           >
@@ -165,7 +166,7 @@ export default function DesktopBoard({
       {(incomingRequests.length > 0 || outgoingRequests.length > 0) && (
         <div
           className="sm:hidden flex-none px-3 py-2 flex flex-col gap-2 max-h-40 overflow-y-auto"
-          style={{ background: "#0a1813", borderTop: `1px solid ${surfaces.goldFaint}` }}
+          style={{ background: D.cardBg, borderTop: `1px solid ${surfaces.goldFaint}` }}
         >
           <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">
             Requests

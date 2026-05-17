@@ -4,6 +4,7 @@ import type { GameState } from "@/lib/types";
 import type { UseBoardReturn } from "@/hooks/useGameBoard";
 import { PHASES_META } from "@/lib/constants";
 import { getGameModeDefinition } from "@/lib/gameMode";
+import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
 import PokerTable from "../PokerTable";
 import ChatPanel from "../ChatPanel";
@@ -60,30 +61,30 @@ export default function MobileLandscapeBoard({
     : gameState.phase;
 
   return (
-    <div className="h-[100dvh] flex flex-col" style={{ background: "#0a1813" }}>
+    <div className="h-[100dvh] flex flex-col" style={{ background: D.cardBg }}>
       {toastEl}
       <div className="flex-none px-3 py-1 flex items-center justify-between" style={{ borderBottom: `1px solid ${surfaces.goldLight}`, background: "rgba(10,40,22,0.95)" }}>
         <div className="flex items-baseline gap-2 min-w-0">
-          <span className="font-serif font-black" style={{ fontSize: 16, color: "#f5e6b8" }}>Ding</span>
-          <span className="text-[9px] font-black uppercase truncate max-w-20" style={{ color: "#c9a54a" }}>
+          <span className="font-serif font-black" style={{ fontSize: 16, color: D.goldBright }}>Ding</span>
+          <span className="text-[9px] font-black uppercase truncate max-w-20" style={{ color: D.gold }}>
             {mode.shortName}
           </span>
         </div>
         <div className="flex items-center gap-2">
           {PLAYABLE_PHASES.map((phase) => (
-            <div key={phase} className="text-[9px] font-black uppercase tracking-widest" style={{ color: gameState.phase === phase ? "#c9a54a" : surfaces.dimmed }}>
+            <div key={phase} className="text-[9px] font-black uppercase tracking-widest" style={{ color: gameState.phase === phase ? D.gold : surfaces.dimmed }}>
               {phase === "preflop" ? "pre" : phase}
             </div>
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#2fb873" }}>
+          <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: D.accent }}>
             {phaseLabel}
           </span>
           <GameTimer gameState={gameState} onAutoReady={() => handleReady(true)} />
           {isCreator && (confirmingEnd
-            ? <button onClick={handleEndGameClick} className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ background: "#c06060", color: "#fff" }}>sure?</button>
-            : <button onClick={handleEndGameClick} className="text-[10px] font-bold" style={{ color: "#c06060" }}>end</button>
+            ? <button onClick={handleEndGameClick} className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ background: D.danger, color: "#fff" }}>sure?</button>
+            : <button onClick={handleEndGameClick} className="text-[10px] font-bold" style={{ color: D.danger }}>end</button>
           )}
         </div>
       </div>
@@ -122,7 +123,7 @@ export default function MobileLandscapeBoard({
         )}
       </div>
 
-      <div className="flex-none px-3 py-1.5" style={{ borderTop: `1px solid ${surfaces.goldFaint}`, background: "#0a1813" }}>
+      <div className="flex-none px-3 py-1.5" style={{ borderTop: `1px solid ${surfaces.goldFaint}`, background: D.cardBg }}>
         {(incomingRequests.length > 0 || outgoingRequests.length > 0) && (
           <div className="flex gap-3 mb-1.5 overflow-x-auto">
             {incomingRequests.map((req) => (

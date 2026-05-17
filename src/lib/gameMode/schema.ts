@@ -566,7 +566,7 @@ const ResolvedDealRule = DealYaml.extend({
   communityCards: z.number().int(),
 });
 
-export const ModeYamlSchema = z
+const ModeYamlSchema = z
   .object({
     id: z.string().min(1),
     name: z.string().min(1),
@@ -604,10 +604,8 @@ export const ManifestSchema = z
   })
   .strict();
 
-export type ModeYaml = z.infer<typeof ModeYamlSchema>;
-
 /** Resolves `deal.extends: standard` into the final GameModeDealRule. */
-export function resolveDeal(yamlDeal: z.infer<typeof DealYaml>): GameModeDealRule {
+function resolveDeal(yamlDeal: z.infer<typeof DealYaml>): GameModeDealRule {
   const { extends: extendsKey, ...rest } = yamlDeal;
   const merged = extendsKey === "standard" ? { ...standardDeal, ...rest } : rest;
   const parsed = ResolvedDealRule.parse(merged);

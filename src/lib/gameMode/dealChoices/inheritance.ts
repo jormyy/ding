@@ -3,6 +3,7 @@
  * card from their right neighbour (so one card flows clockwise per round).
  */
 import { handIndexFromId } from "../../handId";
+import { filterDefined, rightNeighbor } from "../../utils";
 import { registerDealChoiceVariant } from "./registry";
 import { fallbackKeepIndexes, publicCardCount, refreshHandVisibility } from "./shared";
 import type { Card } from "../../types";
@@ -25,9 +26,7 @@ function applyInheritance(state: ServerGameState): void {
     const handIndex = handIndexFromId(hand.id);
     const selectedIndexes = choice.selectedIndexes ?? fallbackKeepIndexes(hand.cards, choice.keepCards);
     const selectedSet = new Set(selectedIndexes);
-    const keptCards = selectedIndexes
-      .map((index) => hand.cards[index])
-      .filter((card): card is Card => card !== undefined);
+    const keptCards = filterDefined(selectedIndexes.map((index) => hand.cards[index]));
     const discardedCard =
       hand.cards.find((_card, index) => !selectedSet.has(index)) ?? null;
     planByOwnerAndIndex.set(`${hand.playerId}:${handIndex}`, { keptCards, discardedCard });
@@ -35,7 +34,7 @@ function applyInheritance(state: ServerGameState): void {
 
   for (let playerIndex = 0; playerIndex < playerIds.length; playerIndex++) {
     const targetPlayerId = playerIds[playerIndex];
-    const rightPlayerId = playerIds[(playerIndex + playerIds.length - 1) % playerIds.length];
+    const rightPlayerId = rightNeighbor(playerIds, playerIndex);
     for (let handIndex = 0; handIndex < state.handsPerPlayer; handIndex++) {
       const targetHand = handByOwnerAndIndex.get(`${targetPlayerId}:${handIndex}`);
       const targetPlan = planByOwnerAndIndex.get(`${targetPlayerId}:${handIndex}`);

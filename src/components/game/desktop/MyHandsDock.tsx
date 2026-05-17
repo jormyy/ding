@@ -7,6 +7,7 @@
 
 import { memo } from "react";
 import type { Hand } from "@/lib/types";
+import { D } from "@/lib/theme";
 import { CardFace } from "../../CardFace";
 import RankChip, { HistoryChip } from "../../RankChip";
 import { PHASES_META } from "@/lib/constants";
@@ -57,7 +58,7 @@ function MyHandsDockImpl({
         <div
           style={{
             fontSize: 10,
-            color: "#2fb873",
+            color: D.accent,
             letterSpacing: 2.5,
             fontWeight: 900,
             textTransform: "uppercase",
@@ -68,7 +69,7 @@ function MyHandsDockImpl({
         <div
           style={{
             fontSize: 12,
-            color: "#f5e6b8",
+            color: D.goldBright,
             fontFamily: "'Playfair Display', serif",
             fontWeight: 700,
             marginTop: 2,
@@ -98,7 +99,7 @@ function MyHandsDockImpl({
               <div
                 style={{
                   fontSize: 9,
-                  color: "#9fc5a8",
+                  color: D.sub,
                   fontWeight: 800,
                   letterSpacing: 1,
                 }}

@@ -89,7 +89,7 @@ export type ArchetypeQuirks = {
   cedesEasily?: number;
 };
 
-export type ArchetypeFlavor = {
+type ArchetypeFlavor = {
   description: string;
   namePool: string[];
   quirks: ArchetypeQuirks;

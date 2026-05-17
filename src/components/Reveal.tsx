@@ -87,7 +87,7 @@ export default function Reveal({
         <div className="flex-1 min-w-0 flex items-center justify-center overflow-hidden relative">
           <div
             className="relative w-full aspect-square sm:aspect-auto sm:h-full"
-            style={{ background: "url('/felt.png') repeat, #0a3820", backgroundSize: "256px 256px" }}
+            style={{ background: `url('/felt.png') repeat, ${D.feltLight}`, backgroundSize: "256px 256px" }}
           >
             <PokerTable gameState={gameState} myId={myId} onFlip={handleFlip} />
 

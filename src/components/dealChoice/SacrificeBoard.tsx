@@ -2,12 +2,13 @@
 
 import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
+import { filterHandsByPlayer } from "@/lib/utils";
 import { CardFace } from "../CardFace";
-import { CommunityPreviewStrip, VariantStatusBar } from "./SharedAffordances";
+import { CommunityPreviewStrip, DEAL_CHOICE_PANEL_STYLE, VariantStatusBar } from "./SharedAffordances";
 import type { DealChoiceBoardProps } from "./types";
 
 export default function SacrificeBoard({ gameState, myId, onSend }: DealChoiceBoardProps) {
-  const myHands = gameState.hands.filter((h) => h.playerId === myId);
+  const myHands = filterHandsByPlayer(gameState.hands, myId);
   const choices = gameState.dealChoices ?? {};
   return (
     <div className="grid gap-3">
@@ -19,7 +20,7 @@ export default function SacrificeBoard({ gameState, myId, onSend }: DealChoiceBo
           <div
             key={hand.id}
             className="grid gap-3 rounded-lg p-3"
-            style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
+            style={DEAL_CHOICE_PANEL_STYLE}
           >
             <div className="flex items-center justify-between gap-3">
               <VariantStatusBar
@@ -50,7 +51,7 @@ export default function SacrificeBoard({ gameState, myId, onSend }: DealChoiceBo
                     className="rounded-lg p-1 transition-all disabled:cursor-default"
                     style={{
                       background: isSacrificed ? surfaces.dangerLight : surfaces.disabledBg,
-                      border: isSacrificed ? "2px solid #f08a6c" : `2px solid ${surfaces.subtleBorder}`,
+                      border: isSacrificed ? `2px solid ${D.warning}` : `2px solid ${surfaces.subtleBorder}`,
                       opacity: isSacrificed ? 0.55 : 1,
                     }}
                     aria-pressed={isSacrificed}

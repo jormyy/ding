@@ -7,6 +7,7 @@
 
 import { memo } from "react";
 import type { GameState } from "@/lib/types";
+import { findHandById } from "@/lib/utils";
 
 export interface BoardInstructionHintProps {
   gameState: GameState;
@@ -22,7 +23,7 @@ function BoardInstructionHintImpl({
   localRanking,
 }: BoardInstructionHintProps) {
   if (selectedHandId !== null) {
-    const selHand = gameState.hands.find((h) => h.id === selectedHandId);
+    const selHand = findHandById(gameState.hands, selectedHandId);
     const isRanked = localRanking.indexOf(selectedHandId) !== -1;
     let text = "Place your chip or tap a teammate's hand";
     if (selHand && isRanked) {

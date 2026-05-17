@@ -5,7 +5,7 @@ import type { ClientMessage, GameState, Hand } from "@/lib/types";
 import { getGameModeDefinition } from "@/lib/gameMode";
 import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
-import { toggleInSet } from "@/lib/utils";
+import { filterHandsByPlayer, toggleInSet } from "@/lib/utils";
 import { CardFace } from "./CardFace";
 import { resolveDealChoiceVariant } from "@/lib/gameMode/dealChoiceVariant";
 import PeekBoardBoard from "./dealChoice/PeekBoardBoard";
@@ -16,6 +16,7 @@ import AuctionBoard from "./dealChoice/AuctionBoard";
 import RecruitBoard from "./dealChoice/RecruitBoard";
 import SolomonBoard from "./dealChoice/SolomonBoard";
 import TablePicksBoard from "./dealChoice/TablePicksBoard";
+import { DEAL_CHOICE_PANEL_STYLE } from "./dealChoice/SharedAffordances";
 
 interface DealChoiceBoardProps {
   gameState: GameState;
@@ -31,7 +32,7 @@ export default function DealChoiceBoard({
   onSend,
 }: DealChoiceBoardProps) {
   const mode = getGameModeDefinition(gameState.modeId);
-  const myHands = gameState.hands.filter((hand) => hand.playerId === myId);
+  const myHands = filterHandsByPlayer(gameState.hands, myId);
   const choices = gameState.dealChoices ?? {};
   const isTradeUp = mode.deal.dealChoice?.tradeUp === true;
   const isInheritance = mode.deal.dealChoice?.inheritance === true;
@@ -39,17 +40,16 @@ export default function DealChoiceBoard({
   const variant = resolveDealChoiceVariant(mode);
 
   return (
-    <div className="h-[100dvh] flex flex-col" style={{ background: "#0a1813" }}>
+    <div className="h-[100dvh] flex flex-col" style={{ background: D.cardBg }}>
       <div
         className="flex-none flex items-center gap-3 px-4"
         style={{
           height: 54,
-          background:
-            "linear-gradient(180deg, rgba(20,60,36,0.95) 0%, rgba(10,40,22,0.98) 100%)",
+          background: D.panelBold,
           borderBottom: `1px solid ${surfaces.goldMid}`,
         }}
       >
-        <span className="font-serif font-black" style={{ fontSize: 22, color: "#f5e6b8" }}>
+        <span className="font-serif font-black" style={{ fontSize: 22, color: D.goldBright }}>
           Ding
         </span>
         {code && (
@@ -60,7 +60,7 @@ export default function DealChoiceBoard({
         <span
           className="rounded-full px-2 py-0.5 text-[10px] font-black uppercase"
           style={{
-            color: "#f5e6b8",
+            color: D.goldBright,
             background: surfaces.neutralFaint,
             border: `1px solid ${surfaces.subtleBorder}`,
           }}
@@ -72,7 +72,7 @@ export default function DealChoiceBoard({
           type="button"
           onClick={() => onSend({ type: "endGame" })}
           className="text-[11px] font-bold transition-colors"
-          style={{ color: "#c06060" }}
+          style={{ color: D.danger }}
         >
           End
         </button>
@@ -81,14 +81,14 @@ export default function DealChoiceBoard({
       <div
         className="flex-1 min-h-0 overflow-y-auto"
         style={{
-          background: "url('/felt.png') repeat, #0a3820",
+          background: `url('/felt.png') repeat, ${D.feltLight}`,
           backgroundSize: "256px 256px",
         }}
       >
         <div className="min-h-full flex items-center justify-center p-4">
           <div
             className="w-full max-w-5xl grid gap-4 lg:grid-cols-[1fr_280px]"
-            style={{ color: "#f5e6b8" }}
+            style={{ color: D.goldBright }}
           >
             <div
               className="rounded-lg p-4"
@@ -171,7 +171,7 @@ export default function DealChoiceBoard({
                 Table status
               </div>
               {gameState.players.map((player) => {
-                const hands = gameState.hands.filter((hand) => hand.playerId === player.id);
+                const hands = filterHandsByPlayer(gameState.hands, player.id);
                 const locked = hands.filter((hand) => choices[hand.id]?.submitted).length;
                 return (
                   <div
@@ -237,7 +237,7 @@ function ChoiceHandRow({
   return (
     <div
       className="grid gap-3 md:grid-cols-[120px_1fr_140px] md:items-center rounded-lg p-3"
-      style={{ background: surfaces.dealChoicePanelBg, border: `1px solid ${surfaces.subtleBorder}` }}
+      style={DEAL_CHOICE_PANEL_STYLE}
     >
       <div>
         <div className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: D.sub }}>
@@ -279,8 +279,8 @@ function ChoiceHandRow({
             className="h-8 rounded-md text-[11px] font-black uppercase tracking-wide transition-all active:scale-95 disabled:opacity-45 disabled:cursor-not-allowed"
             style={{
               background: mulliganUsed ? surfaces.neutralFaint : surfaces.dangerLight,
-              color: mulliganUsed ? D.sub : "#f08a6c",
-              border: "1px solid rgba(240,138,108,0.32)",
+              color: mulliganUsed ? D.sub : D.warning,
+              border: `1px solid ${surfaces.warningBorder}`,
             }}
             aria-label={`Mulligan hand ${handNumber}`}
           >
@@ -295,7 +295,7 @@ function ChoiceHandRow({
           style={{
             background: submitted
               ? surfaces.accentLight
-              : `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`,
+              : D.goldButton,
             color: submitted ? D.accent : D.ink,
             border: submitted ? `1px solid ${surfaces.accentBorder}` : "none",
           }}

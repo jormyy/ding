@@ -1,7 +1,8 @@
 import { GAME_MODE_DEFINITIONS } from "./catalog.generated";
 import { DEFAULT_GAME_MODE_ID, type DingGameModeDefinition } from "./types";
+import { idMap } from "../utils";
 
-const modeById = new Map(GAME_MODE_DEFINITIONS.map((mode) => [mode.id, mode]));
+const modeById = idMap(GAME_MODE_DEFINITIONS);
 
 export function listGameModes(): readonly DingGameModeDefinition[] {
   return GAME_MODE_DEFINITIONS;

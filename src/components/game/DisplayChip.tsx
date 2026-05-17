@@ -1,6 +1,7 @@
 "use client";
 
 import { chipColors } from "@/lib/chipColors";
+import { D } from "@/lib/theme";
 
 interface DisplayChipProps {
   rank: number;
@@ -16,7 +17,7 @@ export default function DisplayChip({
   size = 28,
 }: DisplayChipProps) {
   let { bg, border, color } = chipColors(rank, total);
-  if (mine && rank !== 1 && rank !== total) { bg = "#2fb873"; border = "#6ae09a"; color = "#04221a"; }
+  if (mine && rank !== 1 && rank !== total) { bg = D.accent; border = "#6ae09a"; color = "#04221a"; }
   return (
     <div
       style={{

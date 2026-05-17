@@ -1,6 +1,7 @@
 import type { Card, ModeInfo, Phase } from "../../src/lib/types";
 import { getGameModeDefinition, type InfoFeatureId } from "../../src/lib/gameMode";
 import { ALL_PHASES } from "../../src/lib/phases";
+import { findHandById, findPlayerById, incrementMapCount, leftNeighbor } from "../../src/lib/utils";
 import type { ServerGameState } from "../state";
 import { narrativeSpecs } from "./infoNarrativeSpecs";
 
@@ -126,7 +127,7 @@ function neighborHoleAnnouncements(id: InfoFeatureId, label: string, state: Serv
   const players = state.players;
   if (players.length === 0) return [];
   return players.flatMap((player, index) => {
-    const neighbor = players[(index + 1) % players.length];
+    const neighbor = leftNeighbor(players, index);
     const hand = state.hands.find((candidate) => candidate.playerId === neighbor.id);
     if (!hand) return [];
     return [announce(id, label, `${neighbor.name}: ${cardList(hand.cards.slice(0, cardCount))}`, player.id, phase)];
@@ -142,7 +143,7 @@ function genericInfo(id: InfoFeatureId, state: ServerGameState, phase: Phase): M
 /** Resolve a player-facing name for a hand, falling back if no matching player. */
 function playerName(state: ServerGameState, hand: { playerId?: string; id: string }): string {
   if (hand.playerId) {
-    const player = state.players.find((p) => p.id === hand.playerId);
+    const player = findPlayerById(state.players, hand.playerId);
     if (player) return player.name;
   }
   const index = state.hands.findIndex((h) => h.id === hand.id);
@@ -189,10 +190,10 @@ function tellFact(state: ServerGameState): string {
 function theatreClue(state: ServerGameState, phase: Phase): string {
   const hand = subjectHand(state, phase);
   if (!hand) return "The stage is empty";
-  const live = state.hands.find((h) => h.id === hand.id);
+  const live = findHandById(state.hands, hand.id);
   if (!live || live.cards.length === 0) return `${playerName(state, hand)} steps onstage`;
   const suits = new Map<string, number>();
-  for (const c of live.cards) suits.set(c.suit, (suits.get(c.suit) ?? 0) + 1);
+  for (const c of live.cards) incrementMapCount(suits, c.suit);
   const suitNote = Array.from(suits.entries()).map(([s, n]) => `${n}${s}`).join(" ");
   const ranks = live.cards.map((c) => c.rank).join(",");
   return `${playerName(state, hand)} reads as ${ranks} (${suitNote})`;
@@ -242,7 +243,7 @@ function suitCounts(cards: readonly Card[]): string {
 
 function rankCounts(cards: readonly Card[]): string {
   const counts = new Map<string, number>();
-  for (const card of cards) counts.set(card.rank, (counts.get(card.rank) ?? 0) + 1);
+  for (const card of cards) incrementMapCount(counts, card.rank);
   return Array.from(counts.entries()).map(([rank, count]) => `${rank}${count}`).join(" ");
 }
 

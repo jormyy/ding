@@ -5,6 +5,13 @@ import { D } from "@/lib/theme";
 import { surfaces } from "@/lib/tokens";
 import { CardFace } from "../CardFace";
 
+/** Standard deal-choice card panel chrome: dark green fill + subtle white border.
+ *  Used as the outer style on every per-hand panel in the deal-choice variant UIs. */
+export const DEAL_CHOICE_PANEL_STYLE = {
+  background: surfaces.dealChoicePanelBg,
+  border: `1px solid ${surfaces.subtleBorder}`,
+} as const;
+
 export function CommunityPreviewStrip({
   cards,
   label = "Your peek",
@@ -138,7 +145,7 @@ export function VariantStatusBar({
   value: string;
   tone?: "default" | "accent" | "warning";
 }) {
-  const color = tone === "accent" ? D.accent : tone === "warning" ? "#f08a6c" : D.sub;
+  const color = tone === "accent" ? D.accent : tone === "warning" ? D.warning : D.sub;
   return (
     <div className="flex items-center gap-2">
       <span className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: D.sub }}>

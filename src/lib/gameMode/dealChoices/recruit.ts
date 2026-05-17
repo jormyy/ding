@@ -6,7 +6,7 @@
  */
 import { registerDealChoiceVariant } from "./registry";
 import { fallbackKeepIndexes, publicCardCount, refreshHandVisibility } from "./shared";
-import type { Card } from "../../types";
+import { filterDefined } from "../../utils";
 import type { ServerGameState } from "../../../../party/state";
 
 function applyRecruit(state: ServerGameState): void {
@@ -16,9 +16,7 @@ function applyRecruit(state: ServerGameState): void {
     if (!choice) continue;
     if (choice.recruitStage !== "done") {
       const selectedIndexes = choice.selectedIndexes ?? fallbackKeepIndexes(hand.cards, choice.keepCards);
-      hand.cards = selectedIndexes
-        .map((index) => hand.cards[index])
-        .filter((card): card is Card => card !== undefined);
+      hand.cards = filterDefined(selectedIndexes.map((index) => hand.cards[index]));
     }
     refreshHandVisibility(hand, publicCount);
   }

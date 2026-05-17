@@ -1,3 +1,5 @@
+import { clamp01 } from "./utils";
+
 const VOLUME_KEY = "ding-sound-volume";
 const VOICE_KEY = "ding-voice-uri";
 const DEFAULT_VOLUME = 0.6;
@@ -5,9 +7,9 @@ const DEFAULT_VOLUME = 0.6;
 type Listener = (v: number) => void;
 const listeners = new Set<Listener>();
 
-function clamp(v: number): number {
+function clampVolume(v: number): number {
   if (Number.isNaN(v)) return DEFAULT_VOLUME;
-  return Math.max(0, Math.min(1, v));
+  return clamp01(v);
 }
 
 export function getVolume(): number {
@@ -15,12 +17,12 @@ export function getVolume(): number {
   const raw = window.localStorage.getItem(VOLUME_KEY);
   if (raw === null) return DEFAULT_VOLUME;
   const n = Number(raw);
-  return clamp(n);
+  return clampVolume(n);
 }
 
 export function setVolume(v: number): void {
   if (typeof window === "undefined") return;
-  const c = clamp(v);
+  const c = clampVolume(v);
   window.localStorage.setItem(VOLUME_KEY, String(c));
   listeners.forEach((fn) => fn(c));
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { D } from "@/lib/theme";
 import { shades, shadows, surfaces } from "@/lib/tokens";
 
 interface ReadyButtonProps {
@@ -31,9 +32,9 @@ export default function ReadyButton({
         !canClick
           ? { background: surfaces.disabledOverlay, color: "rgba(255,255,255,0.25)", cursor: "not-allowed" }
           : isReady
-          ? { background: "#2fb873", color: "#04221a", boxShadow: `0 3px 0 #1a5c3a, 0 6px 16px ${shades.shadowSoft}` }
+          ? { background: D.accent, color: "#04221a", boxShadow: `0 3px 0 #1a5c3a, 0 6px 16px ${shades.shadowSoft}` }
           : {
-              background: "linear-gradient(180deg, #f0d278, #c9a54a)",
+              background: D.goldButton,
               color: "#2a1a08",
               boxShadow: shadows.goldButton,
             }

@@ -1,5 +1,6 @@
 import { MAX_PLAYERS } from "../../src/lib/constants";
 import { shuffleDeck } from "../../src/lib/deckUtils";
+import { clamp, findPlayerById } from "../../src/lib/utils";
 import {
   getGameModeDefinition,
   getMaxHandsPerPlayerForMode,
@@ -22,7 +23,7 @@ export const configure: Handler = (state, player, msg) => {
   if (msg.handsPerPlayer !== undefined) {
     const playerCount = state.players.length;
     const maxHands = getMaxHandsPerPlayerForMode(state.modeId, playerCount);
-    state.handsPerPlayer = Math.max(1, Math.min(maxHands, msg.handsPerPlayer));
+    state.handsPerPlayer = clamp(msg.handsPerPlayer, 1, maxHands);
   }
   if (msg.gameTimerSeconds !== undefined) {
     state.gameTimerSeconds = Math.max(0, msg.gameTimerSeconds);
@@ -195,7 +196,7 @@ export const kick: Handler = (state, player, msg, ctx): HandlerResult => {
   if (msg.type !== "kick") return { kind: "ignore" };
   if (!player.isCreator || state.phase !== "lobby") return { kind: "ignore" };
   if (msg.playerId === player.id) return { kind: "ignore" };
-  const target = state.players.find((p) => p.id === msg.playerId);
+  const target = findPlayerById(state.players, msg.playerId);
   if (!target) return { kind: "ignore" };
   ctx.kickedPids.add(target.id);
   if (!target.isBot) {

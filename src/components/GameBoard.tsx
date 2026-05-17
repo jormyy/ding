@@ -59,7 +59,7 @@ export default function GameBoard({
 
   if (gameState.phaseSubstep === "flopDraftPending" && gameState.flopDraftPool) {
     return (
-      <div className="h-[100dvh] flex items-center justify-center p-4" style={{ background: "#0a1813", color: D.text }}>
+      <div className="h-[100dvh] flex items-center justify-center p-4" style={{ background: D.cardBg, color: D.text }}>
         <div className="w-full max-w-3xl">
           <DraftFromFlopBoard gameState={gameState} myId={myId} onSend={onSend} />
         </div>

@@ -11,7 +11,7 @@ import type { PerTickCaches } from "./context";
  * (where no pairs exist yet), we still prefer strong hands in low-index slots.
  * Unclaimed slots receive a heavy penalty that dominates pairwise costs.
  */
-export function expectedInversions(
+function expectedInversions(
   ranking: (string | null)[],
   strengthOf: (handId: string) => number
 ): number {

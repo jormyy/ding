@@ -23,6 +23,11 @@ interface RevealHeaderProps {
   onCustomOutput: (text: string, rate: number, pitch: number) => void;
 }
 
+const ICON_BUTTON_STYLE = {
+  background: surfaces.darkIconBg,
+  border: `1px solid ${surfaces.dividerLine}`,
+} as const;
+
 export default function RevealHeader({
   gameState,
   score,
@@ -99,11 +104,11 @@ export default function RevealHeader({
       <div className="flex-1" />
 
       <div className="flex gap-2">
-        <button onClick={onDing} className="w-8 h-8 flex items-center justify-center rounded-full text-lg select-none transition-all active:scale-90" style={{ background: "rgba(0,0,0,0.35)", border: `1px solid ${surfaces.dividerLine}` }}>🔔</button>
-        <button onClick={onFuckoff} className="w-8 h-8 flex items-center justify-center rounded-full text-lg select-none transition-all active:scale-90" style={{ background: "rgba(0,0,0,0.35)", border: `1px solid ${surfaces.dividerLine}` }}>🖕</button>
-        <VolumeControl size="sm" buttonStyle={{ background: "rgba(0,0,0,0.35)", border: `1px solid ${surfaces.dividerLine}` }} />
-        {isCustom && <CustomOutputButton size="sm" buttonStyle={{ background: "rgba(0,0,0,0.35)", border: `1px solid ${surfaces.dividerLine}` }} onSpeak={onCustomOutput} />}
-        <button onClick={onToggleMobileChat} className="sm:hidden w-8 h-8 flex items-center justify-center rounded-full text-lg select-none" style={{ background: "rgba(0,0,0,0.35)", border: `1px solid ${surfaces.dividerLine}` }}>💬</button>
+        <button onClick={onDing} className="w-8 h-8 flex items-center justify-center rounded-full text-lg select-none transition-all active:scale-90" style={ICON_BUTTON_STYLE}>🔔</button>
+        <button onClick={onFuckoff} className="w-8 h-8 flex items-center justify-center rounded-full text-lg select-none transition-all active:scale-90" style={ICON_BUTTON_STYLE}>🖕</button>
+        <VolumeControl size="sm" buttonStyle={ICON_BUTTON_STYLE} />
+        {isCustom && <CustomOutputButton size="sm" buttonStyle={ICON_BUTTON_STYLE} onSpeak={onCustomOutput} />}
+        <button onClick={onToggleMobileChat} className="sm:hidden w-8 h-8 flex items-center justify-center rounded-full text-lg select-none" style={ICON_BUTTON_STYLE}>💬</button>
       </div>
 
       <div className="flex flex-col items-end gap-1 pointer-events-none absolute top-14 right-4 z-50">
@@ -124,7 +129,7 @@ export default function RevealHeader({
           onClick={onPlayAgain}
           className="flex-none px-5 py-2.5 rounded-xl font-black text-sm tracking-wide transition-all active:scale-95"
           style={{
-            background: `linear-gradient(180deg, ${D.goldTop}, ${D.gold})`,
+            background: D.goldButton,
             color: D.ink,
             boxShadow: shadows.goldButton,
           }}

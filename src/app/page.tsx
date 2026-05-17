@@ -52,7 +52,7 @@ export default function HomePage() {
         backgroundImage: "url('/felt.png'), radial-gradient(ellipse at 50% 30%, transparent 30%, rgba(0,0,0,0.7) 100%)",
         backgroundRepeat: "repeat",
         backgroundSize: "256px 256px",
-        backgroundColor: "#0a3820",
+        backgroundColor: D.feltLight,
       }}
     >
       {/* Dark vignette overlay */}
@@ -68,14 +68,14 @@ export default function HomePage() {
             style={{
               fontSize: "clamp(72px, 16vw, 120px)",
               fontWeight: 900,
-              color: "#f5e6b8",
+              color: D.goldBright,
               textShadow: `0 3px 0 #7a5012, 0 6px 30px ${shades.shadowMedium}`,
               letterSpacing: "-0.02em",
             }}
           >
             Ding
           </h1>
-          <p className="mt-2 text-[11px] font-bold tracking-[0.5em] uppercase" style={{ color: "#9fc5a8" }}>
+          <p className="mt-2 text-[11px] font-bold tracking-[0.5em] uppercase" style={{ color: D.sub }}>
             rank the hands · trust your read
           </p>
         </div>
@@ -83,7 +83,7 @@ export default function HomePage() {
         {/* Gold divider */}
         <div className="flex items-center gap-3 w-full max-w-xs">
           <div className="flex-1 h-px" style={{ background: "linear-gradient(to right, transparent, #c9a54a88)" }} />
-          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#c9a54a", boxShadow: "0 0 12px #c9a54a99" }} />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: D.gold, boxShadow: "0 0 12px #c9a54a99" }} />
           <div className="flex-1 h-px" style={{ background: "linear-gradient(to left, transparent, #c9a54a88)" }} />
         </div>
 
@@ -93,15 +93,15 @@ export default function HomePage() {
           <div
             className="rounded-2xl p-6 flex flex-col gap-4"
             style={{
-              background: "linear-gradient(180deg, rgba(20,60,36,0.92) 0%, rgba(10,40,22,0.96) 100%)",
+              background: D.panel,
               border: `1px solid ${D.panelBorder}`,
               boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
             }}
           >
             <div>
-              <p className="text-[10px] font-black tracking-[0.25em] uppercase mb-1" style={{ color: "#9fc5a8" }}>New Table</p>
-              <h2 className="font-serif text-2xl font-bold" style={{ color: "#f5e6b8" }}>Host a game</h2>
-              <p className="text-sm mt-1" style={{ color: "#9fc5a8" }}>Start a room. Share a {ROOM_CODE_LENGTH}-letter code.</p>
+              <p className="text-[10px] font-black tracking-[0.25em] uppercase mb-1" style={{ color: D.sub }}>New Table</p>
+              <h2 className="font-serif text-2xl font-bold" style={{ color: D.goldBright }}>Host a game</h2>
+              <p className="text-sm mt-1" style={{ color: D.sub }}>Start a room. Share a {ROOM_CODE_LENGTH}-letter code.</p>
             </div>
             <GoldButton onClick={handleCreateGame}>Deal me in →</GoldButton>
           </div>
@@ -115,7 +115,7 @@ export default function HomePage() {
             }}
           >
             <div>
-              <p className="text-[10px] font-black tracking-[0.25em] uppercase mb-3" style={{ color: "#9fc5a8" }}>Join a Table</p>
+              <p className="text-[10px] font-black tracking-[0.25em] uppercase mb-3" style={{ color: D.sub }}>Join a Table</p>
               {/* Code boxes — count driven by ROOM_CODE_LENGTH */}
               <div className="flex gap-2">
                 {Array.from({ length: ROOM_CODE_LENGTH }, (_, i) => (
@@ -134,8 +134,8 @@ export default function HomePage() {
                     style={{
                       aspectRatio: "1",
                       background: "rgba(0,0,0,0.4)",
-                      border: `1.5px solid ${joinCode[i] ? "#c9a54a" : "rgba(201,165,74,0.35)"}`,
-                      color: "#f5e6b8",
+                      border: `1.5px solid ${joinCode[i] ? D.gold : "rgba(201,165,74,0.35)"}`,
+                      color: D.goldBright,
                       fontSize: "clamp(20px, 5vw, 32px)",
                     }}
                     aria-label={`Room code digit ${i + 1}`}
@@ -149,7 +149,7 @@ export default function HomePage() {
               className="w-full py-3 rounded-xl font-black text-sm tracking-wide transition-all active:scale-95"
               style={{
                 background: surfaces.tagBg,
-                color: "#f5e6b8",
+                color: D.goldBright,
                 border: "1px solid rgba(201,165,74,0.35)",
               }}
             >
@@ -172,7 +172,7 @@ function GoldButton({ onClick, children }: { onClick: () => void; children: Reac
       onClick={onClick}
       className="w-full py-3 rounded-xl font-black text-sm tracking-wide transition-all active:scale-95"
       style={{
-        background: "linear-gradient(180deg, #f0d278, #c9a54a)",
+        background: D.goldButton,
         color: "#2a1a08",
         boxShadow: shadows.goldButton,
         border: "none",

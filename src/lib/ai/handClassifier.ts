@@ -9,7 +9,7 @@ import { Hand as PokerHand } from "pokersolver";
 import { cardToPokersolverStr } from "../utils";
 import { RANK_VALUE } from "../rankValue";
 
-export type DrawType =
+type DrawType =
   | "flush-draw"
   | "open-ended-straight-draw"
   | "double-gutshot"

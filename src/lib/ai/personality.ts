@@ -1,3 +1,4 @@
+import { clamp01 } from "../utils";
 import {
   pickArchetype,
   archetypePatch,
@@ -36,7 +37,7 @@ function rand(min: number, max: number): number {
 }
 
 function jitter(v: number, amt = 0.08): number {
-  return Math.max(0, Math.min(1, v + (Math.random() * 2 - 1) * amt));
+  return clamp01(v + (Math.random() * 2 - 1) * amt);
 }
 
 function defaultTraits(): Traits {
