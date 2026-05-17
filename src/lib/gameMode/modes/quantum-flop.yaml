@@ -1,8 +1,8 @@
 id: quantum-flop
 name: Quantum Flop
 shortName: Q Flop
-summary: Three possible flops exist at once.
-detail: Nine community cards form three flop boards; each hand scores against its best quantum board.
+summary: Three parallel boards run flop, turn, and river at once.
+detail: Fifteen community cards form three full boards; each hand scores against its best quantum board.
 family: environment
 tags:
   - multi-board
@@ -11,46 +11,66 @@ tags:
 tier: insanity
 deal:
   extends: standard
-  communityCards: 9
+  communityCards: 15
   boardLayout:
     kind: grid
     slots:
       - row: 0
         col: 0
-        group: flop-a
+        group: board-a
       - row: 0
         col: 1
-        group: flop-a
+        group: board-a
       - row: 0
         col: 2
-        group: flop-a
+        group: board-a
+      - row: 0
+        col: 3
+        group: board-a
+      - row: 0
+        col: 4
+        group: board-a
       - row: 1
         col: 0
-        group: flop-b
+        group: board-b
       - row: 1
         col: 1
-        group: flop-b
+        group: board-b
       - row: 1
         col: 2
-        group: flop-b
+        group: board-b
+      - row: 1
+        col: 3
+        group: board-b
+      - row: 1
+        col: 4
+        group: board-b
       - row: 2
         col: 0
-        group: flop-c
+        group: board-c
       - row: 2
         col: 1
-        group: flop-c
+        group: board-c
       - row: 2
         col: 2
-        group: flop-c
+        group: board-c
+      - row: 2
+        col: 3
+        group: board-c
+      - row: 2
+        col: 4
+        group: board-c
   boards:
     count: 3
-    cardsPerBoard: 3
+    cardsPerBoard: 5
     scoring: best
-  visibleCommunityCards:
-    flop: 9
-    turn: 9
-    river: 9
-    reveal: 9
+  visibleCommunityIndexes:
+    lobby: []
+    preflop: []
+    flop:   [0, 1, 2,    5, 6, 7,    10, 11, 12]
+    turn:   [0, 1, 2, 3, 5, 6, 7, 8, 10, 11, 12, 13]
+    river:  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    reveal: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 infoFeatures:
   - quantum-flop
 score: high
