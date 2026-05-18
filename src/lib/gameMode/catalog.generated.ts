@@ -3967,7 +3967,7 @@ export const GAME_MODE_DEFINITIONS: readonly DingGameModeDefinition[] = [
     "deal": {
       "holeCards": 2,
       "communityCards": 5,
-      "deck": "tarot"
+      "forceTarotHoleCards": 1
     },
     "forceRankByMeta": {
       "last": "tarot"

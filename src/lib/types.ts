@@ -38,7 +38,15 @@ export type CardMeta =
   | "trickster";
 
 /** A single playing card. */
-export type Card = { rank: Rank; suit: Suit; meta?: CardMeta; possibleIdentities?: Card[]; justCollapsed?: boolean };
+export type Card = {
+  rank: Rank;
+  suit: Suit;
+  meta?: CardMeta;
+  /** Random art variant assigned at deal time (0–21 for tarot Major Arcana). */
+  artVariant?: number;
+  possibleIdentities?: Card[];
+  justCollapsed?: boolean;
+};
 
 export type CardColor = "red" | "black";
 
@@ -48,6 +56,7 @@ export type DisplayedCard = {
   suit?: Suit;
   color?: CardColor;
   meta?: CardMeta;
+  artVariant?: number;
   possibleIdentities?: Card[];
   justCollapsed?: boolean;
 };

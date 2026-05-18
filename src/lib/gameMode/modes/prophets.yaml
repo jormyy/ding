@@ -9,7 +9,7 @@ tags:
 tier: wild
 deal:
   extends: standard
-  deck: tarot
+  forceTarotHoleCards: 1
 forceRankByMeta:
   last: tarot
 infoFeatures:

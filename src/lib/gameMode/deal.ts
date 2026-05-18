@@ -32,8 +32,8 @@ export function createDeckForMode(modeId: string | undefined): Card[] {
       return duplicateDeck(deck.filter((card) => RANK_VALUE[card.rank] >= 9), 2);
     case "tarot":
       return deck.concat([
-        { rank: "A", suit: "H", meta: "tarot" },
-        { rank: "A", suit: "S", meta: "tarot" },
+        { rank: "A", suit: "H", meta: "tarot", artVariant: Math.floor(Math.random() * 22) },
+        { rank: "A", suit: "S", meta: "tarot", artVariant: Math.floor(Math.random() * 22) },
       ]);
     case "suitHeavy":
       return deck.concat(deck.filter((card) => card.suit === "H").map((card) => ({ ...card })));
@@ -103,6 +103,7 @@ export function dealCardsForMode(
         ? dealt.slice()
         : keepBestCards(dealt, mode.deal.dealChoice?.keepCards ?? mode.deal.keepCards);
       markCounterfeitHoleCards(cards, mode.deal.counterfeitHoleCards);
+      forceTarotHoleCards(cards, mode.deal.forceTarotHoleCards);
       if (mode.deal.discardedCardsToCommunity && !mode.deal.dealChoice?.selectionPhase) {
         discardedCommunityCards.push(...dealt.filter((card) => !cards.includes(card)));
       }
@@ -214,6 +215,14 @@ function markCounterfeitHoleCards(cards: Card[], count: number | undefined): voi
   if (!count) return;
   for (let index = 0; index < Math.min(count, cards.length); index++) {
     cards[index] = { ...cards[index], meta: "counterfeit" };
+  }
+}
+
+function forceTarotHoleCards(cards: Card[], count: number | undefined): void {
+  if (!count || count <= 0) return;
+  const start = Math.max(0, cards.length - count);
+  for (let index = start; index < cards.length; index++) {
+    cards[index] = { ...cards[index], meta: "tarot", artVariant: Math.floor(Math.random() * 22) };
   }
 }
 

@@ -210,6 +210,8 @@ export interface GameModeDealRule {
   discardedCardsToCommunity?: boolean;
   /** Marks the first N kept hole cards in each hand as counterfeit after dealing. */
   counterfeitHoleCards?: number;
+  /** Replaces the last N kept hole cards in each hand with a freshly-minted tarot (random arcana). */
+  forceTarotHoleCards?: number;
   /** Deck family to deal from. */
   deck?: DeckKind;
   /** Optional constrained hand construction before the board is dealt. */

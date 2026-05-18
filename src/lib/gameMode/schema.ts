@@ -555,6 +555,7 @@ const DealYaml = z
     possibleIdentities: z.enum(["holes", "board", "holesAndBoard"]).optional(),
     discardedCardsToCommunity: z.boolean().optional(),
     counterfeitHoleCards: z.number().int().optional(),
+    forceTarotHoleCards: z.number().int().optional(),
     deck: DeckKind.optional(),
     constraint: DealConstraint.optional(),
   })
